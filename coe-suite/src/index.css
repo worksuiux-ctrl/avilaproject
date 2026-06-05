@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "@worksuiux-ctrl/my-design-system/style.css";
+
+/* ── COE Suite custom overrides ── */
+html, body { height: 100%; overflow: hidden; }
+#root { height: 100%; display: flex; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-neutro-300); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-neutro-500); }
+
+@keyframes fi {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}

@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COE Suite — Catálogo de Componentes</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green-50: #ECF6E4;
+  --green-100: #D6EBC2;
+  --green-400: #84C237;
+  --green-500: #42AA42;
+  --green-600: #3CB93C;
+  --green-700: #267335;
+  --green-800: #4B7F0C;
+  --ink-900: #101828;
+  --ink-800: #2F2F2F;
+  --ink-700: #4F4F4F;
+  --ink-600: #4A5565;
+  --ink-500: #6B7280;
+  --ink-400: #98A1AF;
+  --ink-300: #B4B9BE;
+  --ink-250: #C2C7CA;
+  --ink-200: #D1D5DC;
+  --ink-150: #E5E7EB;
+  --ink-100: #F3F4F6;
+  --ink-50: #F9FAFB;
+  --warning: #FF9E03;
+  --danger: #FF5848;
+  --info: #0D9DDB;
+  --purple: #8A38F5;
+  --teal: #14B8A6;
+  --amber: #FF9E03;
+  --shadow: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--ink-50);color:var(--ink-700);display:flex;min-height:100vh;overflow-x:hidden}
+
+/* SIDEBAR */
+#sidebar{width:260px;min-width:260px;background:#fff;border-right:1px solid var(--ink-150);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;overflow-y:auto;z-index:10}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid var(--ink-150)}
+.sb-logo h1{font-size:18px;font-weight:700;color:var(--green-500);letter-spacing:-.3px}
+.sb-logo p{font-size:9px;color:var(--ink-500);font-weight:600;letter-spacing:1.8px;text-transform:uppercase;margin-top:2px}
+.sb-logo p span{color:var(--amber)}
+.sb-search{padding:12px 14px;position:relative}
+.sb-search input{width:100%;padding:8px 10px 8px 32px;border:1px solid var(--ink-200);border-radius:8px;font-size:12px;font-family:'Inter',sans-serif;outline:none;background:var(--ink-50);color:var(--ink-900);transition:border-color .15s}
+.sb-search input:focus{border-color:var(--green-500);box-shadow:0 0 0 3px rgba(66,170,66,.1)}
+.sb-search i{position:absolute;left:24px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink-400)}
+.sb-nav{padding:8px 0;flex:1;overflow-y:auto}
+.sb-sec{padding:12px 18px 6px;font-size:9px;font-weight:700;color:var(--ink-500);letter-spacing:1.5px;text-transform:uppercase}
+.sb-link{display:flex;align-items:center;gap:9px;padding:8px 18px;font-size:12px;font-weight:500;color:var(--ink-700);text-decoration:none;border-radius:0;transition:all .12s;cursor:pointer;border-left:3px solid transparent}
+.sb-link:hover{background:var(--ink-100);color:var(--ink-900)}
+.sb-link.active{background:var(--green-50);color:var(--green-700);font-weight:600;border-left-color:var(--green-500)}
+.sb-link i{width:16px;text-align:center;font-size:12px;color:var(--ink-400)}
+.sb-link.active i{color:var(--green-500)}
+.sb-count{display:inline-flex;align-items:center;justify-content:center;background:var(--ink-150);color:var(--ink-600);font-size:9px;font-weight:600;padding:0 6px;height:16px;border-radius:999px;margin-left:auto;font-family:'JetBrains Mono',monospace}
+
+/* MAIN */
+#main{flex:1;min-width:0;padding:0}
+.topbar{background:#fff;border-bottom:1px solid var(--ink-150);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:9}
+.topbar h2{font-size:16px;font-weight:700;color:var(--ink-900);display:flex;align-items:center;gap:8px}
+.topbar h2 i{color:var(--green-500);font-size:18px}
+.topbar .stats{display:flex;gap:16px;font-size:11px;color:var(--ink-500)}
+.topbar .stats span{display:flex;align-items:center;gap:4px}
+.topbar .stats b{color:var(--ink-900)}
+.content{padding:24px 28px 40px}
+
+/* SECTION */
+.section{margin-bottom:36px}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--ink-150)}
+.section-header .sh-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.section-header h3{font-size:14px;font-weight:700;color:var(--ink-900)}
+.section-header .sh-count{font-size:10px;color:var(--ink-500);margin-left:auto;font-family:'JetBrains Mono',monospace}
+
+/* COMPONENT GRID */
+.c-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:10px}
+
+/* COMPONENT CARD */
+.c-card{background:#fff;border:1px solid var(--ink-150);border-radius:10px;overflow:hidden;transition:all .15s;box-shadow:var(--shadow)}
+.c-card:hover{border-color:var(--ink-250);box-shadow:0 4px 12px rgba(16,24,40,.1)}
+.c-card-head{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--ink-100)}
+.c-card-head .cc-name{font-size:12px;font-weight:600;color:var(--ink-900);font-family:'JetBrains Mono',monospace}
+.c-card-head .cc-badge{font-size:8px;font-weight:700;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.badge-ok{background:var(--green-50);color:var(--green-700);border:1px solid var(--green-100)}
+.badge-partial{background:#FFF4DC;color:#A76B00;border:1px solid #FDE0A7}
+.badge-wip{background:var(--ink-100);color:var(--ink-500);border:1px solid var(--ink-200)}
+.c-card-body{padding:8px 14px 10px}
+.c-card-body .cc-path{font-size:10px;color:var(--ink-500);margin-bottom:5px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px;word-break:break-all}
+.c-card-body .cc-path i{font-size:9px;color:var(--ink-400);width:12px}
+.c-card-body .cc-desc{font-size:11px;color:var(--ink-700);line-height:1.5;margin-bottom:6px}
+.c-card-body .cc-meta{display:flex;flex-wrap:wrap;gap:4px}
+.cc-tag{font-size:9px;padding:2px 6px;border-radius:5px;background:var(--ink-50);border:1px solid var(--ink-150);color:var(--ink-600);display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace}
+.cc-tag i{font-size:7px}
+.cc-tag.props{background:#EFF6FF;border-color:#BFDBFE;color:#1D4ED8}
+.cc-tag.export{background:#F0FAE0;border-color:#C6E6A8;color:var(--green-800)}
+.cc-tag.store{background:#F2E6FE;border-color:#D8BAF9;color:#6B1EC6}
+.cc-tag.context{background:#FFF4DC;border-color:#FDE0A7;color:#A76B00}
+.cc-tag.hook{background:#E0F4FC;border-color:#B9E4F5;color:#0876A3}
+
+/* PREVIEW */
+.cc-preview{display:none;padding:12px 14px;background:var(--ink-50);border-top:1px solid var(--ink-100)}
+.cc-preview.show{display:block}
+.preview-btn{font-size:10px;color:var(--info);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:3px 8px;border:1px solid var(--ink-150);border-radius:6px;background:#fff;font-family:'Inter',sans-serif;transition:all .12s}
+.preview-btn:hover{border-color:var(--info);background:var(--ink-50)}
+.preview-btn i{font-size:8px}
+
+/* PREVIEW INNER - mini visual representations */
+.pv{font-family:'Inter',sans-serif;overflow:hidden;border-radius:6px}
+.pv-kpi{background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;position:relative;overflow:hidden;max-width:200px;margin:0 auto}
+.pv-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--pv-acc,var(--green-500))}
+.pv-kpi .pv-kl{font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.pv-kpi .pv-kv{font-size:16px;font-weight:600;color:var(--ink-900);line-height:1;font-family:'JetBrains Mono',monospace}
+.pv-kpi .pv-ks{font-size:8px;color:var(--ink-500);margin-top:3px;display:flex;align-items:center;gap:3px}
+.pv-kpi .pv-up{color:var(--green-500);font-weight:600}
+.pv-kpi .pv-dn{color:var(--danger);font-weight:600}
+
+.pv-panel{background:#fff;border:1px solid var(--ink-150);border-radius:6px;overflow:hidden}
+.pv-ph{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--ink-100);background:#fff}
+.pv-ph h4{font-size:8px;font-weight:700;color:var(--ink-900);display:flex;align-items:center;gap:4px}
+.pv-ph i{font-size:9px}
+.pv-pb{padding:6px 8px}
+.pv-table{width:100%;border-collapse:collapse;font-size:8px}
+.pv-table th{padding:4px 6px;text-align:left;font-size:7px;font-weight:700;color:var(--ink-500);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--ink-150);background:var(--ink-50)}
+.pv-table td{padding:4px 6px;border-bottom:1px solid var(--ink-100);color:var(--ink-700)}
+
+.pv-bar{display:flex;gap:3px;height:30px;align-items:flex-end}
+.pv-bar-item{flex:1;border-radius:2px 2px 0 0;display:flex;flex-direction:column;align-items:center;gap:1px}
+.pv-bar-item .pv-bar-h{width:100%;border-radius:2px 2px 0 0}
+.pv-bar-item .pv-bar-l{font-size:6px;color:var(--ink-400)}
+.pv-badge{display:inline-flex;align-items:center;padding:1px 5px;border-radius:999px;font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;gap:3px;line-height:1.2}
+.pv-badge.green{background:var(--green-50);color:var(--green-700);border:1px solid var(--green-100)}
+.pv-badge.amber{background:#FFF4DC;color:#A76B00;border:1px solid #FDE0A7}
+.pv-badge.red{background:var(--ink-100);color:var(--ink-500);border:1px solid var(--ink-200)}
+.pv-badge.blue{background:#E0F4FC;color:#0876A3;border:1px solid #B9E4F5}
+.pv-badge.purple{background:#F2E6FE;color:#6B1EC6;border:1px solid #D8BAF9}
+
+.pv-sidebar{width:160px;background:#fff;border:1px solid var(--ink-150);border-radius:6px;padding:0;margin:0 auto;font-size:8px}
+.pv-sidebar .pv-sb-logo{padding:8px 10px;border-bottom:1px solid var(--ink-150);display:flex;align-items:center;gap:6px}
+.pv-sidebar .pv-sb-logo .pv-ico{width:18px;height:18px;background:linear-gradient(180deg,#84C237,#4B7F0C);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--ink-900);flex-shrink:0}
+.pv-sidebar .pv-sb-sec{padding:6px 10px 3px;font-size:6px;font-weight:700;color:var(--ink-500);letter-spacing:1px;text-transform:uppercase}
+.pv-sidebar .pv-sb-btn{display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:8px;color:var(--ink-700);border-left:2px solid transparent}
+.pv-sidebar .pv-sb-btn.active{background:var(--green-50);color:var(--green-700);font-weight:600;border-left-color:var(--green-500)}
+
+.pv-topbar{width:100%;background:#fff;border:1px solid var(--ink-150);border-radius:6px;padding:6px 10px;display:flex;align-items:center;justify-content:space-between}
+.pv-topbar .pv-tbl h4{font-size:8px;font-weight:700;color:var(--ink-900)}
+.pv-topbar .pv-tbl p{font-size:7px;color:var(--ink-500)}
+.pv-topbar .pv-tbr{display:flex;align-items:center;gap:4px}
+.pv-topbar .pv-pill{display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:999px;font-size:6px;font-weight:700;background:var(--green-50);color:var(--green-700)}
+
+.pv-login{width:200px;margin:0 auto;background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:12px;text-align:center}
+.pv-login .pv-logo{width:28px;height:28px;background:var(--green-500);border-radius:6px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:12px;color:#fff}
+.pv-login input{width:100%;padding:5px 8px;border:1px solid var(--ink-200);border-radius:4px;font-size:8px;margin-bottom:5px;font-family:'Inter',sans-serif}
+
+.pv-modal{width:220px;margin:0 auto;background:#fff;border:1px solid var(--ink-150);border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.pv-modal .pv-mh{padding:8px 10px;border-bottom:1px solid var(--ink-100);display:flex;justify-content:space-between;align-items:center}
+.pv-modal .pv-mh h4{font-size:9px;font-weight:700;color:var(--ink-900)}
+.pv-modal .pv-mb{padding:8px 10px;font-size:8px;color:var(--ink-700);min-height:40px}
+.pv-modal .pv-mf{padding:6px 10px;border-top:1px solid var(--ink-100);display:flex;justify-content:flex-end;gap:4px;background:var(--ink-50)}
+
+.pv-engine{width:100%;background:#fff;border:1px solid var(--ink-150);border-radius:6px;overflow:hidden;font-size:8px}
+.pv-engine .pv-eh{padding:5px 8px;border-bottom:1px solid var(--ink-100);display:flex;align-items:center;gap:6px;background:var(--ink-50)}
+.pv-engine .pv-eh .pv-green-dot{width:5px;height:5px;border-radius:50%;background:var(--green-500)}
+.pv-engine .pv-ec{padding:5px 8px;display:flex;gap:4px}
+.pv-engine .pv-chan{flex:1;text-align:center;padding:3px;background:var(--green-50);border:1px solid var(--green-100);border-radius:4px}
+.pv-engine .pv-chan span{display:block;font-size:10px}
+.pv-engine .pv-chan .pv-cl{font-size:6px;color:var(--green-700);font-weight:600}
+
+.pv-activity{width:100%}
+.pv-activity .pv-act-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--ink-100);font-size:8px}
+.pv-activity .pv-act-item:last-child{border-bottom:none}
+.pv-activity .pv-act-item i{width:10px;text-align:center;font-size:8px}
+.pv-activity .pv-green{color:var(--green-500)}
+.pv-activity .pv-amber{color:var(--amber)}
+.pv-activity .pv-blue{color:var(--info)}
+
+/* PROPS TABLE Toggle */
+.props-toggle{font-size:10px;color:var(--info);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 0;border:none;background:none;font-family:'Inter',sans-serif}
+.props-toggle:hover{text-decoration:underline}
+.props-table{display:none;margin-top:4px;font-size:10px;width:100%;border-collapse:collapse;background:var(--ink-50);border-radius:6px;overflow:hidden}
+.props-table.show{display:table}
+.props-table th{padding:4px 8px;text-align:left;font-size:8px;font-weight:700;color:var(--ink-500);text-transform:uppercase;letter-spacing:.8px;background:var(--ink-100);border-bottom:1px solid var(--ink-150)}
+.props-table td{padding:4px 8px;border-bottom:1px solid var(--ink-100);color:var(--ink-700);font-family:'JetBrains Mono',monospace;font-size:9px}
+.props-table tr:last-child td{border-bottom:none}
+.props-table td .type{color:var(--purple);font-weight:500}
+
+/* CONVENTIONS */
+.conv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.conv-card{background:#fff;border:1px solid var(--ink-150);border-radius:10px;padding:16px;box-shadow:var(--shadow)}
+.conv-card h4{font-size:12px;font-weight:700;color:var(--ink-900);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.conv-card h4 i{color:var(--green-500);font-size:13px}
+.conv-card ul{list-style:none;padding:0}
+.conv-card li{font-size:10px;color:var(--ink-700);padding:4px 0;display:flex;align-items:flex-start;gap:6px;line-height:1.5}
+.conv-card li i{color:var(--green-500);font-size:8px;margin-top:3px;flex-shrink:0}
+.conv-card code{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--ink-100);padding:1px 5px;border-radius:3px;color:var(--purple)}
+
+/* LEGEND */
+.legend{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-600)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.legend-dot.ok{background:var(--green-500)}
+.legend-dot.partial{background:var(--amber)}
+.legend-dot.wip{background:var(--ink-250)}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<nav id="sidebar">
+  <div class="sb-logo">
+    <h1><i class="fa-solid fa-cube" style="color:var(--green-500);margin-right:6px"></i>Componentes</h1>
+    <p>COE Suite <span>React Refactor</span></p>
+  </div>
+  <div class="sb-search">
+    <i class="fa-solid fa-search"></i>
+    <input type="text" id="filter-input" placeholder="Buscar componente..." oninput="filterComponents()">
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Navegación</div>
+    <a class="sb-link active" href="#" data-section="layouts" onclick="scrollToSection('layouts',this)"><i class="fa-solid fa-layer-group"></i>Layouts<span class="sb-count">3</span></a>
+    <a class="sb-link" href="#" data-section="pages" onclick="scrollToSection('pages',this)"><i class="fa-solid fa-file-lines"></i>Páginas<span class="sb-count">7</span></a>
+    <a class="sb-link" href="#" data-section="components" onclick="scrollToSection('components',this)"><i class="fa-solid fa-puzzle-piece"></i>Componentes<span class="sb-count">23</span></a>
+    <a class="sb-link" href="#" data-section="stores" onclick="scrollToSection('stores',this)"><i class="fa-solid fa-database"></i>Stores<span class="sb-count">3</span></a>
+    <a class="sb-link" href="#" data-section="contexts" onclick="scrollToSection('contexts',this)"><i class="fa-solid fa-plug"></i>Contextos<span class="sb-count">4</span></a>
+    <a class="sb-link" href="#" data-section="data" onclick="scrollToSection('data',this)"><i class="fa-solid fa-table"></i>Datos<span class="sb-count">2</span></a>
+    <a class="sb-link" href="#" data-section="lib" onclick="scrollToSection('lib',this)"><i class="fa-solid fa-toolbox"></i>Librerías<span class="sb-count">1</span></a>
+    <a class="sb-link" href="#" data-section="conventions" onclick="scrollToSection('conventions',this)"><i class="fa-solid fa-book"></i>Convenciones</a>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<div id="main">
+  <header class="topbar">
+    <h2><i class="fa-solid fa-compass"></i> Catálogo de Componentes</h2>
+    <div class="stats">
+      <span>Total <b id="total-count">0</b></span>
+      <span><i class="fa-solid fa-circle" style="color:var(--green-500);font-size:8px"></i> Migrados <b id="ok-count">0</b></span>
+      <span><i class="fa-solid fa-circle" style="color:var(--amber);font-size:8px"></i> Parciales <b id="partial-count">0</b></span>
+      <span><i class="fa-solid fa-circle" style="color:var(--ink-250);font-size:8px"></i> Pendientes <b id="wip-count">0</b></span>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot ok"></span> Migrado</span>
+      <span class="legend-item"><span class="legend-dot partial"></span> Parcial</span>
+      <span class="legend-item"><span class="legend-dot wip"></span> Pendiente</span>
+    </div>
+
+    <!-- ═══════ LAYOUTS ═══════ -->
+    <section class="section" id="sec-layouts" data-category="layouts">
+      <div class="section-header">
+        <div class="sh-icon" style="background:#ECF6E4;color:var(--green-700)"><i class="fa-solid fa-layer-group"></i></div>
+        <h3>Layouts</h3>
+        <span class="sh-count" id="count-layouts">3 componentes</span>
+      </div>
+      <div class="c-grid" data-category="layouts">
+        <!-- AppShell -->
+        <div class="c-card" data-name="AppShell" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">AppShell</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/layouts/AppShell.tsx</div>
+            <div class="cc-desc">Layout principal que envuelve todas las rutas: Sidebar + Topbar + &lt;Outlet/&gt; de React Router.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag"><i class="fa-solid fa-repeat"></i> Outlet</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv" style="display:flex;gap:6px;height:80px">
+                <div style="width:50px;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:4px;font-size:6px;color:var(--ink-500);display:flex;flex-direction:column;align-items:center;gap:2px">
+                  <div style="width:16px;height:16px;background:var(--green-500);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff"><i class="fa-solid fa-leaf"></i></div>
+                  <span>Sidebar</span>
+                  <span style="background:var(--green-50);padding:1px 4px;border-radius:3px;font-size:5px;color:var(--green-700)">252px</span>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+                  <div style="height:16px;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:3px 6px;display:flex;align-items:center;font-size:7px;color:var(--ink-500)">
+                    <span style="color:var(--ink-900);font-weight:600">Topbar</span>
+                    <span style="margin-left:auto">58px</span>
+                  </div>
+                  <div style="flex:1;background:var(--ink-50);border:1px dashed var(--ink-200);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:7px;color:var(--ink-400)">
+                    &lt;Outlet /&gt; → Página actual
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="c-card" data-name="Sidebar" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">Sidebar</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/layouts/Sidebar.tsx</div>
+            <div class="cc-desc">Barra lateral colapsable. Muestra 7 módulos con iconos HeroIcons, sub-ítems anidados, toggle de colapso.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag store"><i class="fa-solid fa-database"></i> useNavStore</span>
+              <span class="cc-tag store"><i class="fa-solid fa-database"></i> useUserStore</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv pv-sidebar">
+                <div class="pv-sb-logo"><div class="pv-ico"><i class="fa-solid fa-leaf"></i></div><span style="color:#3CB93C;font-weight:700">COE Suite</span></div>
+                <div class="pv-sb-sec">Principal</div>
+                <div class="pv-sb-btn active"><i class="fa-solid fa-chart-line" style="font-size:7px;width:10px;color:var(--green-500)"></i>Dashboard</div>
+                <div class="pv-sb-btn"><i class="fa-solid fa-tower-observation" style="font-size:7px;width:10px"></i>War Room</div>
+                <div class="pv-sb-btn"><i class="fa-solid fa-chart-pie" style="font-size:7px;width:10px"></i>KPIs</div>
+                <div class="pv-sb-sec">Operaciones</div>
+                <div class="pv-sb-btn"><i class="fa-solid fa-building-columns" style="font-size:7px;width:10px"></i>Perfil Banco</div>
+                <div class="pv-sb-btn"><i class="fa-solid fa-truck-fast" style="font-size:7px;width:10px"></i>Transportista</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topbar -->
+        <div class="c-card" data-name="Topbar" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">Topbar</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/layouts/Topbar.tsx</div>
+            <div class="cc-desc">Barra superior con breadcrumb, título dinámico, selector de perfil, estado CORE SYNC y acciones.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag store"><i class="fa-solid fa-database"></i> useNavStore</span>
+              <span class="cc-tag store"><i class="fa-solid fa-database"></i> useUserStore</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv pv-topbar">
+                <div class="pv-tbl">
+                  <h4>Dashboard — Indicadores Globales</h4>
+                  <p>Visión integral de liquidez y operaciones en tiempo real</p>
+                </div>
+                <div class="pv-tbr">
+                  <span class="pv-pill"><span style="width:4px;height:4px;border-radius:50%;background:var(--green-500)"></span>CORE SYNC</span>
+                  <span style="width:18px;height:18px;border:1px solid var(--ink-150);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--ink-400)"><i class="fa-regular fa-bell"></i></span>
+                  <span style="padding:3px 8px;background:var(--green-500);color:#fff;border-radius:4px;font-size:7px;font-weight:700;display:flex;align-items:center;gap:2px"><i class="fa-solid fa-plus" style="font-size:6px"></i>Nueva Op.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ PAGES ═══════ -->
+    <section class="section" id="sec-pages" data-category="pages">
+      <div class="section-header">
+        <div class="sh-icon" style="background:#F2E6FE;color:#6B1EC6"><i class="fa-solid fa-file-lines"></i></div>
+        <h3>Páginas</h3>
+        <span class="sh-count" id="count-pages">7 componentes</span>
+      </div>
+      <div class="c-grid" data-category="pages">
+        <!-- Dashboard -->
+        <div class="c-card" data-name="Dashboard" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">Dashboard</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/Dashboard/Dashboard.tsx</div>
+            <div class="cc-desc">Panel principal con 6 KPIs, gráfico de liquidez semanal, propuesta COENGINE, tabla conciliación y telemetría CIT.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag"><i class="fa-solid fa-chart-line"></i> Dashboard</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv" style="display:flex;flex-direction:column;gap:4px;font-size:8px">
+                <div style="display:flex;gap:4px">
+                  <div class="pv-kpi" style="--pv-acc:var(--green-500);flex:1"><div class="pv-kl">Efectivo Global</div><div class="pv-kv">$14.2M</div><div class="pv-ks"><span class="pv-up">↑ +2.4%</span> semana</div></div>
+                  <div class="pv-kpi" style="--pv-acc:var(--amber);flex:1"><div class="pv-kl">Nodos Alerta</div><div class="pv-kv" style="color:var(--danger)">14</div><div class="pv-ks"><span class="pv-dn">⚠</span> Stock-out</div></div>
+                </div>
+                <div style="display:flex;gap:4px">
+                  <div class="pv-panel" style="flex:1">
+                    <div class="pv-ph"><h4><i class="fa-solid fa-chart-area" style="color:var(--green-500)"></i>Liquidez</h4><span class="pv-badge green">Semana</span></div>
+                    <div class="pv-pb">
+                      <div class="pv-bar"><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:flex-end;height:100%"><div style="width:100%;height:55%;background:var(--green-500);border-radius:2px 2px 0 0"></div><span style="font-size:5px;color:var(--ink-400)">L</span></div><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:flex-end;height:100%"><div style="width:100%;height:40%;background:var(--green-500);border-radius:2px 2px 0 0"></div><span style="font-size:5px;color:var(--ink-400)">M</span></div><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:flex-end;height:100%"><div style="width:100%;height:68%;background:var(--green-500);border-radius:2px 2px 0 0"></div><span style="font-size:5px;color:var(--ink-400)">X</span></div><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:flex-end;height:100%"><div style="width:100%;height:58%;background:var(--green-500);border-radius:2px 2px 0 0"></div><span style="font-size:5px;color:var(--ink-400)">J</span></div><div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:flex-end;height:100%"><div style="width:100%;height:82%;background:var(--info);border-radius:2px 2px 0 0"></div><span style="font-size:5px;color:var(--green-700);font-weight:700">HOY</span></div></div>
+                    </div>
+                  </div>
+                  <div class="pv-panel" style="flex:1">
+                    <div class="pv-ph"><h4><i class="fa-solid fa-scale-balanced" style="color:var(--info)"></i>Conciliación</h4><span class="pv-badge blue">Matching</span></div>
+                    <div class="pv-pb" style="padding:4px 6px">
+                      <table class="pv-table"><tr><th>Centro</th><th>Dif.</th><th>Estado</th></tr><tr><td>TransV. Norte</td><td>$0</td><td><span class="pv-badge green">OK</span></td></tr><tr><td>Blindados Sur</td><td style="color:var(--amber)">-$200</td><td><span class="pv-badge amber">Disputa</span></td></tr></table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ConfigEngine -->
+        <div class="c-card" data-name="ConfigEngine" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">ConfigEngine</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/ConfigEngine/ConfigEngine.tsx</div>
+            <div class="cc-desc">Configuración del motor COENGINE: modo, canales (5), parámetros, modelos ML, reglas de negocio con toggles expandibles.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag props"><i class="fa-solid fa-list"></i> ~345 líneas</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv pv-engine">
+                <div class="pv-eh"><span class="pv-green-dot"></span><span style="font-weight:600">COENGINE Engine</span><span class="pv-badge green" style="margin-left:auto">● ACTIVO</span></div>
+                <div class="pv-ec">
+                  <div class="pv-chan"><span>🏦</span><span class="pv-cl">Agencia</span><span class="pv-cl">ACTIVO</span></div>
+                  <div class="pv-chan"><span>🏛</span><span class="pv-cl">Acopio</span><span class="pv-cl">ACTIVO</span></div>
+                  <div class="pv-chan" style="background:var(--ink-50);border-color:var(--ink-150);opacity:.5"><span>💼</span><span class="pv-cl" style="color:var(--ink-400)">Taquilla</span><span class="pv-cl" style="color:var(--ink-400)">INACTIVO</span></div>
+                  <div class="pv-chan"><span>🏧</span><span class="pv-cl">ATM</span><span class="pv-cl">ACTIVO</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CoengineActivity -->
+        <div class="c-card" data-name="CoengineActivity" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">CoengineActivity</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/CoengineActivity/CoengineActivity.tsx</div>
+            <div class="cc-desc">Panel COENGINE IA: 6 sub-tabs con gráficos Chart.js, escenarios de decisión, propuestas activas, simulador y calibración.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag props"><i class="fa-solid fa-list"></i> ~1045 líneas</span>
+              <span class="cc-tag hook"><i class="fa-solid fa-chart-simple"></i> Chart</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv" style="font-size:8px">
+                <div style="display:flex;gap:3px;margin-bottom:4px;border-bottom:1px solid var(--ink-150);padding-bottom:3px">
+                  <span style="padding:2px 6px;background:var(--green-50);color:var(--green-700);border-radius:4px;font-weight:600;font-size:7px">📈 Demanda</span>
+                  <span style="padding:2px 6px;color:var(--ink-500);font-size:7px">🎯 Escenarios</span>
+                  <span style="padding:2px 6px;color:var(--ink-500);font-size:7px">🤖 Propuestas</span>
+                </div>
+                <div class="pv-activity">
+                  <div class="pv-act-item"><i class="fa-solid fa-circle pv-green" style="font-size:5px"></i><span>Propuesta Agencia · $180K · 92%</span></div>
+                  <div class="pv-act-item"><i class="fa-solid fa-circle pv-green" style="font-size:5px"></i><span>Propuesta ATM · $95K · 88%</span></div>
+                  <div class="pv-act-item"><i class="fa-solid fa-circle pv-blue" style="font-size:5px"></i><span>Ciclo manual iniciado</span></div>
+                  <div class="pv-act-item"><i class="fa-solid fa-circle pv-amber" style="font-size:5px"></i><span>Regla R-INV-001 activada</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Login -->
+        <div class="c-card" data-name="Login" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">Login</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/Login/Login.tsx</div>
+            <div class="cc-desc">Formulario de inicio de sesión. Autenticación dual: Supabase o mock (admin/123456).</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag context"><i class="fa-solid fa-plug"></i> useAuth</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv pv-login">
+                <div class="pv-logo"><i class="fa-solid fa-leaf"></i></div>
+                <input type="text" value="admin" readonly placeholder="Usuario" style="text-align:center;font-size:9px;background:var(--ink-50);cursor:default">
+                <input type="password" value="••••••" readonly placeholder="Contraseña" style="text-align:center;font-size:9px;background:var(--ink-50);cursor:default">
+                <div style="padding:4px 8px;background:var(--green-500);color:#fff;border-radius:4px;font-size:8px;font-weight:700;text-align:center">Iniciar Sesión</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ModuleSelector -->
+        <div class="c-card" data-name="ModuleSelector" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">ModuleSelector</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/ModuleSelector/ModuleSelector.tsx</div>
+            <div class="cc-desc">Grid de tarjetas para selección de módulos con icono, nombre, descripción y sub-ítems.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WarRoom -->
+        <div class="c-card" data-name="WarRoom" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">WarRoom</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/WarRoom/WarRoom.tsx</div>
+            <div class="cc-desc">Sala de control con 7 sub-componentes: CommandBar, KpiRow, ProductGrid, RedGrid, VesPuntoGrid, Compromisos, Alarmas. Toggle Divisas/Bolívares.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag"><i class="fa-solid fa-tower-observation"></i> War Room</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv" style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;gap:4px;padding:4px 6px;background:#fff;border:1px solid var(--ink-150);border-radius:4px;font-size:7px">
+                  <span style="padding:2px 6px;background:var(--green-50);color:var(--green-700);border-radius:4px;font-weight:600">Divisas</span>
+                  <span style="padding:2px 6px;color:var(--ink-500)">Bolívares</span>
+                  <span style="margin-left:auto;display:flex;gap:2px">
+                    <span style="width:4px;height:4px;border-radius:50%;background:var(--green-500)"></span>
+                    <span style="width:4px;height:4px;border-radius:50%;background:var(--green-500)"></span>
+                    <span style="width:4px;height:4px;border-radius:50%;background:var(--amber)"></span>
+                    <span style="width:4px;height:4px;border-radius:50%;background:var(--danger)"></span>
+                  </span>
+                </div>
+                <div style="display:flex;gap:4px">
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:4px 6px;font-size:7px">
+                    <div style="font-weight:600;color:var(--ink-900)">Efectivo USD</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-900)">$142.3M</div>
+                    <span class="pv-badge green">Normal</span>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:4px 6px;font-size:7px">
+                    <div style="font-weight:600;color:var(--ink-900)">Efectivo EUR</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-900)">€8.4M</div>
+                    <span class="pv-badge amber">Alerta</span>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:4px 6px;font-size:7px">
+                    <div style="font-weight:600;color:var(--ink-900)">Red</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ink-900)">1,284 nodos</div>
+                    <span class="pv-badge green">96% OK</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ComingSoon -->
+        <div class="c-card" data-name="ComingSoon" data-status="ok">
+          <div class="c-card-head">
+            <span class="cc-name">ComingSoon</span>
+            <span class="cc-badge badge-ok">Migrado</span>
+          </div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/pages/ComingSoon/ComingSoon.tsx</div>
+            <div class="cc-desc">Placeholder "En construcción" con enlace a la versión legacy HTML para vistas no migradas.</div>
+            <div class="cc-meta">
+              <span class="cc-tag export"><i class="fa-solid fa-up-right-from-square"></i> named</span>
+              <span class="cc-tag props"><i class="fa-solid fa-list"></i> view: string</span>
+            </div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+            <div class="cc-preview">
+              <div class="pv" style="text-align:center;padding:12px;background:#fff;border:1px solid var(--ink-150);border-radius:6px">
+                <div style="font-size:16px;color:var(--ink-300);margin-bottom:4px"><i class="fa-regular fa-file"></i></div>
+                <div style="font-size:10px;font-weight:700;color:var(--ink-900)">En construcción</div>
+                <div style="font-size:8px;color:var(--ink-500);margin:4px 0">Esta sección se está migrando a React</div>
+                <div style="display:inline-block;padding:3px 10px;border:1px solid var(--green-500);border-radius:4px;font-size:8px;font-weight:700;color:var(--green-500)">Abrir versión original</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ COMPONENTS ═══════ -->
+    <section class="section" id="sec-components" data-category="components">
+      <div class="section-header">
+        <div class="sh-icon" style="background:#EFF6FF;color:#1D4ED8"><i class="fa-solid fa-puzzle-piece"></i></div>
+        <h3>Componentes Compartidos</h3>
+        <span class="sh-count" id="count-components">16 componentes</span>
+      </div>
+
+      <!-- Sub: indicators/ -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;background:var(--ink-50);border-radius:6px;border:1px solid var(--ink-150)">
+          <i class="fa-solid fa-folder-open" style="color:var(--amber);font-size:11px"></i>
+          <span style="font-size:11px;font-weight:600;color:var(--ink-700)">components/indicators/</span>
+          <span style="font-size:9px;color:var(--ink-500)">— KPIs del Dashboard</span>
+        </div>
+        <div class="c-grid">
+          <div class="c-card" data-name="EfectivoGlobal" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">EfectivoGlobal</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/indicators/EfectivoGlobal.tsx</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">value?, trend?, subtitle?</span></div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview (DS)</button>
+            <div class="cc-preview">
+              <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;max-width:180px;margin:0 auto">
+                <div style="font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Efectivo Global</div>
+                <div style="font-size:16px;font-weight:600;color:var(--ink-900);line-height:1;font-family:'JetBrains Mono',monospace">$14.2M</div>
+                <div style="font-size:8px;color:var(--ink-500);margin-top:3px;display:flex;align-items:center;gap:3px"><span style="color:var(--green-500);font-weight:600">↑ +2.4%</span> semana</div>
+              </div>
+            </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="InventarioFisicoTotal" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">InventarioFisicoTotal</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/indicators/InventarioFisicoTotal.tsx</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">value?, subtitle?</span></div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview (DS)</button>
+            <div class="cc-preview">
+              <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;max-width:180px;margin:0 auto">
+                <div style="font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Inventario Físico Total</div>
+                <div style="font-size:16px;font-weight:600;color:var(--green-700);line-height:1;font-family:'JetBrains Mono',monospace">$14.2M</div>
+                <div style="font-size:8px;color:var(--ink-500);margin-top:3px">USD · Red completa</div>
+              </div>
+            </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="InventarioBovedas" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">InventarioBovedas</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/indicators/InventarioBovedas.tsx</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">value?, subtitle?</span></div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview (DS)</button>
+            <div class="cc-preview">
+              <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;max-width:180px;margin:0 auto">
+                <div style="font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Inventario Físico Total</div>
+                <div style="font-size:16px;font-weight:600;color:var(--amber);line-height:1;font-family:'JetBrains Mono',monospace">$14.2M</div>
+                <div style="font-size:8px;color:var(--ink-500);margin-top:3px">Bóvedas + ATMs + tránsito</div>
+              </div>
+            </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="Demanda48h" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">Demanda48h</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/indicators/Demanda48h.tsx</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">value?, subtitle?</span></div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview (DS)</button>
+            <div class="cc-preview">
+              <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;max-width:180px;margin:0 auto">
+                <div style="font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Demanda 48h (IA)</div>
+                <div style="font-size:16px;font-weight:600;color:var(--purple);line-height:1;font-family:'JetBrains Mono',monospace">$3.8M</div>
+                <div style="font-size:8px;color:var(--ink-500);margin-top:3px">Montecarlo · MAE 1.5%</div>
+              </div>
+            </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="NodosAlerta" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">NodosAlerta</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/indicators/NodosAlerta.tsx</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">value?, trend?</span></div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview (DS)</button>
+            <div class="cc-preview">
+              <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;max-width:180px;margin:0 auto">
+                <div style="font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Nodos en Alerta</div>
+                <div style="font-size:16px;font-weight:600;color:var(--danger);line-height:1;font-family:'JetBrains Mono',monospace">14</div>
+                <div style="font-size:8px;color:var(--ink-500);margin-top:3px"><span style="color:var(--danger);font-weight:600">⚠</span> Stock-out</div>
+              </div>
+            </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="SlaCumplimiento" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">SlaCumplimiento</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/indicators/SlaCumplimiento.tsx</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">value?, trend?</span></div>
+            <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview (DS)</button>
+            <div class="cc-preview">
+              <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:8px;padding:8px 10px;max-width:180px;margin:0 auto">
+                <div style="font-size:7px;font-weight:600;color:var(--ink-500);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">SLA Cumplimiento</div>
+                <div style="font-size:16px;font-weight:600;color:var(--green-500);line-height:1;font-family:'JetBrains Mono',monospace">98.2%</div>
+                <div style="font-size:8px;color:var(--ink-500);margin-top:3px"><span style="color:var(--green-500);font-weight:600">✓</span> Sobre meta</div>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: ui/ -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;background:var(--ink-50);border-radius:6px;border:1px solid var(--ink-150)">
+          <i class="fa-solid fa-folder-open" style="color:var(--amber);font-size:11px"></i>
+          <span style="font-size:11px;font-weight:600;color:var(--ink-700)">components/ui/</span>
+          <span style="font-size:9px;color:var(--ink-500)">— Componentes de interfaz reutilizables</span>
+        </div>
+        <div class="c-grid">
+          <div class="c-card" data-name="Modal" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">Modal</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/ui/Modal.tsx</div>
+              <div class="cc-desc">Modal genérico con backdrop, título, cuerpo y slot de acciones. Tamaños: sm | md | lg.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">open, onClose, title?, children, actions?, size?</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv pv-modal">
+                  <div class="pv-mh"><h4><i class="fa-solid fa-window-maximize" style="color:var(--info);font-size:9px"></i> Título del Modal</h4><span style="font-size:10px;color:var(--ink-300);cursor:default">✕</span></div>
+                  <div class="pv-mb">Contenido del modal aquí...</div>
+                  <div class="pv-mf"><span style="padding:3px 8px;border:1px solid var(--ink-250);border-radius:4px;font-size:7px;color:var(--ink-600)">Cancelar</span><span style="padding:3px 8px;background:var(--green-500);color:#fff;border-radius:4px;font-size:7px">Aceptar</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="CoengineLogo" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">CoengineLogo</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/ui/CoengineLogo.tsx</div>
+              <div class="cc-desc">SVG inline del logo COE (hoja verde).</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">className?</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="text-align:center;padding:6px">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2L30 28H2L16 2Z" fill="#42AA42"/><path d="M16 8L24 24H8L16 8Z" fill="#267335"/></svg>
+                  <div style="font-size:7px;color:var(--ink-400);margin-top:2px">Logo COE (SVG)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="PageHeader" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">PageHeader</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/ui/PageHeader.tsx</div>
+              <div class="cc-desc">Encabezado de página con título, descripción y slot de acciones.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">title, description?, actions?</span></div>
+            </div>
+          </div>
+          <div class="c-card" data-name="ProfileSelector" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">ProfileSelector</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/ui/ProfileSelector.tsx</div>
+              <div class="cc-desc">Selector de perfil: banco, BCV, transportista, corporativo, negocios. Consume useProfileStore.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag store">useProfileStore</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: charts/ -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;background:var(--ink-50);border-radius:6px;border:1px solid var(--ink-150)">
+          <i class="fa-solid fa-folder-open" style="color:var(--amber);font-size:11px"></i>
+          <span style="font-size:11px;font-weight:600;color:var(--ink-700)">components/charts/</span>
+          <span style="font-size:9px;color:var(--ink-500)">— Wrapper de Chart.js</span>
+        </div>
+        <div class="c-grid">
+          <div class="c-card" data-name="Chart" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">Chart</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/charts/Chart.tsx</div>
+              <div class="cc-desc">Wrapper genérico de Chart.js. Renderiza canvas y carga dinámicamente Chart.js. Soporta line, bar, etc.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">type, data, options?, height?</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="display:flex;gap:4px;align-items:flex-end;height:40px;padding:4px;background:#fff;border:1px solid var(--ink-150);border-radius:4px">
+                  <div style="flex:1;height:55%;background:var(--green-500);border-radius:2px"></div>
+                  <div style="flex:1;height:40%;background:var(--green-500);border-radius:2px"></div>
+                  <div style="flex:1;height:68%;background:var(--green-500);border-radius:2px"></div>
+                  <div style="flex:1;height:58%;background:var(--green-500);border-radius:2px"></div>
+                  <div style="flex:1;height:82%;background:var(--info);border-radius:2px"></div>
+                  <div style="flex:1;height:75%;background:var(--ink-250);border-radius:2px"></div>
+                  <div style="flex:1;height:90%;background:var(--ink-250);border-radius:2px"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: shared/ -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;background:var(--ink-50);border-radius:6px;border:1px solid var(--ink-150)">
+          <i class="fa-solid fa-folder-open" style="color:var(--amber);font-size:11px"></i>
+          <span style="font-size:11px;font-weight:600;color:var(--ink-700)">components/shared/</span>
+          <span style="font-size:9px;color:var(--ink-500)">— Diálogos y componentes compartidos</span>
+        </div>
+        <div class="c-grid">
+          <div class="c-card" data-name="ExportDialog" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">ExportDialog</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/shared/ExportDialog.tsx</div>
+              <div class="cc-desc">Diálogo modal para exportar datos a Excel (.xlsx) con selección de columnas.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">open, onOpenChange, title?, data, columns, filename</span></div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WizardDialog" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WizardDialog</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/shared/WizardDialog.tsx</div>
+              <div class="cc-desc">Modal multi-paso con navegación Anterior/Siguiente e indicador de progreso.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">open, onOpenChange, title, steps, onFinish</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv pv-modal" style="max-width:240px">
+                  <div class="pv-mh"><h4>Asistente</h4><span style="font-size:8px;color:var(--ink-400)">Paso 2/4</span></div>
+                  <div class="pv-mb">
+                    <div style="display:flex;gap:3px;margin-bottom:6px"><div style="flex:1;height:3px;background:var(--green-500);border-radius:2px"></div><div style="flex:1;height:3px;background:var(--green-500);border-radius:2px"></div><div style="flex:1;height:3px;background:var(--ink-200);border-radius:2px"></div><div style="flex:1;height:3px;background:var(--ink-200);border-radius:2px"></div></div>
+                    <span style="font-size:8px;color:var(--ink-700)">Selecciona tipo de operación...</span>
+                  </div>
+                  <div class="pv-mf"><span style="padding:3px 8px;border:1px solid var(--ink-250);border-radius:4px;font-size:7px">← Anterior</span><span style="padding:3px 8px;background:var(--green-500);color:#fff;border-radius:4px;font-size:7px">Siguiente →</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="BulkUploadDialog" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">BulkUploadDialog</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/shared/BulkUploadDialog.tsx</div>
+              <div class="cc-desc">Diálogo para descarga de plantilla Excel y carga masiva de datos con validación.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">open, onOpenChange, title, columns, templateFilename, onUpload</span></div>
+            </div>
+          </div>
+          <div class="c-card" data-name="DeleteDialog" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">DeleteDialog</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/shared/DeleteDialog.tsx</div>
+              <div class="cc-desc">Modal de confirmación de eliminación con icono de advertencia.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">open, onOpenChange, title, description, itemName?, onConfirm</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv pv-modal" style="max-width:220px">
+                  <div class="pv-mh"><h4><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger);font-size:9px"></i> Confirmar</h4></div>
+                  <div class="pv-mb"><span style="font-size:8px">¿Eliminar "Registro #123"? Esta acción no se puede deshacer.</span></div>
+                  <div class="pv-mf"><span style="padding:3px 8px;border:1px solid var(--ink-250);border-radius:4px;font-size:7px">Cancelar</span><span style="padding:3px 8px;background:var(--danger);color:#fff;border-radius:4px;font-size:7px">Eliminar</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: war-room/ -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;background:var(--ink-50);border-radius:6px;border:1px solid var(--ink-150)">
+          <i class="fa-solid fa-folder-open" style="color:var(--danger);font-size:11px"></i>
+          <span style="font-size:11px;font-weight:600;color:var(--ink-700)">components/war-room/</span>
+          <span style="font-size:9px;color:var(--ink-500)">— Componentes de la Sala de Control</span>
+        </div>
+        <div class="c-grid">
+          <div class="c-card" data-name="WarRoomCommandBar" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomCommandBar</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomCommandBar.tsx</div>
+              <div class="cc-desc">Barra superior con tabs de período, botones de acción y últimos sensores. Usa DS Button, Text, Tabs.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">interval, onIntervalChange</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="display:flex;gap:6px;align-items:center;padding:6px 8px;background:#fff;border:1px solid var(--ink-150);border-radius:6px">
+                  <span style="padding:2px 8px;background:var(--green-50);color:var(--green-700);border-radius:999px;font-size:7px;font-weight:600">24h</span>
+                  <span style="padding:2px 8px;color:var(--ink-500);font-size:7px">7d</span>
+                  <span style="padding:2px 8px;color:var(--ink-500);font-size:7px">30d</span>
+                  <span style="margin-left:auto;padding:3px 8px;background:var(--green-500);color:#fff;border-radius:4px;font-size:7px">Exportar</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WarRoomKpiRow" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomKpiRow</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomKpiRow.tsx</div>
+              <div class="cc-desc">Fila de 6 KPIs de War Room con indicadores de efectivo/red/transporte. Usa DS Card, Text, Heading, ProgressBar.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">kpis</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="display:flex;gap:4px">
+                  <div class="pv-kpi" style="--pv-acc:var(--green-500);flex:1"><div class="pv-kl">Efvo USD</div><div class="pv-kv">$142M</div></div>
+                  <div class="pv-kpi" style="--pv-acc:var(--info);flex:1"><div class="pv-kl">Efvo EUR</div><div class="pv-kv">€8.4M</div></div>
+                  <div class="pv-kpi" style="--pv-acc:var(--amber);flex:1"><div class="pv-kl">Red</div><div class="pv-kv">1,284</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WarRoomProductGrid" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomProductGrid</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomProductGrid.tsx</div>
+              <div class="cc-desc">Grid 5-columnas de productos (Efectivo Bóveda USD/EUR, Mesa de Cambio, etc.) con montos y status. Usa DS Card, Text, Heading, Chip.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">products</span><span class="cc-tag"><i class="fa-regular fa-circle" style="color:#0d9488;font-size:7px"></i> USD</span><span class="cc-tag"><i class="fa-regular fa-circle" style="color:#2563eb;font-size:7px"></i> EUR</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="display:flex;gap:4px">
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="font-size:7px;font-weight:600;color:var(--ink-900);margin-bottom:2px">💰 Bóveda USD</div>
+                    <div style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace">$124.5M</div>
+                    <span class="pv-badge green">Todo apto</span>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="font-size:7px;font-weight:600;color:var(--ink-900);margin-bottom:2px">💶 Bóveda EUR</div>
+                    <div style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace">€7.2M</div>
+                    <span class="pv-badge amber">Con no aptos</span>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="font-size:7px;font-weight:600;color:var(--ink-900);margin-bottom:2px">📊 Mesa Cambio</div>
+                    <div style="font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace">$800K</div>
+                    <span class="pv-badge green">Todo apto</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WarRoomRedGrid" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomRedGrid</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomRedGrid.tsx</div>
+              <div class="cc-desc">Grid agencias/centros de acopio con montos USD/EUR y status. Usa DS Card, Text, Heading, Chip.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">groups</span><span class="cc-tag"><i class="fa-solid fa-network-wired"></i> Red</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="display:flex;gap:4px">
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="display:flex;justify-content:space-between;font-size:7px;font-weight:600;color:var(--ink-900)">Agencias <span style="color:var(--ink-400)">48 unid.</span></div>
+                    <div style="font-size:8px;font-family:'JetBrains Mono',monospace">$42.5M</div>
+                    <span class="pv-badge green">Normal</span>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="display:flex;justify-content:space-between;font-size:7px;font-weight:600;color:var(--ink-900)">Acopios <span style="color:var(--ink-400)">22 unid.</span></div>
+                    <div style="font-size:8px;font-family:'JetBrains Mono',monospace">$28.3M</div>
+                    <span class="pv-badge green">Normal</span>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="display:flex;justify-content:space-between;font-size:7px;font-weight:600;color:var(--ink-900)">ATMs <span style="color:var(--ink-400)">156 unid.</span></div>
+                    <div style="font-size:8px;font-family:'JetBrains Mono',monospace">$9.8M</div>
+                    <span class="pv-badge amber">Alerta</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WarRoomVesPuntoGrid" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomVesPuntoGrid</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomVesPuntoGrid.tsx</div>
+              <div class="cc-desc">Grid posición VES por punto (agencias, acopios, ATMs) con aptitud y ProgressBar. Usa DS Card, Text, Heading, ProgressBar, Chip.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">groups</span><span class="cc-tag"><i class="fa-regular fa-circle" style="color:#d97706;font-size:7px"></i> VES</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="display:flex;gap:4px">
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="font-size:7px;font-weight:600;color:var(--ink-900);margin-bottom:1px">Agencias</div>
+                    <div style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace">Bs 32M</div>
+                    <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+                      <span class="pv-badge green">Normal</span>
+                      <span style="font-size:6px;color:var(--ink-400)">88% apt.</span>
+                    </div>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="font-size:7px;font-weight:600;color:var(--ink-900);margin-bottom:1px">Acopios</div>
+                    <div style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace">Bs 18M</div>
+                    <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+                      <span class="pv-badge amber">Alerta</span>
+                      <span style="font-size:6px;color:var(--ink-400)">83% apt.</span>
+                    </div>
+                  </div>
+                  <div style="flex:1;background:#fff;border:1px solid var(--ink-150);border-radius:4px;padding:5px 6px">
+                    <div style="font-size:7px;font-weight:600;color:var(--ink-900);margin-bottom:1px">ATMs</div>
+                    <div style="font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace">Bs 9.8M</div>
+                    <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+                      <span class="pv-badge green">Normal</span>
+                      <span style="font-size:6px;color:var(--ink-400)">90% apt.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WarRoomCompromisos" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomCompromisos</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomCompromisos.tsx</div>
+              <div class="cc-desc">Tabla de compromisos con tabs por tipo (Todos, Pendientes, Cumplidos, Vencidos), búsqueda y EmptyState. Usa DS Table, Tabs, Input, EmptyState, Badge, Card.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">compromisos</span><span class="cc-tag"><i class="fa-solid fa-table"></i> Table</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:6px;overflow:hidden">
+                  <div style="display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid var(--ink-100);font-size:7px">
+                    <span style="padding:2px 6px;background:var(--green-50);color:var(--green-700);border-radius:999px;font-weight:600">Todos (8)</span>
+                    <span style="padding:2px 6px;color:var(--ink-500)">Pendientes</span>
+                    <span style="padding:2px 6px;color:var(--ink-500)">Cumplidos</span>
+                  </div>
+                  <table class="pv-table"><tr><th>Destino</th><th>Monto</th><th>Estado</th></tr><tr><td>Banco Central</td><td>$2.4M</td><td><span class="pv-badge green">Cumplido</span></td></tr><tr><td>Transportista R1</td><td>$890K</td><td><span class="pv-badge amber">Pendiente</span></td></tr></table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="c-card" data-name="WarRoomAlarms" data-status="ok">
+            <div class="c-card-head"><span class="cc-name">WarRoomAlarms</span><span class="cc-badge badge-ok">Migrado</span></div>
+            <div class="c-card-body">
+              <div class="cc-path"><i class="fa-regular fa-file-lines"></i>components/war-room/WarRoomAlarms.tsx</div>
+              <div class="cc-desc">Panel de alarmas colapsable: barra compacta con contadores, expande a grid 2-columnas con acciones. Usa DS Card, Text, Badge, Heading.</div>
+              <div class="cc-meta"><span class="cc-tag export">named</span><span class="cc-tag props">alarms</span><span class="cc-tag"><i class="fa-solid fa-bell"></i> Alarmas</span></div>
+              <button class="preview-btn" onclick="togglePreview(this)"><i class="fa-solid fa-eye"></i> Ver preview</button>
+              <div class="cc-preview">
+                <div class="pv" style="background:#fff;border:1px solid var(--ink-150);border-radius:6px;overflow:hidden">
+                  <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#FEF2F2;font-size:7px;font-weight:600;color:var(--danger)">
+                    <i class="fa-solid fa-bell"></i> 3 alarmas activas
+                    <span style="display:flex;gap:4px;margin-left:auto">
+                      <span style="padding:1px 5px;border-radius:999px;background:#FEE2E2;color:var(--danger);font-size:6px">2 críticas</span>
+                      <span style="padding:1px 5px;border-radius:999px;background:#FFF4DC;color:#A76B00;font-size:6px">1 media</span>
+                    </span>
+                  </div>
+                  <div style="padding:4px 8px;font-size:7px;color:var(--ink-700)">Click para expandir →</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub: kpi/ -->
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 10px;background:var(--ink-50);border-radius:6px;border:1px solid var(--ink-150)">
+          <i class="fa-solid fa-folder-open" style="color:var(--amber);font-size:11px"></i>
+          <span style="font-size:11px;font-weight:600;color:var(--ink-700)">components/kpi/</span>
+          <span style="font-size:9px;color:var(--ink-500)">— Pendiente por migrar</span>
+        </div>
+        <div class="c-grid">
+          <div class="c-card" data-name="KpiCard" data-status="wip">
+            <div class="c-card-head"><span class="cc-name" style="color:var(--ink-400)">KpiCard (DS)</span><span class="cc-badge badge-wip">DS nativo</span></div>
+            <div class="c-card-body"><div class="cc-desc">Se usa directamente el KpiCard de @worksuiux-ctrl/my-design-system (sin personalizar). Carpeta components/kpi/ disponible para futuros wrappers si hace falta.</div><div class="cc-meta"><span class="cc-tag"><i class="fa-regular fa-folder"></i> @worksuiux-ctrl DS</span><span class="cc-tag props">label, value, variant, trend?, trendDirection?, subtitle?, icon?</span></div></div>
+          </div>
+          <div class="c-card" data-name="ScorecardGrid" data-status="wip">
+            <div class="c-card-head"><span class="cc-name" style="color:var(--ink-400)">ScorecardGrid</span><span class="cc-badge badge-wip">Pendiente</span></div>
+            <div class="c-card-body"><div class="cc-desc">Grid de scorecards para vista KPI Gerencial. Pendiente de migración.</div><div class="cc-meta"><span class="cc-tag"><i class="fa-regular fa-folder"></i> src/components/kpi/</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ STORES ═══════ -->
+    <section class="section" id="sec-stores" data-category="stores">
+      <div class="section-header">
+        <div class="sh-icon" style="background:#F0FAE0;color:var(--green-800)"><i class="fa-solid fa-database"></i></div>
+        <h3>Stores (Zustand)</h3>
+        <span class="sh-count" id="count-stores">3 stores</span>
+      </div>
+      <div class="c-grid" data-category="stores">
+        <div class="c-card" data-name="useNavStore" data-status="ok">
+          <div class="c-card-head"><span class="cc-name">useNavStore</span><span class="cc-badge badge-ok">Migrado</span></div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/stores/navStore.ts</div>
+            <div class="cc-desc">Estado de navegación: activeView, title, description. Auto-genera metadatos desde MODULES.</div>
+            <div class="cc-meta"><span class="cc-tag store">Zustand</span></div>
+            <button class="props-toggle" onclick="toggleProps(this)"><i class="fa-solid fa-chevron-right" style="font-size:7px"></i> Ver estado/acciones</button>
+            <table class="props-table">
+              <tr><td><strong>activeView</strong><br><span class="type">string</span></td><td>"dashboard"</td></tr>
+              <tr><td><strong>title</strong><br><span class="type">string</span></td><td>"Selecciona un Módulo"</td></tr>
+              <tr><td><strong>description</strong><br><span class="type">string</span></td><td>"Panel de navegación principal"</td></tr>
+              <tr><td><strong>navigate(view)</strong></td><td>Actualiza activeView + title + description</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="c-card" data-name="useProfileStore" data-status="ok">
+          <div class="c-card-head"><span class="cc-name">useProfileStore</span><span class="cc-badge badge-ok">Migrado</span></div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/stores/profileStore.ts</div>
+            <div class="cc-desc">Estado del perfil activo: banco | banco-central | transportista | corporativo | negocios.</div>
+            <div class="cc-meta"><span class="cc-tag store">Zustand</span></div>
+            <button class="props-toggle" onclick="toggleProps(this)"><i class="fa-solid fa-chevron-right" style="font-size:7px"></i> Ver estado/acciones</button>
+            <table class="props-table">
+              <tr><td><strong>perfil</strong><br><span class="type">Perfil</span></td><td>"banco"</td></tr>
+              <tr><td><strong>setPerfil(p)</strong></td><td>Cambia el perfil activo</td></tr>
+            </table>
+          </div>
+        </div>
+        <div class="c-card" data-name="useUserStore" data-status="ok">
+          <div class="c-card-head"><span class="cc-name">useUserStore</span><span class="cc-badge badge-ok">Migrado</span></div>
+          <div class="c-card-body">
+            <div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/stores/userStore.ts</div>
+            <div class="cc-desc">Usuario actual hardcodeado (mock). Campos: id, initials, nombre, email, rol, actor.</div>
+            <div class="cc-meta"><span class="cc-tag store">Zustand</span></div>
+            <button class="props-toggle" onclick="toggleProps(this)"><i class="fa-solid fa-chevron-right" style="font-size:7px"></i> Ver estado</button>
+            <table class="props-table">
+              <tr><td><strong>current</strong></td><td><span class="type">User</span> { id:"u001", initials:"AM", nombre:"COE User", rol:"Super Admin" }</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ CONTEXTS ═══════ -->
+    <section class="section" id="sec-contexts" data-category="contexts">
+      <div class="section-header">
+        <div class="sh-icon" style="background:#FFF4DC;color:#A76B00"><i class="fa-solid fa-plug"></i></div>
+        <h3>Contextos (React Context)</h3>
+        <span class="sh-count" id="count-contexts">4 contextos</span>
+      </div>
+      <div class="c-grid" data-category="contexts">
+        <div class="c-card" data-name="AppProviders" data-status="ok"><div class="c-card-head"><span class="cc-name">AppProviders</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/contexts/AppProviders.tsx</div><div class="cc-desc">Wrapper que anida: QueryClientProvider → AuthProvider → FormatoProvider → ParametrosProvider + Toaster.</div><div class="cc-meta"><span class="cc-tag context">Context</span></div></div></div>
+        <div class="c-card" data-name="AuthContext" data-status="ok"><div class="c-card-head"><span class="cc-name">AuthContext</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/contexts/AuthContext.tsx</div><div class="cc-desc">Autenticación dual: Supabase o mock. Expone: isAuthenticated, user, login(), logout().</div><div class="cc-meta"><span class="cc-tag context">Context</span><span class="cc-tag hook">useAuth</span></div></div></div>
+        <div class="c-card" data-name="FormatoContext" data-status="ok"><div class="c-card-head"><span class="cc-name">FormatoContext</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/contexts/FormatoContext.tsx</div><div class="cc-desc">Formato numérico: separadores miles/decimales. Expone formatearNumero() y helpers.</div><div class="cc-meta"><span class="cc-tag context">Context</span><span class="cc-tag hook">useFormato</span></div></div></div>
+        <div class="c-card" data-name="ParametrosContext" data-status="ok"><div class="c-card-head"><span class="cc-name">ParametrosContext</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/contexts/ParametrosContext.tsx</div><div class="cc-desc">Parámetros del sistema con persistencia dual (localStorage + Supabase).</div><div class="cc-meta"><span class="cc-tag context">Context</span><span class="cc-tag hook">useParametros</span></div></div></div>
+      </div>
+    </section>
+
+    <!-- ═══════ DATA ═══════ -->
+    <section class="section" id="sec-data" data-category="data">
+      <div class="section-header">
+        <div class="sh-icon" style="background:var(--ink-100);color:var(--ink-600)"><i class="fa-solid fa-table"></i></div>
+        <h3>Datos Mock</h3>
+        <span class="sh-count" id="count-data">2 archivos</span>
+      </div>
+      <div class="c-grid" data-category="data">
+        <div class="c-card" data-name="navigation.ts" data-status="ok"><div class="c-card-head"><span class="cc-name">navigation.ts</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/data/navigation.ts</div><div class="cc-desc">Define MODULES (10 módulos, 22+ ítems) con interfaces NavItem y Module. Usado por Sidebar y Topbar.</div><div class="cc-meta"><span class="cc-tag">MODULES, NavItem, Module</span></div></div></div>
+        <div class="c-card" data-name="warRoomData.ts" data-status="ok"><div class="c-card-head"><span class="cc-name">warRoomData.ts</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/data/warRoomData.ts</div><div class="cc-desc">Tipos TypeScript y datos mock War Room: productos, red, compromisos, alarmas, bancos, transportistas. Incluye formatCurrency().</div><div class="cc-meta"><span class="cc-tag">WrProduct, WrRedGroup, WrCompromiso, WrAlarm</span><span class="cc-tag"><i class="fa-regular fa-file"></i> 6 colecciones</span></div></div></div>
+      </div>
+    </section>
+
+    <!-- ═══════ LIB ═══════ -->
+    <section class="section" id="sec-lib" data-category="lib">
+      <div class="section-header">
+        <div class="sh-icon" style="background:var(--ink-100);color:var(--ink-600)"><i class="fa-solid fa-toolbox"></i></div>
+        <h3>Librerías y Utilidades</h3>
+        <span class="sh-count" id="count-lib">1 archivo</span>
+      </div>
+      <div class="c-grid" data-category="lib">
+        <div class="c-card" data-name="exportUtils" data-status="ok"><div class="c-card-head"><span class="cc-name">exportUtils</span><span class="cc-badge badge-ok">Migrado</span></div><div class="c-card-body"><div class="cc-path"><i class="fa-regular fa-file-lines"></i>src/lib/exportUtils.ts</div><div class="cc-desc">Utilidades para exportar a Excel/CSV y cargar archivos. exportToExcel, exportToCSV, downloadTemplate, parseUploadedFile.</div><div class="cc-meta"><span class="cc-tag">ExportColumn</span><span class="cc-tag"><i class="fa-solid fa-file-excel"></i> xlsx</span></div></div></div>
+      </div>
+    </section>
+
+    <!-- ═══════ CONVENTIONS ═══════ -->
+    <section class="section" id="sec-conventions">
+      <div class="section-header">
+        <div class="sh-icon" style="background:var(--teal);color:#fff"><i class="fa-solid fa-book"></i></div>
+        <h3>Convenciones del Proyecto</h3>
+      </div>
+      <div class="conv-grid">
+        <div class="conv-card">
+          <h4><i class="fa-solid fa-font"></i> Naming</h4>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Componentes: PascalCase <code>EfectivoGlobal.tsx</code></li>
+            <li><i class="fa-solid fa-check"></i> Stores: camelCase <code>navStore.ts</code></li>
+            <li><i class="fa-solid fa-check"></i> Archivos: PascalCase para componentes</li>
+            <li><i class="fa-solid fa-check"></i> Directorios: PascalCase para páginas <code>Dashboard/</code></li>
+          </ul>
+        </div>
+        <div class="conv-card">
+          <h4><i class="fa-solid fa-arrow-up-from-bracket"></i> Exports</h4>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Named exports para todos los componentes</li>
+            <li><i class="fa-solid fa-check"></i> Sin default exports (excepto App.tsx)</li>
+            <li><i class="fa-solid fa-check"></i> Barrel exports en <code>index.ts</code> para grupos</li>
+          </ul>
+        </div>
+        <div class="conv-card">
+          <h4><i class="fa-solid fa-database"></i> Estado Global</h4>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Zustand para estado global (stores modulares)</li>
+            <li><i class="fa-solid fa-check"></i> React Context para temas transversales</li>
+            <li><i class="fa-solid fa-check"></i> Sin prop drilling</li>
+          </ul>
+        </div>
+        <div class="conv-card">
+          <h4><i class="fa-solid fa-palette"></i> Estilos</h4>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> Tailwind CSS v4 con tokens del DS</li>
+            <li><i class="fa-solid fa-check"></i> Nunca CSS manual</li>
+            <li><i class="fa-solid fa-check"></i> Tokens: <code>var(--color-verde-100)</code></li>
+          </ul>
+        </div>
+        <div class="conv-card">
+          <h4><i class="fa-solid fa-icons"></i> Iconos</h4>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> HeroIcons (react-icons/hi2) en navegación</li>
+            <li><i class="fa-solid fa-check"></i> Lucide React en páginas internas</li>
+            <li><i class="fa-solid fa-check"></i> Reemplazo de FontAwesome → lucide-react</li>
+          </ul>
+        </div>
+        <div class="conv-card">
+          <h4><i class="fa-solid fa-sitemap"></i> Stack</h4>
+          <ul>
+            <li><i class="fa-solid fa-check"></i> React 19 + Vite 8 + TypeScript 6</li>
+            <li><i class="fa-solid fa-check"></i> React Router v7 + Zustand 5</li>
+            <li><i class="fa-solid fa-check"></i> Chart.js 4 + Leaflet 1.9</li>
+            <li><i class="fa-solid fa-check"></i> @worksuiux-ctrl/my-design-system</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+function filterComponents() {
+  const q = document.getElementById('filter-input').value.toLowerCase().trim();
+  document.querySelectorAll('.c-card').forEach(c => {
+    const name = c.getAttribute('data-name').toLowerCase();
+    const path = c.querySelector('.cc-path')?.textContent?.toLowerCase() || '';
+    c.classList.toggle('hidden', !q || name.includes(q) || path.includes(q));
+  });
+  updateCounts();
+}
+
+function scrollToSection(id, el) {
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function togglePreview(btn) {
+  const preview = btn.nextElementSibling;
+  const icon = btn.querySelector('i');
+  if (!preview || !preview.classList.contains('cc-preview')) return;
+  const isOpen = preview.classList.toggle('show');
+  btn.innerHTML = isOpen
+    ? '<i class="fa-solid fa-eye-slash"></i> Ocultar preview'
+    : '<i class="fa-solid fa-eye"></i> Ver preview';
+}
+
+function toggleProps(btn) {
+  const table = btn.nextElementSibling;
+  const icon = btn.querySelector('i');
+  table.classList.toggle('show');
+  icon.style.transform = table.classList.contains('show') ? 'rotate(90deg)' : '';
+}
+
+function updateCounts() {
+  document.querySelectorAll('section[id^="sec-"]').forEach(sec => {
+    const cat = sec.dataset.category;
+    if (!cat) return;
+    const cards = sec.querySelectorAll('.c-card:not(.hidden)');
+    const el = document.getElementById('count-' + cat);
+    if (el) el.textContent = cards.length + ' componente' + (cards.length !== 1 ? 's' : '');
+  });
+  document.getElementById('total-count').textContent = document.querySelectorAll('.c-card:not(.hidden)').length;
+  document.getElementById('ok-count').textContent = document.querySelectorAll('.c-card:not(.hidden) .badge-ok').length;
+  document.getElementById('partial-count').textContent = document.querySelectorAll('.c-card:not(.hidden) .badge-partial').length;
+  document.getElementById('wip-count').textContent = document.querySelectorAll('.c-card:not(.hidden) .badge-wip').length;
+}
+document.addEventListener('DOMContentLoaded', updateCounts);
+</script>
+</body>
+</html>
