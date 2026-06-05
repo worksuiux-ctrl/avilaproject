@@ -20,7 +20,7 @@ export function Topbar() {
   );
 
   return (
-    <header className="h-[58px] bg-white border-b border-[var(--color-neutro-200)] flex items-center justify-between px-6 flex-shrink-0">
+    <header className="h-[58px] bg-white/70 backdrop-blur-xl border-b border-[var(--color-neutro-200)] flex items-center justify-between px-6 flex-shrink-0 relative z-20">
       {/* Left: breadcrumb + title */}
       <div>
         <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-neutro-400)] mb-0.5">

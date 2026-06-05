@@ -84,8 +84,10 @@ function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {
     return (
       <div className="flex flex-col items-center gap-1">
         <div
-          className={`w-10 h-10 rounded-corner-xs flex items-center justify-center cursor-pointer transition-all
-            ${isActive ? "bg-[var(--color-surface-darkwhite)] text-[var(--color-verde-100)]" : "text-[var(--color-neutro-400)] hover:text-[var(--color-neutro-600)] hover:bg-[var(--color-neutro-100)]"}`}
+          className={`w-10 h-10 rounded-corner-m flex items-center justify-center cursor-pointer transition-all duration-200
+            ${isActive
+              ? "bg-[var(--color-verde-100)] text-white shadow-md shadow-[var(--color-verde-100)]/20"
+              : "text-[var(--color-neutro-400)] hover:text-[var(--color-verde-100)] hover:bg-[var(--color-verde-100)]/8"}`}
           title={module.label}
         >
           <ModuleIcon className="w-5 h-5" />
@@ -98,15 +100,17 @@ function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {
     <div>
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-corner-xs border-none cursor-pointer text-left transition-all
-          ${isActive ? "text-[var(--color-verde-100)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-900)]"}`}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-corner-m border-none cursor-pointer text-left transition-all duration-200
+          ${isActive
+            ? "text-[var(--color-verde-100)] bg-[var(--color-verde-100)]/5"
+            : "text-[var(--color-neutro-500)] hover:text-[var(--color-verde-100)] hover:bg-[var(--color-verde-100)]/5"}`}
       >
         <ModuleIcon className="w-5 h-5 flex-shrink-0" />
         <span className="flex-1 text-[13px] font-semibold">{module.label}</span>
-        <HiOutlineChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-0" : "-rotate-90"}`} />
+        <HiOutlineChevronDown className={`w-3.5 h-3.5 text-[var(--color-neutro-400)] transition-all duration-200 ${open ? "rotate-0 text-[var(--color-verde-100)]" : "-rotate-90"}`} />
       </button>
       {open && (
-        <div className="ml-2 mt-0.5 space-y-0.5">
+        <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[var(--color-verde-100)]/15 pl-2">
           {module.items.map((item) => {
             const ItemIcon = itemIcons[item.icon] || HiOutlineCog6Tooth;
             const itemActive = activeRoute === item.route;
@@ -114,13 +118,13 @@ function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.route)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-corner-xs border-none cursor-pointer text-left transition-all text-[12px]
+                className={`relative w-full flex items-center gap-3 px-3 py-2 rounded-corner-m border-none cursor-pointer text-left transition-all duration-200 text-[12px]
                   ${itemActive
-                    ? "bg-[var(--color-surface-darkwhite)] text-[var(--color-verde-100)] font-semibold shadow-[inset_3px_0_0_var(--color-verde-100)]"
-                    : "text-[var(--color-neutro-500)] hover:bg-[var(--color-neutro-100)] hover:text-[var(--color-neutro-900)]"
+                    ? "bg-[var(--color-verde-100)] text-white font-semibold shadow-sm shadow-[var(--color-verde-100)]/20"
+                    : "text-[var(--color-neutro-500)] hover:text-[var(--color-verde-100)] hover:bg-[var(--color-verde-100)]/6"
                   }`}
               >
-                <ItemIcon className="w-4 h-4 flex-shrink-0" />
+                <ItemIcon className={`w-4 h-4 flex-shrink-0 ${itemActive ? "" : "opacity-60"}`} />
                 <span>{item.label}</span>
               </button>
             );
@@ -151,7 +155,7 @@ export function Sidebar() {
       }`}
     >
       {/* Logo */}
-      <div className={`flex items-center border-b border-[var(--color-neutro-200)] ${collapsed ? "justify-center py-4 px-2" : "gap-3 px-4 py-[18px] pb-4"}`}>
+      <div className={`flex items-center border-b border-[var(--color-neutro-200)] ${collapsed ? "justify-center px-2" : "gap-3 px-4"} h-[58px] flex-shrink-0`}>
         <img src="/Icono%20coe.png" alt="COE" className="w-8 h-8 block flex-shrink-0" />
         {!collapsed && (
           <div>
@@ -166,7 +170,7 @@ export function Sidebar() {
       </div>
 
       {/* Modules */}
-      <div className="flex-1 overflow-y-auto py-3 space-y-1">
+      <div className="flex-1 py-3 space-y-1 px-2">
         {MODULES.map((mod) => (
           <ModuleGroup
             key={mod.id}
@@ -181,16 +185,16 @@ export function Sidebar() {
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="mx-3 mb-2 p-2 rounded-corner-xs border border-[var(--color-neutro-200)] bg-white text-[var(--color-neutro-400)] cursor-pointer hover:text-[var(--color-neutro-600)] hover:bg-[var(--color-neutro-100)] transition-all flex items-center justify-center"
+        className="mx-3 mb-2 p-2 rounded-corner-m border border-[var(--color-neutro-200)] bg-white text-[var(--color-neutro-400)] cursor-pointer hover:text-[var(--color-verde-100)] hover:border-[var(--color-verde-100)]/30 hover:bg-[var(--color-verde-100)]/5 transition-all duration-200 flex items-center justify-center"
         title={collapsed ? "Expandir menú" : "Colapsar menú"}
       >
-        <HiOutlineChevronDown className={`w-4 h-4 transition-transform ${collapsed ? "rotate-90" : ""}`} />
+        <HiOutlineChevronDown className={`w-4 h-4 transition-all duration-200 ${collapsed ? "rotate-90" : ""}`} />
       </button>
 
       {/* User */}
       {!collapsed && (
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-[var(--color-neutro-200)] mt-auto">
-          <div className="w-[34px] h-[34px] rounded-full bg-[var(--color-verde-100)] flex items-center justify-center text-[var(--color-neutro-900)] font-bold text-[12px] flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 border-t border-[var(--color-neutro-200)] mt-auto hover:bg-[var(--color-verde-100)]/4 transition-all duration-200">
+          <div className="w-[34px] h-[34px] rounded-full bg-gradient-to-br from-[var(--color-verde-100)] to-[var(--color-corp-green)] flex items-center justify-center text-white font-bold text-[12px] flex-shrink-0 shadow-sm">
             {user.initials}
           </div>
           <div className="flex-1 min-w-0">

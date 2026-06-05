@@ -20,7 +20,7 @@ export const MODULES: Module[] = [
     icon: "LayoutDashboard",
     description: "Monitoreo diario, análisis y control",
     items: [
-      { id: "dashboard-main", label: "Panel General", icon: "ChartLine", route: "/" },
+      { id: "dashboard-main", label: "Panel General", icon: "ChartLine", route: "/dashboard" },
       { id: "war-room", label: "War Room · Tesorería", icon: "TowerObservation", route: "/war-room" },
       { id: "kpi-gerencial", label: "KPIs Estratégicos", icon: "ChartPie", route: "/kpi-gerencial" },
       { id: "kpi-operativo", label: "KPIs Operativos", icon: "Gauge", route: "/kpi-operativo" },
