@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Card, Badge, Button, Heading, Select } from "@worksuiux-ctrl/my-design-system";
+import { Card, Badge, Button, Heading, Select } from "@coe/design-system";
 import { CoengineLogo } from "@components/ui/CoengineLogo";
 import {
   ChartLine, ArrowLeftRight, CreditCard, Building2,

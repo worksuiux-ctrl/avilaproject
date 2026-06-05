@@ -1,4 +1,4 @@
-import { Card, Text, Badge } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Badge } from "@coe/design-system";
 import { Chart } from "@components/charts/Chart";
 import { KPI_COSTO_OPORTUNIDAD, KPI_MARGEN_FINANCIERO, CHART_COO_LINE, CHART_COO_OPTS, CHART_MFN_BAR, CHART_MFN_OPTS } from "@data/kpiData";
 

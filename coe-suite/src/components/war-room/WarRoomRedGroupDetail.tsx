@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Dialog, Text, Badge, Card } from "@worksuiux-ctrl/my-design-system";
+import { Dialog, Text, Badge, Card } from "@coe/design-system";
 import { Building2, Warehouse, Banknote } from "lucide-react";
 import type { WrRedGroup } from "@data/warRoomData";
 import { WR_RED, WR_VES_DENOMS } from "@data/warRoomData";

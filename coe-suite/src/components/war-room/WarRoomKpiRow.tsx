@@ -1,4 +1,4 @@
-import { Card, Text, ProgressBar, Heading } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, ProgressBar, Heading } from "@coe/design-system";
 import type { WrKpiItem } from "@data/warRoomData";
 
 interface WarRoomKpiRowProps {

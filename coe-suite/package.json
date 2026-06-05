@@ -10,9 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coe/design-system": "git+http://200.74.216.124:8906/dise-o_ux_ui/coe-design-system.git",
     "@supabase/supabase-js": "^2.107.0",
     "@tanstack/react-query": "^5.101.0",
-    "@worksuiux-ctrl/my-design-system": "^0.3.0",
     "chart.js": "^4.5.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",

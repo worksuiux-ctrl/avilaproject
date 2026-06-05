@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button, Text, Tabs } from "@worksuiux-ctrl/my-design-system";
+import { Button, Text, Tabs } from "@coe/design-system";
 import type { WrTab } from "@data/warRoomData";
 
 interface WarRoomCommandBarProps {

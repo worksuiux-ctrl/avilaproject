@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Table, Tabs, Text, Badge, Heading, Input, EmptyState, KpiCard } from "@worksuiux-ctrl/my-design-system";
+import { Table, Tabs, Text, Badge, Heading, Input, EmptyState, KpiCard } from "@coe/design-system";
 import { FileSpreadsheet } from "lucide-react";
 import type { WrCompromiso, Moneda } from "@data/warRoomData";
 import { WR_COMMITMENTS, formatCurrency } from "@data/warRoomData";

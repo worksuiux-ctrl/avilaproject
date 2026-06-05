@@ -1,4 +1,4 @@
-import { Select } from "@worksuiux-ctrl/my-design-system";
+import { Select } from "@coe/design-system";
 import { useProfileStore, PERFIL_OPTIONS } from "@stores/profileStore";
 
 export function ProfileSelector() {

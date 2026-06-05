@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Text, Badge, ProgressBar, Divider } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Badge, ProgressBar, Divider } from "@coe/design-system";
 import { ChevronRight } from "lucide-react";
 import type { WrDenomEntry } from "@data/warRoomData";
 

@@ -1,4 +1,4 @@
-import { Card, Text, Heading, ProgressBar, Chip } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Heading, ProgressBar, Chip } from "@coe/design-system";
 import { Building2 } from "lucide-react";
 import type { WrRedGroup } from "@data/warRoomData";
 import { formatCurrency } from "@data/warRoomData";

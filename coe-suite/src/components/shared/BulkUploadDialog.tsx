@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Button } from "@worksuiux-ctrl/my-design-system";
+import { Button } from "@coe/design-system";
 import { Download, FileUp, AlertCircle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Modal } from "../ui/Modal";

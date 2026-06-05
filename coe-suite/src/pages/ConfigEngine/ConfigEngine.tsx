@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Badge, Button, Heading, Select, Switch, Slider, Checkbox } from "@worksuiux-ctrl/my-design-system";
+import { Card, Badge, Button, Heading, Select, Switch, Slider, Checkbox } from "@coe/design-system";
 import { CoengineLogo } from "@components/ui/CoengineLogo";
 import { Play, Upload, Clock, Brain, FlaskConical, Bell, Zap, Hand, AlertTriangle, FolderOpen, BarChart3, DollarSign, TrendingUp, ChevronDown } from "lucide-react";
 

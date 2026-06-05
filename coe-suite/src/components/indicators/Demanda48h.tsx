@@ -1,4 +1,4 @@
-import { KpiCard } from "@worksuiux-ctrl/my-design-system";
+import { KpiCard } from "@coe/design-system";
 
 interface Demanda48hProps {
   value?: string;

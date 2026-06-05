@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Badge, Button, Table, Select } from "@worksuiux-ctrl/my-design-system";
+import { Card, Badge, Button, Table, Select } from "@coe/design-system";
 import { EfectivoGlobal, InventarioFisicoTotal, InventarioBovedas, Demanda48h, NodosAlerta, SlaCumplimiento } from "@components/indicators";
 import { Scale, Truck, Check } from "lucide-react";
 import { CoengineLogo } from "@components/ui/CoengineLogo";

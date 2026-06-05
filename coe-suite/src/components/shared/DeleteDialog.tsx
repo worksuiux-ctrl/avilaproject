@@ -1,4 +1,4 @@
-import { Button } from "@worksuiux-ctrl/my-design-system";
+import { Button } from "@coe/design-system";
 import { AlertTriangle } from "lucide-react";
 
 interface DeleteDialogProps {

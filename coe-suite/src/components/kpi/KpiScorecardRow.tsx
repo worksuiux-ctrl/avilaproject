@@ -1,4 +1,4 @@
-import { Card, Text, Heading } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Heading } from "@coe/design-system";
 import type { KpiScorecard } from "@data/kpiData";
 
 interface KpiScorecardRowProps {

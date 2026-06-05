@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@worksuiux-ctrl/my-design-system/style.css";
+@import "@coe/design-system/style.css";
 
 /* ── COE Suite custom overrides ── */
 html, body { height: 100%; overflow: hidden; }

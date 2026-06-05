@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Button } from "@worksuiux-ctrl/my-design-system";
+import { Button } from "@coe/design-system";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Modal } from "../ui/Modal";
 

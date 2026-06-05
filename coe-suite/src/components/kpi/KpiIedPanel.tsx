@@ -1,4 +1,4 @@
-import { Card, Text, Badge, Button, ProgressBar } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Badge, Button, ProgressBar } from "@coe/design-system";
 import { Chart } from "@components/charts/Chart";
 import { KPI_IED_CURRENCIES, CHART_IED_LINE, CHART_IED_OPTS } from "@data/kpiData";
 

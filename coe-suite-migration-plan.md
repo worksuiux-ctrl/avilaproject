@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Migrar la aplicación COE Suite de un archivo HTML/JS monolítico (`17,908` líneas) a un proyecto React moderno con TypeScript, consumiendo el Design System `@worksuiux-ctrl/my-design-system`.
+Migrar la aplicación COE Suite de un archivo HTML/JS monolítico (`17,908` líneas) a un proyecto React moderno con TypeScript, consumiendo el Design System `@coe/design-system`.
 
 ## Arquitectura objetivo
 

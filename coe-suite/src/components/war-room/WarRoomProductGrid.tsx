@@ -1,4 +1,4 @@
-import { Card, Text, Heading, Chip } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Heading, Chip } from "@coe/design-system";
 import { Layers } from "lucide-react";
 import type { WrProduct } from "@data/warRoomData";
 import { formatCurrency } from "@data/warRoomData";

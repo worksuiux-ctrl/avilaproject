@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Text, Select } from "@worksuiux-ctrl/my-design-system";
+import { Button, Text, Select } from "@coe/design-system";
 import {
   KPI_SCORECARDS,
 } from "@data/kpiData";

@@ -1,4 +1,4 @@
-import { Button } from "@worksuiux-ctrl/my-design-system";
+import { Button } from "@coe/design-system";
 import { FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Modal } from "../ui/Modal";

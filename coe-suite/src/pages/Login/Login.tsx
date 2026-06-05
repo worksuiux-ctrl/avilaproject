@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { Button } from "@worksuiux-ctrl/my-design-system";
-import { Input } from "@worksuiux-ctrl/my-design-system";
-import { Card } from "@worksuiux-ctrl/my-design-system";
-import { Logo } from "@worksuiux-ctrl/my-design-system";
+import { Button } from "@coe/design-system";
+import { Input } from "@coe/design-system";
+import { Card } from "@coe/design-system";
+import { Logo } from "@coe/design-system";
 
 export function Login() {
   const [username, setUsername] = useState("");

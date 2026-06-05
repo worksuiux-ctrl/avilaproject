@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Text, Badge } from "@worksuiux-ctrl/my-design-system";
+import { Card, Text, Badge } from "@coe/design-system";
 import { Chart } from "@components/charts/Chart";
 import { KPI_MASA_ANUAL, KPI_MASA_MENSUAL_STATS, CHART_MASA_ANUAL_LINE, CHART_MASA_ANUAL_OPTS, CHART_MASA_MENSUAL_BAR, CHART_MASA_MENSUAL_OPTS } from "@data/kpiData";
 
