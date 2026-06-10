@@ -1,0 +1,505 @@
+import { create } from "zustand";
+
+export interface Entity {
+  id: string;
+  codigo: string;
+  nombre: string;
+  nivel: string;
+  subtipo: string;
+  padreId: string | null;
+  activo: boolean;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EntitiesState {
+  entities: Entity[];
+  selectedId: string | null;
+  expandedIds: Set<string>;
+  addEntity: (e: Omit<Entity, "id" | "createdAt" | "updatedAt">) => void;
+  updateEntity: (id: string, data: Partial<Entity>) => void;
+  removeEntity: (id: string) => void;
+  selectEntity: (id: string | null) => void;
+  toggleExpand: (id: string) => void;
+  getChildren: (padreId: string | null) => Entity[];
+  getAncestors: (id: string) => Entity[];
+}
+
+function makeId(): string {
+  return Math.random().toString(36).slice(2, 9);
+}
+
+const DEFAULT_ENTITIES: Entity[] = [
+  {
+    id: "demo-1",
+    codigo: "BCO-001",
+    nombre: "Banco Mercantil Sede Principal",
+    nivel: "Oficinas",
+    subtipo: "Sucursal",
+    padreId: null,
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  },
+  {
+    id: "demo-2",
+    codigo: "BCO-BOV-01",
+    nombre: "Bóveda Central",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  },
+  {
+    id: "demo-3",
+    codigo: "BCO-ATM-01",
+    nombre: "ATM Planta Baja",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  },
+  {
+    id: "demo-4",
+    codigo: "BCO-CAM-01",
+    nombre: "Flota de Transporte",
+    nivel: "Vehículos",
+    subtipo: "Camión",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  },
+  /* Agencias */
+  {
+    id: "demo-5",
+    codigo: "BCO-AGE-CCS",
+    nombre: "Agencia Caracas Centro",
+    nivel: "Oficinas",
+    subtipo: "Agencia",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-15",
+    updatedAt: "2026-01-15",
+  },
+  {
+    id: "demo-6",
+    codigo: "BCO-AGE-MRD",
+    nombre: "Agencia Miranda",
+    nivel: "Oficinas",
+    subtipo: "Agencia",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-01",
+    updatedAt: "2026-02-01",
+  },
+  {
+    id: "demo-7",
+    codigo: "BCO-AGE-VLC",
+    nombre: "Agencia Valencia",
+    nivel: "Oficinas",
+    subtipo: "Agencia",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-10",
+    updatedAt: "2026-02-10",
+  },
+  {
+    id: "demo-8",
+    codigo: "BCO-AGE-MRQ",
+    nombre: "Agencia Maracaibo",
+    nivel: "Oficinas",
+    subtipo: "Agencia",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-03-01",
+    updatedAt: "2026-03-01",
+  },
+  /* Bóvedas por agencia */
+  {
+    id: "demo-15",
+    codigo: "BCO-BOV-CCS-01",
+    nombre: "Bóveda Principal CCS Centro",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-16",
+    codigo: "BCO-BOV-CCS-02",
+    nombre: "Bóveda Secundaria CCS Centro",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-17",
+    codigo: "BCO-BOV-MRD-01",
+    nombre: "Bóveda Principal Miranda",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-6",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-05",
+    updatedAt: "2026-02-05",
+  },
+  {
+    id: "demo-18",
+    codigo: "BCO-BOV-MRD-02",
+    nombre: "Bóveda de Resguardo Miranda",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-6",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-05",
+    updatedAt: "2026-02-05",
+  },
+  {
+    id: "demo-19",
+    codigo: "BCO-BOV-MRD-03",
+    nombre: "Caja Fuerte Miranda",
+    nivel: "Depósitos",
+    subtipo: "Caja Fuerte",
+    padreId: "demo-6",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-10",
+    updatedAt: "2026-02-10",
+  },
+  {
+    id: "demo-20",
+    codigo: "BCO-BOV-VLC-01",
+    nombre: "Bóveda Principal Valencia",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-7",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-15",
+    updatedAt: "2026-02-15",
+  },
+  {
+    id: "demo-21",
+    codigo: "BCO-BOV-VLC-02",
+    nombre: "Almacén Valencia",
+    nivel: "Depósitos",
+    subtipo: "Almacén",
+    padreId: "demo-7",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-15",
+    updatedAt: "2026-02-15",
+  },
+  {
+    id: "demo-22",
+    codigo: "BCO-BOV-MRQ-01",
+    nombre: "Bóveda Principal Maracaibo",
+    nivel: "Depósitos",
+    subtipo: "Bóveda",
+    padreId: "demo-8",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-03-05",
+    updatedAt: "2026-03-05",
+  },
+  /* ATMs */
+  {
+    id: "demo-9",
+    codigo: "BCO-ATM-CCS01",
+    nombre: "ATM Centro Comercial Sambil",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-10",
+    codigo: "BCO-ATM-CCS02",
+    nombre: "ATM Plaza Venezuela",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-11",
+    codigo: "BCO-ATM-MRD01",
+    nombre: "ATM Centro Lider",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-6",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-05",
+    updatedAt: "2026-02-05",
+  },
+  {
+    id: "demo-12",
+    codigo: "BCO-ATM-VLC01",
+    nombre: "ATM Sambil Valencia",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-7",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-15",
+    updatedAt: "2026-02-15",
+  },
+  {
+    id: "demo-13",
+    codigo: "BCO-ATM-MRQ01",
+    nombre: "ATM Galerias Mall",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-8",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-03-05",
+    updatedAt: "2026-03-05",
+  },
+  {
+    id: "demo-14",
+    codigo: "BCO-ATM-CCS03",
+    nombre: "ATM Torre Britanica",
+    nivel: "Sub Entidades",
+    subtipo: "ATM",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-04-01",
+    updatedAt: "2026-04-01",
+  },
+  /* Cajas y Taquillas por agencia */
+  {
+    id: "demo-23",
+    codigo: "BCO-CAJ-SEDE-01",
+    nombre: "Caja Principal Sede",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  },
+  {
+    id: "demo-24",
+    codigo: "BCO-CAJ-SEDE-02",
+    nombre: "Caja VIP Sede",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-1",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-01",
+    updatedAt: "2026-01-01",
+  },
+  {
+    id: "demo-25",
+    codigo: "BCO-CAJ-CCS-01",
+    nombre: "Caja Principal CCS Centro",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-26",
+    codigo: "BCO-CAJ-CCS-02",
+    nombre: "Caja Express CCS Centro",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-27",
+    codigo: "BCO-TAQ-CCS-01",
+    nombre: "Taquilla Nocturna CCS",
+    nivel: "Sub Entidades",
+    subtipo: "Taquilla",
+    padreId: "demo-5",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-01-20",
+    updatedAt: "2026-01-20",
+  },
+  {
+    id: "demo-28",
+    codigo: "BCO-CAJ-MRD-01",
+    nombre: "Caja Principal Miranda",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-6",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-05",
+    updatedAt: "2026-02-05",
+  },
+  {
+    id: "demo-29",
+    codigo: "BCO-TAQ-MRD-01",
+    nombre: "Taquilla 24h Miranda",
+    nivel: "Sub Entidades",
+    subtipo: "Taquilla",
+    padreId: "demo-6",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-05",
+    updatedAt: "2026-02-05",
+  },
+  {
+    id: "demo-30",
+    codigo: "BCO-CAJ-VLC-01",
+    nombre: "Caja Principal Valencia",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-7",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-15",
+    updatedAt: "2026-02-15",
+  },
+  {
+    id: "demo-31",
+    codigo: "BCO-CAJ-VLC-02",
+    nombre: "Caja Preferencial Valencia",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-7",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-15",
+    updatedAt: "2026-02-15",
+  },
+  {
+    id: "demo-32",
+    codigo: "BCO-TAQ-VLC-01",
+    nombre: "Taquilla Centro Valencia",
+    nivel: "Sub Entidades",
+    subtipo: "Taquilla",
+    padreId: "demo-7",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-02-15",
+    updatedAt: "2026-02-15",
+  },
+  {
+    id: "demo-33",
+    codigo: "BCO-CAJ-MRQ-01",
+    nombre: "Caja Principal Maracaibo",
+    nivel: "Sub Entidades",
+    subtipo: "Caja",
+    padreId: "demo-8",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-03-05",
+    updatedAt: "2026-03-05",
+  },
+  {
+    id: "demo-34",
+    codigo: "BCO-TAQ-MRQ-01",
+    nombre: "Taquilla Automática Maracaibo",
+    nivel: "Sub Entidades",
+    subtipo: "Taquilla",
+    padreId: "demo-8",
+    activo: true,
+    metadata: {},
+    createdAt: "2026-03-05",
+    updatedAt: "2026-03-05",
+  },
+];
+
+export const useEntitiesStore = create<EntitiesState>((set, get) => ({
+  entities: DEFAULT_ENTITIES,
+  selectedId: null,
+  expandedIds: new Set(DEFAULT_ENTITIES.map((e) => e.id)),
+
+  addEntity: (data) => {
+    const now = new Date().toISOString();
+    const entity: Entity = { ...data, id: makeId(), metadata: data.metadata ?? {}, createdAt: now, updatedAt: now };
+    set((s) => ({ entities: [...s.entities, entity] }));
+  },
+
+  updateEntity: (id, data) => {
+    set((s) => ({
+      entities: s.entities.map((e) =>
+        e.id === id ? { ...e, ...data, updatedAt: new Date().toISOString() } : e
+      ),
+    }));
+  },
+
+  removeEntity: (id) => {
+    const { entities } = get();
+    const idsToRemove = new Set<string>();
+    const collect = (parentId: string) => {
+      idsToRemove.add(parentId);
+      entities.filter((e) => e.padreId === parentId).forEach((e) => collect(e.id));
+    };
+    collect(id);
+    set((s) => ({
+      entities: s.entities.filter((e) => !idsToRemove.has(e.id)),
+      selectedId: s.selectedId && idsToRemove.has(s.selectedId) ? null : s.selectedId,
+    }));
+  },
+
+  selectEntity: (id) => set({ selectedId: id }),
+
+  toggleExpand: (id) => {
+    set((s) => {
+      const next = new Set(s.expandedIds);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return { expandedIds: next };
+    });
+  },
+
+  getChildren: (padreId) => get().entities.filter((e) => e.padreId === padreId),
+
+  getAncestors: (id) => {
+    const { entities } = get();
+    const result: Entity[] = [];
+    let current = entities.find((e) => e.id === id);
+    while (current?.padreId) {
+      const parent = entities.find((e) => e.id === current!.padreId);
+      if (parent) result.unshift(parent);
+      current = parent;
+    }
+    return result;
+  },
+}));

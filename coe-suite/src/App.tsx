@@ -6,12 +6,11 @@ import { ConfigEngine } from "./pages/ConfigEngine/ConfigEngine";
 import { CoengineActivity } from "./pages/CoengineActivity/CoengineActivity";
 import { WarRoom } from "./pages/WarRoom/WarRoom";
 import { KpiEstrategico } from "./pages/KpiEstrategico/KpiEstrategico";
+import { Unidades, Divisas, Proveedores, Clientes, Grupos } from "./pages/Configuracion";
 import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { Login } from "./pages/Login/Login";
 
 const PENDING_ROUTES = [
-  "config", "divisas", "transporte", "bovedas", "unidades",
-  "empleados", "parametros",
   "kpi-operativo", "op-reports",
   "reg-reports", "txns", "georef", "help", "integrations", "audit",
   "operaciones",
@@ -30,6 +29,12 @@ function App() {
             <Route path="/coengine/activity" element={<CoengineActivity />} />
             <Route path="/war-room" element={<WarRoom />} />
             <Route path="/kpi-gerencial" element={<KpiEstrategico />} />
+            <Route path="/config" element={<Navigate to="/config/unidades" replace />} />
+            <Route path="/config/unidades" element={<Unidades />} />
+            <Route path="/config/divisas" element={<Divisas />} />
+            <Route path="/config/proveedores" element={<Proveedores />} />
+            <Route path="/config/clientes" element={<Clientes />} />
+            <Route path="/config/grupos" element={<Grupos />} />
             {PENDING_ROUTES.map((v) => (
               <Route key={v} path={`/${v}`} element={<ComingSoon view={v} />} />
             ))}
