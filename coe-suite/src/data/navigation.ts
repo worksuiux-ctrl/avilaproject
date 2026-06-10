@@ -94,7 +94,8 @@ export const MODULES: Module[] = [
     icon: "HelpCircle",
     description: "Documentación, guías y soporte técnico",
     items: [
-      { id: "help", label: "Centro de Ayuda", icon: "HelpCircle", route: "/help" },
+      { id: "coe-tickets", label: "COE Tickets", icon: "Ticket", route: "/soporte/tickets" },
+      { id: "faq", label: "Preguntas Frecuentes", icon: "QuestionMarkCircle", route: "/soporte/faq" },
     ],
   },
   {
