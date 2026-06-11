@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MODULES, type Module } from "../data/navigation";
-import { useUserStore } from "../stores/userStore";
 import { useNavStore } from "../stores/navStore";
 import {
   HiOutlineChartBarSquare,
@@ -73,11 +72,12 @@ const itemIcons: Record<string, IconType> = {
   QuestionMarkCircle: HiOutlineQuestionMarkCircle,
 };
 
-function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {
+function ModuleGroup({ module, activeRoute, onNavigate, collapsed, onModuleClick }: {
   module: Module;
   activeRoute: string;
   onNavigate: (route: string) => void;
   collapsed: boolean;
+  onModuleClick: (mod: Module) => void;
 }) {
   const [open, setOpen] = useState(module.items.some((i) => i.route === activeRoute));
   const ModuleIcon = moduleIcons[module.icon] || HiOutlineCog6Tooth;
@@ -86,15 +86,17 @@ function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {
   if (collapsed) {
     return (
       <div className="flex flex-col items-center gap-1">
-        <div
-          className={`w-10 h-10 rounded-corner-m flex items-center justify-center cursor-pointer transition-all duration-200
+        <button
+          type="button"
+          onClick={() => onModuleClick(module)}
+          className={`w-10 h-10 rounded-corner-m flex items-center justify-center cursor-pointer transition-all duration-200 border-none
             ${isActive
               ? "bg-[var(--color-verde-100)] text-white shadow-md shadow-[var(--color-verde-100)]/20"
               : "text-[var(--color-neutro-400)] hover:text-[var(--color-verde-100)] hover:bg-[var(--color-verde-100)]/8"}`}
           title={module.label}
         >
           <ModuleIcon className="w-5 h-5" />
-        </div>
+        </button>
       </div>
     );
   }
@@ -139,29 +141,69 @@ function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {
 }
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { navigate: navStore } = useNavStore();
-  const user = useUserStore((s) => s.current);
   const activeRoute = location.pathname;
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isHovering = useRef(false);
+
+  const clearCollapseTimer = useCallback(() => {
+    if (collapseTimer.current) {
+      clearTimeout(collapseTimer.current);
+      collapseTimer.current = null;
+    }
+  }, []);
+
+  const startCollapseTimer = useCallback(() => {
+    clearCollapseTimer();
+    collapseTimer.current = setTimeout(() => {
+      if (!isHovering.current) setCollapsed(true);
+    }, 3500);
+  }, [clearCollapseTimer]);
+
+  useEffect(() => {
+    return () => clearCollapseTimer();
+  }, [clearCollapseTimer]);
+
+  const handleMouseEnter = () => {
+    isHovering.current = true;
+    clearCollapseTimer();
+    setCollapsed(false);
+  };
+
+  const handleMouseLeave = () => {
+    isHovering.current = false;
+    startCollapseTimer();
+  };
 
   const handleNavigate = (route: string) => {
     navStore(route.replace("/", "") || "dashboard");
     navigate(route);
   };
 
+  const handleModuleClick = (mod: Module) => {
+    const firstRoute = mod.items[0]?.route;
+    if (firstRoute) handleNavigate(firstRoute);
+  };
+
   return (
     <nav
-      className={`bg-white border-r border-[var(--color-neutro-200)] flex flex-col z-20 overflow-y-auto transition-all duration-300 ${
+      className={`bg-white border-r border-[var(--color-neutro-200)] flex flex-col z-20 overflow-hidden transition-all duration-300 ${
         collapsed ? "w-[72px] min-w-[72px]" : "w-[252px] min-w-[252px]"
       }`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Logo */}
-      <div className={`flex items-center border-b border-[var(--color-neutro-200)] ${collapsed ? "justify-center px-2" : "gap-3 px-4"} h-[58px] flex-shrink-0`}>
+      <button
+        type="button"
+        onClick={() => handleNavigate("/dashboard")}
+        className={`flex items-center border-b border-[var(--color-neutro-200)] ${collapsed ? "justify-center px-2" : "gap-3 px-4"} h-[58px] flex-shrink-0 sticky top-0 bg-white z-10 cursor-pointer w-full transition-colors hover:bg-[var(--color-neutro-100)]`}>
         <img src="/Icono%20coe.png" alt="COE" className="w-8 h-8 block flex-shrink-0" />
-        {!collapsed && (
-          <div>
+        <div className={`overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[180px] opacity-100"}`}>
+          <div className="whitespace-nowrap">
             <h1 className="font-['Inclusive_Sans','Inter',sans-serif] font-normal text-[20px] leading-none tracking-tight" style={{ color: "#3CB93C" }}>
               COE Suite
             </h1>
@@ -169,11 +211,11 @@ export function Sidebar() {
               Cash Mgmt <span style={{ color: "var(--color-ind-naranja)" }}>Pro</span>
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      </button>
 
       {/* Modules */}
-      <div className="flex-1 py-3 space-y-1 px-2">
+      <div className="flex-1 overflow-y-auto py-3 space-y-1 px-2">
         {MODULES.map((mod) => (
           <ModuleGroup
             key={mod.id}
@@ -181,31 +223,10 @@ export function Sidebar() {
             activeRoute={activeRoute}
             onNavigate={handleNavigate}
             collapsed={collapsed}
+            onModuleClick={handleModuleClick}
           />
         ))}
       </div>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="mx-3 mb-2 p-2 rounded-corner-m border border-[var(--color-neutro-200)] bg-white text-[var(--color-neutro-400)] cursor-pointer hover:text-[var(--color-verde-100)] hover:border-[var(--color-verde-100)]/30 hover:bg-[var(--color-verde-100)]/5 transition-all duration-200 flex items-center justify-center"
-        title={collapsed ? "Expandir menú" : "Colapsar menú"}
-      >
-        <HiOutlineChevronDown className={`w-4 h-4 transition-all duration-200 ${collapsed ? "rotate-90" : ""}`} />
-      </button>
-
-      {/* User */}
-      {!collapsed && (
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-[var(--color-neutro-200)] mt-auto hover:bg-[var(--color-verde-100)]/4 transition-all duration-200">
-          <div className="w-[34px] h-[34px] rounded-full bg-gradient-to-br from-[var(--color-verde-100)] to-[var(--color-corp-green)] flex items-center justify-center text-white font-bold text-[12px] flex-shrink-0 shadow-sm">
-            {user.initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-semibold text-[var(--color-neutro-900)] truncate">{user.nombre}</p>
-            <p className="text-[10px] text-[var(--color-neutro-500)] truncate">{user.rol}</p>
-          </div>
-        </div>
-      )}
     </nav>
   );
 }
