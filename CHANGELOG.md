@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Central Administrativa
+- Nuevo nivel de entidad `Central Administrativa` (subtipos: Central Principal, Regional)
+- Solo puede contener Oficinas como hijas — no admite Sub Entidades ni Depósitos directos
+- Regla de validación: una Central no puede estar dentro de otra Central
+- No realiza transacciones — es una unidad puramente organizacional
+- Banner informativo cyan en detalle: "Unidad organizacional — no realiza transacciones"
+- Punto distintivo (●) en el árbol de entidades en lugar de advertencia de error
+- Nuevo perfil `modulo-central` disponible en el selector de perfiles
+- Nuevo componente `CentralSelector` en Topbar: dropdown de centrales disponible solo cuando el perfil es "Módulo Central"
+- Diagrama de entidades corregido para mostrar cualquier entidad raíz (ya no solo Oficinas)
+- Demo data: 2 centrales (Occidente, Capital) con sucursales bajo ellas
+- Documentación `modelo-entidades.md` actualizada con el nuevo nivel y reglas
+
 ### Migration DS
 - Migrado design system de GitHub (`@worksuiux-ctrl/my-design-system`) a GitLab (`@coe/design-system`)
 - Actualizados imports en ~43 archivos
