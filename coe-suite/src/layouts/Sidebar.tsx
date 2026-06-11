@@ -28,6 +28,7 @@ import {
   HiOutlinePuzzlePiece,
   HiOutlineShieldCheck,
   HiOutlineChevronDown,
+  HiOutlineClipboardDocumentCheck,
 } from "react-icons/hi2";
 import type { IconType } from "react-icons";
 
@@ -68,6 +69,8 @@ const itemIcons: Record<string, IconType> = {
   HelpCircle: HiOutlineQuestionMarkCircle,
   Puzzle: HiOutlinePuzzlePiece,
   Shield: HiOutlineShieldCheck,
+  Ticket: HiOutlineClipboardDocumentCheck,
+  QuestionMarkCircle: HiOutlineQuestionMarkCircle,
 };
 
 function ModuleGroup({ module, activeRoute, onNavigate, collapsed }: {

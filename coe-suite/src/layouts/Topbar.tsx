@@ -3,6 +3,7 @@ import { useUserStore } from "../stores/userStore";
 import { useLocation } from "react-router-dom";
 import { MODULES } from "../data/navigation";
 import { ProfileSelector } from "../components/ui/ProfileSelector";
+import { CentralSelector } from "../components/ui/CentralSelector";
 import {
   HiOutlineBell,
   HiOutlineArrowUpTray,
@@ -38,6 +39,7 @@ export function Topbar() {
       {/* Right: actions */}
       <div className="flex items-center gap-2">
         <ProfileSelector />
+        <CentralSelector />
         <div className="flex items-center gap-1.5 px-[11px] py-1 rounded-full text-[9px] font-bold bg-[var(--color-surface-darkwhite)] text-[var(--color-verde-100)] tracking-wide border border-[var(--color-verde-100)]/30">
           <span className="w-[6px] h-[6px] rounded-full bg-[var(--color-verde-100)] animate-pulse" />
           CORE SYNC

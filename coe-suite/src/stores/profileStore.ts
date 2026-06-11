@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type Perfil = "banco" | "banco-central" | "transportista" | "corporativo" | "negocios";
+export type Perfil = "banco" | "banco-central" | "transportista" | "corporativo" | "negocios" | "modulo-central";
 
 interface ProfileState {
   perfil: Perfil;
@@ -18,4 +18,5 @@ export const PERFIL_OPTIONS = [
   { value: "transportista", label: "Transportista" },
   { value: "corporativo", label: "Corporativo" },
   { value: "negocios", label: "Negocios" },
+  { value: "modulo-central", label: "Módulo Central" },
 ];

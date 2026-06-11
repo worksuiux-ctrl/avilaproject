@@ -28,6 +28,8 @@ const VIEW_META: Record<string, { t: string; d: string }> = {
   unidades: { t: "Unidades y Cupos", d: "Administración de unidades operativas y asignación de cupos" },
   empleados: { t: "Empleados y Cargos", d: "Gestión del personal, roles y estructura organizativa" },
   parametros: { t: "Parámetros del Sistema", d: "Configuración avanzada de parámetros operativos y financieros" },
+  soportetickets: { t: "COE Tickets", d: "Soporte y Ayuda — COE Tickets" },
+  soportefaq: { t: "FAQ", d: "Soporte y Ayuda — Preguntas Frecuentes" },
 };
 
 // Auto-generate meta from navigation data for any missing entries

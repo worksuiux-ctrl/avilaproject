@@ -79,13 +79,11 @@ export const MODULES: Module[] = [
     icon: "Cog",
     description: "Parámetros del sistema, bóvedas, divisas, ATMs",
     items: [
-      { id: "config", label: "Configuraciones COE", icon: "Settings", route: "/config" },
-      { id: "config-divisas", label: "Gestión de Divisas", icon: "Cash", route: "/config/divisas" },
-      { id: "config-transporte", label: "Logística de Transporte", icon: "Truck", route: "/config/transporte" },
-      { id: "config-bovedas", label: "Gestión de Bóvedas", icon: "Vault", route: "/config/bovedas" },
-      { id: "config-unidades", label: "Unidades y Cupos", icon: "Building2", route: "/config/unidades" },
-      { id: "config-empleados", label: "Empleados y Cargos", icon: "Users", route: "/config/empleados" },
-      { id: "config-parametros", label: "Parámetros", icon: "Sliders", route: "/config/parametros" },
+      { id: "config-unidades", label: "Unidades", icon: "Building2", route: "/config/unidades" },
+      { id: "config-divisas", label: "Divisas", icon: "Cash", route: "/config/divisas" },
+      { id: "config-proveedores", label: "Proveedores", icon: "Truck", route: "/config/proveedores" },
+      { id: "config-clientes", label: "Clientes", icon: "Users", route: "/config/clientes" },
+      { id: "config-grupos", label: "Grupos", icon: "FolderTree", route: "/config/grupos" },
     ],
   },
   {
@@ -94,7 +92,8 @@ export const MODULES: Module[] = [
     icon: "HelpCircle",
     description: "Documentación, guías y soporte técnico",
     items: [
-      { id: "help", label: "Centro de Ayuda", icon: "HelpCircle", route: "/help" },
+      { id: "coe-tickets", label: "COE Tickets", icon: "Ticket", route: "/soporte/tickets" },
+      { id: "faq", label: "Preguntas Frecuentes", icon: "QuestionMarkCircle", route: "/soporte/faq" },
     ],
   },
   {
