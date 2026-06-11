@@ -1,6 +1,8 @@
-import { useState, useCallback } from "react";
-import { Heading, Text } from "@coe/design-system";
+import { useState, useCallback, useEffect } from "react";
+import { Heading, Text, Dialog, Button } from "@coe/design-system";
+import { toast } from "sonner";
 import { useProfileStore } from "@stores/profileStore";
+import { useNavStore } from "@stores/navStore";
 import { TicketDashboard } from "./components/TicketDashboard";
 import { TicketList } from "./components/TicketList";
 import { TicketForm } from "./components/TicketForm";
@@ -17,6 +19,7 @@ export function SoporteTicket() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTicket, setEditTicket] = useState<Ticket | null>(null);
   const [view, setView] = useState<View>("list");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleSelectTicket = useCallback((t: Ticket) => {
     setSelectedTicket(t);
@@ -64,25 +67,37 @@ export function SoporteTicket() {
       };
       setTickets((prev) => [newTicket, ...prev]);
     }
+    toast.success(data.id && tickets.some((t) => t.id === data.id) ? "Ticket actualizado correctamente" : "Ticket creado correctamente");
   }, [tickets]);
 
   const handleDelete = useCallback((id: string) => {
     setTickets((prev) => prev.filter((t) => t.id !== id));
-    handleBack();
-  }, [handleBack]);
+    setView("list");
+    setSelectedTicket(null);
+    toast.success("Ticket eliminado correctamente");
+  }, []);
 
   const perfilLabel = perfil.charAt(0).toUpperCase() + perfil.slice(1);
 
+  useEffect(() => {
+    useNavStore.setState({
+      title: view === "detail" && selectedTicket ? `COE Tickets · ${selectedTicket.id}` : "COE Tickets",
+      description: view === "detail" && selectedTicket ? `Soporte y Ayuda — ${selectedTicket.titulo}` : "Soporte y Ayuda — COE Tickets",
+    });
+  }, [view, selectedTicket]);
+
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div>
-          <Heading variant="title" className="font-bold text-[18px]">COE Tickets</Heading>
-          <Text variant="caption" className="text-[#2563eb] font-semibold tracking-wider uppercase">
-            Perfil: {perfilLabel}
-          </Text>
+      {view === "list" && (
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <div>
+            <Heading variant="title" className="font-bold text-[18px]">COE Tickets</Heading>
+            <Text variant="caption" className="text-[#2563eb] font-semibold tracking-wider uppercase">
+              Perfil: {perfilLabel}
+            </Text>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 min-h-0">
         {view === "list" ? (
@@ -99,7 +114,7 @@ export function SoporteTicket() {
             ticket={selectedTicket}
             onBack={handleBack}
             onEdit={handleEditTicket}
-            onDelete={handleDelete}
+            onDelete={setConfirmDeleteId}
           />
         )}
       </div>
@@ -111,6 +126,23 @@ export function SoporteTicket() {
         onDelete={handleDelete}
         editTicket={editTicket}
       />
+
+      {confirmDeleteId && (
+        <Dialog
+          open={!!confirmDeleteId}
+          onClose={() => setConfirmDeleteId(null)}
+          title="Confirmar eliminación"
+          size="sm"
+          actions={
+            <div className="flex items-center gap-2 justify-end w-full">
+              <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancelar</Button>
+              <Button variant="primary" size="sm" onClick={() => { handleDelete(confirmDeleteId); setConfirmDeleteId(null); }}>Sí, eliminar</Button>
+            </div>
+          }
+        >
+          <Text variant="body">¿Está seguro de que desea eliminar este ticket? Esta acción no se puede deshacer.</Text>
+        </Dialog>
+      )}
     </div>
   );
 }

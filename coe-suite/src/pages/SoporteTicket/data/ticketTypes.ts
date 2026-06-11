@@ -42,6 +42,7 @@ export interface Ticket {
   asignadoA: { nombre: string; avatar?: string }[];
   fechaCreacion: string;
   slaVencimiento: string;
+  fechaCierre?: string;
   archivosAdjuntos: TicketFile[];
   comentarios: TicketComment[];
   actividad: TicketActivity[];

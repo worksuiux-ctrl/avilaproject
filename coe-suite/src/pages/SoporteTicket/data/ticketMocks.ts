@@ -133,6 +133,7 @@ export const MOCK_TICKETS: Ticket[] = [
     creadoPor: U("José Gregorio Rivas"),
     asignadoA: [U("Ana Sofía Torres")],
     fechaCreacion: "2026-05-15T14:00:00", slaVencimiento: "2026-06-15T14:00:00",
+    fechaCierre: "2026-06-02T08:00:00",
     archivosAdjuntos: [],
     comentarios: [
       { id: "c10", autor: "José Gregorio Rivas", rol: "Operaciones", mensaje: "Adjunto el mock de cómo me imagino la vista.", timestamp: "2026-05-15T14:05:00" },

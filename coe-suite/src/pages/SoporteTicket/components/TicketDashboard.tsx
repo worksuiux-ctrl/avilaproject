@@ -1,6 +1,7 @@
-import { KpiCard, Card, Badge, ProgressBar, Text } from "@coe/design-system";
-import { TrendingUp } from "lucide-react";
+import { KpiCard, Card, Text } from "@coe/design-system";
+import { TrendingUp, Printer } from "lucide-react";
 import type { Ticket, TicketStatus as TicketStatusType } from "../data/ticketTypes";
+import { SlaGauge } from "./SlaGauge";
 
 interface TicketDashboardProps {
   tickets: Ticket[];
@@ -48,9 +49,9 @@ export function TicketDashboard({ tickets }: TicketDashboardProps) {
             <TrendingUp className="w-3.5 h-3.5 text-[var(--color-verde-100)]" />
             <Text variant="caption" className="font-semibold">Cumplimiento SLA</Text>
           </div>
-          <Badge variant={sla >= 90 ? "success" : sla >= 70 ? "warning" : "error"} size="sm">{sla}%</Badge>
+          <Printer className="w-3.5 h-3.5 text-[var(--color-neutro-500)] cursor-pointer hover:text-[var(--color-neutro-900)]" />
         </div>
-        <ProgressBar value={sla} variant={sla >= 90 ? "success" : sla >= 70 ? "warning" : "error"} size="sm" />
+        <SlaGauge value={sla} />
       </Card>
     </div>
   );

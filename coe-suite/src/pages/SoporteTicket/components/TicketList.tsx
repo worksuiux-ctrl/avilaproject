@@ -6,9 +6,10 @@ import {
 import type { Ticket } from "../data/ticketTypes";
 import {
   PRIORIDAD_OPTIONS, STATUS_OPTIONS, CATEGORIA_OPTIONS,
-  STATUS_VARIANTS, PRIORIDAD_VARIANTS,
+  STATUS_VARIANTS,
 } from "../data/ticketTypes";
 import { getUserColor, getNameInitials } from "./avatarUtils";
+import { PriorityFlag } from "./PriorityFlag";
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -17,18 +18,10 @@ interface TicketListProps {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" });
-}
-
-function getSlaIndicator(t: Ticket) {
-  const ahora = new Date();
-  const venc = new Date(t.slaVencimiento);
-  const creado = new Date(t.fechaCreacion);
-  const total = venc.getTime() - creado.getTime();
-  const restante = venc.getTime() - ahora.getTime();
-  const pct = total > 0 ? Math.min(100, Math.max(0, Math.round(((total - restante) / total) * 100))) : 100;
-  const isOverdue = restante <= 0 && t.estado !== "resuelto" && t.estado !== "cerrado";
-  return { pct, isOverdue };
+  return new Date(iso).toLocaleDateString("es-ES", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
 }
 
 const SIN_ASIGNAR = { nombre: "Sin asignar", avatar: "" };
@@ -103,9 +96,7 @@ export function TicketList({ tickets, onSelectTicket, onNewTicket }: TicketListP
       key: "prioridad", label: "Prioridad",
       render: (row: Ticket) => (
         <div className="cursor-pointer" onClick={() => onSelectTicket(row)}>
-          <Badge variant={PRIORIDAD_VARIANTS[row.prioridad]} size="sm">
-            {row.prioridad.charAt(0).toUpperCase() + row.prioridad.slice(1)}
-          </Badge>
+          <PriorityFlag prioridad={row.prioridad} />
         </div>
       ),
     },
@@ -128,33 +119,32 @@ export function TicketList({ tickets, onSelectTicket, onNewTicket }: TicketListP
       ),
     },
     {
-      key: "sla", label: "SLA",
-      render: (row: Ticket) => {
-        const { pct, isOverdue } = getSlaIndicator(row);
-        return (
-          <div className="cursor-pointer" onClick={() => onSelectTicket(row)}>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 max-w-[50px]">
-                <div className="h-1.5 rounded-full overflow-hidden bg-[var(--color-neutro-200)]">
-                  <div className="h-full rounded-full transition-all" style={{
-                    width: `${pct}%`,
-                    background: isOverdue ? "#dc2626" : pct > 80 ? "#d97706" : "#16a34a",
-                  }} />
-                </div>
-              </div>
-              <Text variant="caption" className={isOverdue ? "text-[#dc2626] font-semibold" : "text-[var(--color-neutro-500)]"}>
-                {isOverdue ? "Vencido" : `${pct}%`}
-              </Text>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
       key: "fecha", label: "Creado",
       render: (row: Ticket) => (
         <div className="cursor-pointer" onClick={() => onSelectTicket(row)}>
           <Text variant="caption" className="text-[var(--color-neutro-500)]">{formatDate(row.fechaCreacion)}</Text>
+        </div>
+      ),
+    },
+    {
+      key: "sla", label: "Vencimiento SLA",
+      render: (row: Ticket) => (
+        <div className="cursor-pointer" onClick={() => onSelectTicket(row)}>
+          <Text variant="caption" className={row.estado === "cerrado" ? "text-[var(--color-verde-100)] font-semibold" : "text-[var(--color-neutro-500)]"}>
+            {row.estado === "cerrado" && row.fechaCierre
+              ? formatDate(row.fechaCierre)
+              : formatDate(row.slaVencimiento)}
+          </Text>
+        </div>
+      ),
+    },
+    {
+      key: "cerrado", label: "Cerrado",
+      render: (row: Ticket) => (
+        <div className="cursor-pointer" onClick={() => onSelectTicket(row)}>
+          <Text variant="caption" className="text-[var(--color-neutro-500)]">
+            {row.estado === "cerrado" && row.fechaCierre ? formatDate(row.fechaCierre) : "—"}
+          </Text>
         </div>
       ),
     },

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import {
   Badge, Avatar, Button, Textarea, Text, Heading,
-  ProgressBar, Divider, Card,
+  Divider, Card,
 } from "@coe/design-system";
-import { ArrowLeft, Paperclip, FileText, Image, Video, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Paperclip, FileText, Image, Video, Trash2, Send, Pencil } from "lucide-react";
 import type { Ticket } from "../data/ticketTypes";
-import { STATUS_OPTIONS, STATUS_VARIANTS, PRIORIDAD_VARIANTS } from "../data/ticketTypes";
+import { STATUS_OPTIONS, STATUS_VARIANTS } from "../data/ticketTypes";
 import { getUserColor, getNameInitials } from "./avatarUtils";
+import { PriorityFlag } from "./PriorityFlag";
 
 interface TicketDetailProps {
   ticket: Ticket | null;
@@ -70,52 +71,40 @@ export function TicketDetail({ ticket, onBack, onEdit, onDelete }: TicketDetailP
     );
   }
 
-  const slaPct = (() => {
-    const total = new Date(ticket.slaVencimiento).getTime() - new Date(ticket.fechaCreacion).getTime();
-    const restante = new Date(ticket.slaVencimiento).getTime() - Date.now();
-    const pct = total > 0 ? Math.min(100, Math.max(0, ((total - restante) / total) * 100)) : 100;
-    return { pct, vencido: restante <= 0, restante };
-  })();
-
-  const remainingHours = slaPct.restante / 3600000;
-
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onBack}>
+      <div className="flex items-center justify-between mb-4 shrink-0 gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Button variant="ghost" size="sm" onClick={onBack} className="shrink-0">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[14px] font-bold text-[#2563eb]">{ticket.id}</span>
-            <Badge variant={STATUS_VARIANTS[ticket.estado]} size="sm">
-              {STATUS_OPTIONS.find((o) => o.value === ticket.estado)?.label}
-            </Badge>
-            <Badge variant={PRIORIDAD_VARIANTS[ticket.prioridad]} size="sm">
-              {ticket.prioridad.charAt(0).toUpperCase() + ticket.prioridad.slice(1)}
-            </Badge>
-          </div>
+          <Heading variant="title" className="text-[18px] font-bold text-[#1e293b] truncate">{ticket.titulo}</Heading>
         </div>
-        {canModify && (
-          <div className="flex items-center gap-2">
-            {onDelete && (
-              <Button variant="outline" size="sm" onClick={() => { onDelete(ticket.id); onBack(); }}>
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            )}
-            {onEdit && (
-              <Button variant="primary" size="sm" onClick={() => onEdit(ticket)}>
-                Modificar
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="font-mono text-[14px] font-bold text-[#42aa42]">{ticket.id}</span>
+          <Badge variant={STATUS_VARIANTS[ticket.estado]} size="sm">
+            {STATUS_OPTIONS.find((o) => o.value === ticket.estado)?.label}
+          </Badge>
+          <PriorityFlag prioridad={ticket.prioridad} />
+          {canModify && (
+            <div className="flex items-center gap-1 ml-2">
+              {onDelete && (
+                <button onClick={() => { onDelete(ticket.id); onBack(); }} className="p-1.5 rounded-md text-[var(--color-neutro-500)] hover:text-[var(--color-ind-rojo)] hover:bg-[var(--color-ind-rojo)]/10 transition-colors cursor-pointer" title="Eliminar ticket">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              {onEdit && (
+                <button onClick={() => onEdit(ticket)} className="p-1.5 rounded-md text-[var(--color-neutro-500)] hover:text-[var(--color-verde-100)] hover:bg-[var(--color-verde-100)]/10 transition-colors cursor-pointer" title="Modificar ticket">
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', overflow: 'hidden' }}>
         <div className="overflow-y-auto pr-1 space-y-4 min-h-0" style={{ flex: 2 }}>
-          <Heading variant="title" className="text-[18px] font-bold text-[#1e293b]">{ticket.titulo}</Heading>
-
           <Card variant="flat" padding="sm" className="!p-4">
             <Text variant="body" className="text-[14px] leading-relaxed text-[#334155]">{ticket.descripcion}</Text>
           </Card>
@@ -151,14 +140,12 @@ export function TicketDetail({ ticket, onBack, onEdit, onDelete }: TicketDetailP
             </div>
             <div>
               <Text variant="caption" className="text-[#94a3b8] uppercase text-[10px] font-semibold">SLA</Text>
-              <div className="mt-1 space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className={`text-[13px] font-bold ${slaPct.vencido ? "text-[#dc2626]" : remainingHours < 4 ? "text-[#d97706]" : "text-[#16a34a]"}`}>
-                    {slaPct.vencido ? "Vencido" : `${remainingHours.toFixed(1)}h`}
-                  </span>
-                  <ProgressBar value={slaPct.pct} variant={slaPct.vencido ? "error" : remainingHours < 4 ? "warning" : "success"} size="sm" className="flex-1" />
-                  <Text variant="caption" className="text-[#94a3b8]">{slaPct.pct}%</Text>
-                </div>
+              <div className="mt-1">
+                <Text variant="small" className="font-medium text-[#334155]">
+                  {ticket.estado === "cerrado" && ticket.fechaCierre
+                    ? formatDate(ticket.fechaCierre)
+                    : formatDate(ticket.slaVencimiento)}
+                </Text>
               </div>
             </div>
           </div>
@@ -240,23 +227,32 @@ export function TicketDetail({ ticket, onBack, onEdit, onDelete }: TicketDetailP
 
           <Divider className="my-3 shrink-0" />
 
-          <div className="shrink-0 w-full">
-            <div className="relative w-full">
-              <Textarea
-                placeholder="Escribe un comentario..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={3}
-                className="w-full pr-11"
-              />
+          <div className="shrink-0 w-full space-y-2">
+            <Textarea
+              placeholder="Escribe un comentario..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              className="w-full"
+            />
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {}}
+                title="Adjuntar archivo"
+              >
+                <Paperclip className="w-4 h-4 mr-1" />
+                Adjuntar
+              </Button>
               <Button
                 variant="primary"
                 size="sm"
                 disabled={!comment.trim()}
                 onClick={() => setComment("")}
-                className="absolute bottom-2 right-2"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4 mr-1" />
+                Enviar
               </Button>
             </div>
           </div>
