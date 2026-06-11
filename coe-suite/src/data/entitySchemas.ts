@@ -42,11 +42,24 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
     ],
   },
 
+  /* ───────── Central Administrativa ───────── */
+  {
+    nivel: "Central Administrativa",
+    fields: [
+      { key: "codigoCentral", label: "Código de Central", type: "text", section: "propiedades", required: true },
+      { key: "region", label: "Región / Zona de Influencia", type: "text", section: "propiedades" },
+      { key: "direccionCentral", label: "Dirección", type: "text", section: "propiedades" },
+      { key: "monedaBase", label: "Moneda Base", type: "select", options: ["USD", "EUR", "VES", "COP", "MXN", "Otro"], section: "parametros" },
+      { key: "estadoCentral", label: "Estado Operativo", type: "select", options: ["Activo", "Inactivo"], section: "parametros" },
+    ],
+  },
+
   /* ───────── Oficinas / Entidad Principal ───────── */
   {
     nivel: "Oficinas",
     fields: [
       { key: "giroNegocio", label: "Giro de Negocio", type: "select", options: GIROS_NEGOCIO, section: "propiedades", required: true },
+      { key: "jerarquia", label: "Jerarquía (Nivel relacional)", type: "select", options: ["Casa Matriz", "Regional", "Sucursal", "Agencia Local", "Punto de Servicio"], section: "propiedades" },
       { key: "direccion", label: "Dirección", type: "text", section: "propiedades", required: true },
       { key: "coordenadas", label: "Geolocalización", type: "geolocation", section: "propiedades" },
       { key: "monedas", label: "Monedas Permitidas", type: "multiSelect", options: ["USD", "EUR", "VES", "COP", "MXN", "GBP", "CHF"], section: "parametros" },
@@ -62,7 +75,6 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
   {
     nivel: "Sub Entidades",
     fields: [
-      { key: "tipoDispositivo", label: "Tipo de Dispositivo", type: "select", options: ["ATM", "Reciclador", "Terminal Punto de Venta", "Caja Registradora", "Taquilla"], section: "propiedades", required: true },
       { key: "modeloFabricante", label: "Modelo/Fabricante", type: "select", options: [...MODELOS_ATM, ...MODELOS_POS], section: "propiedades" },
       { key: "modoInstalacion", label: "Modo de Instalación", type: "select", options: ["Empotrado", "Stand-alone", "Móvil"], section: "propiedades" },
       { key: "identificadorRed", label: "Identificador de Red", type: "text", placeholder: "IP o ID de red", section: "propiedades" },
@@ -75,12 +87,8 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
       { key: "capacidadNominal", label: "Capacidad Nominal", type: "number", section: "parametros" },
       { key: "umbralMinimo", label: "Umbral de Reabastecimiento (Min)", type: "number", section: "parametros" },
       { key: "estadoSub", label: "Estado Operativo", type: "select", options: ["Operativo", "Fuera de Servicio", "Mantenimiento"], section: "parametros" },
-      {
-        key: "responsableAsignado", label: "Asignación de Responsable", type: "text",
-        placeholder: "ID del cajero o proveedor",
-        section: "parametros",
-        dependsOn: { field: "tipoDispositivo", value: "Caja Registradora" },
-      },
+      { key: "responsableAsignado", label: "Responsable Asignado", type: "text", placeholder: "ID del cajero o proveedor de custodia", section: "parametros" },
+      { key: "parametrosSeguridad", label: "Parámetros de Seguridad", type: "textarea", placeholder: "Claves, temporizadores, restricciones de acceso", section: "parametros" },
     ],
   },
 
@@ -88,7 +96,6 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
   {
     nivel: "Depósitos",
     fields: [
-      { key: "tipoDeposito", label: "Tipo", type: "select", options: ["Caja Fuerte", "Cuarto Frío", "Rack", "Silo", "Contenedor", "Cajón"], section: "propiedades", required: true },
       { key: "materialConstruccion", label: "Material de Construcción", type: "text", placeholder: "Ej: Acero, Concreto", section: "propiedades" },
       { key: "dimensiones", label: "Dimensiones Físicas", type: "text", placeholder: "Ej: 2m x 3m x 2.5m", section: "propiedades" },
       { key: "tipoContenido", label: "Tipo de Contenido", type: "select", options: CATEGORIAS_CONTENIDO, section: "parametros" },
@@ -97,9 +104,9 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
       { key: "capacidadNominalDep", label: "Capacidad Nominal", type: "number", section: "parametros" },
       { key: "umbralMinimoDep", label: "Umbral de Reabastecimiento (Min)", type: "number", section: "parametros" },
       { key: "estadoDep", label: "Estado Operativo", type: "select", options: ["Disponible", "Ocupado", "Mantenimiento", "Clausurado"], section: "parametros" },
-      { key: "tempMin", label: "Rango Temperatura Mín", type: "number", section: "parametros", dependsOn: { field: "tipoDeposito", value: "Cuarto Frío" } },
-      { key: "tempMax", label: "Rango Temperatura Máx", type: "number", section: "parametros", dependsOn: { field: "tipoDeposito", value: "Cuarto Frío" } },
-      { key: "humedad", label: "Nivel de Humedad", type: "number", placeholder: "%", section: "parametros", dependsOn: { field: "tipoDeposito", value: "Cuarto Frío" } },
+      { key: "tempMin", label: "Rango Temperatura Mín", type: "number", section: "parametros", dependsOn: { field: "subtipo", value: "Cuarto Frío" } },
+      { key: "tempMax", label: "Rango Temperatura Máx", type: "number", section: "parametros", dependsOn: { field: "subtipo", value: "Cuarto Frío" } },
+      { key: "humedad", label: "Nivel de Humedad", type: "number", placeholder: "%", section: "parametros", dependsOn: { field: "subtipo", value: "Cuarto Frío" } },
       { key: "nivelBlindaje", label: "Nivel de Blindaje", type: "select", options: ["Bajo", "Medio", "Alto", "Máximo"], section: "parametros" },
     ],
   },
@@ -108,7 +115,6 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
   {
     nivel: "Contenedores",
     fields: [
-      { key: "tipoContenedor", label: "Tipo", type: "select", options: ["Container", "Envase", "Bulto", "Bolsa", "Empaque", "Paleta"], section: "propiedades", required: true },
       { key: "tara", label: "Peso Vacío (Tara)", type: "number", placeholder: "Kg", section: "propiedades" },
       { key: "material", label: "Material", type: "select", options: MATERIALES_CONTENEDOR, section: "propiedades" },
       { key: "sistemaCierre", label: "Sistema de Cierre/Seguridad", type: "select", options: TIPOS_CIERRE, section: "propiedades" },
@@ -128,7 +134,6 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
     nivel: "Vehículos",
     fields: [
       { key: "propiedad", label: "Propiedad", type: "select", options: ["Propio", "Proveedor"], section: "propiedades", required: true },
-      { key: "tipoVehiculo", label: "Tipo", type: "select", options: ["Camión", "Carro", "Barco", "Avión", "Tren"], section: "propiedades", required: true },
       { key: "placa", label: "ID de Vehículo / Placa", type: "text", section: "propiedades", required: true },
       { key: "marcaModelo", label: "Modelo y Marca", type: "text", placeholder: "Ej: Ford F-350 2024", section: "propiedades" },
       {
@@ -142,6 +147,7 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
       { key: "capacidadContenedores", label: "Capacidad en Contenedores", type: "number", section: "parametros" },
       { key: "disponibilidad", label: "Estado de Disponibilidad", type: "select", options: ["Disponible", "En Ruta", "Mantenimiento", "Fuera de Servicio"], section: "parametros" },
       { key: "nivelSeguridad", label: "Nivel de Seguridad", type: "select", options: ["Estándar", "Blindado", "Máxima Seguridad"], section: "parametros" },
+      { key: "geolocalizacion", label: "Geolocalización (Tracking)", type: "geolocation", section: "parametros" },
       { key: "odometro", label: "Consumo y Odómetro", type: "text", placeholder: "Km actuales", section: "parametros", dependsOn: { field: "propiedad", value: "Propio" } },
     ],
   },

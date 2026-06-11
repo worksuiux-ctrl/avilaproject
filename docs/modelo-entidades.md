@@ -7,8 +7,9 @@ Define la estructura de entidades que modela la logística, almacenamiento y ope
 
 | # | Entidad | Nivel | Tipos | Hijos Permitidos | ¿Hoja? |
 |---|---------|-------|-------|------------------|--------|
-| 1 | **Grupos Geográficos** | Grupos | Zonas, Ciudades, Estados, Municipios, Continentes, Países, Flotas | Oficinas, Depósitos, Vehículos, Proveedores, Clientes, Grupos | No |
-| 2 | **Entidad Principal** | Oficinas | Agencia, Sucursales, Oficinas, CDA, Banco Central | Depósitos, Sub Entidades, Vehículos | No |
+| 1 | **Grupos Geográficos** | Grupos | Zonas, Ciudades, Estados, Municipios, Continentes, Países, Flotas | Central Administrativa, Oficinas, Depósitos, Vehículos, Proveedores, Clientes, Grupos | No |
+| 2 | **Central Administrativa** | Central Administrativa | Central Principal, Regional | Oficinas | No |
+| 3 | **Entidad Principal** | Oficinas | Agencia, Sucursales, Oficinas, CDA, Banco Central | Depósitos, Sub Entidades, Vehículos | No |
 | 3 | **Sub Entidades** | Sub Entidades | ATM, Cajas, Taquillas, Puntos de venta | Depósitos | No |
 | 4 | **Depósitos** | Depósitos | Bóvedas, Almacenes, Depósitos, Estacionamientos | Mercancía | No |
 | 5 | **Contenedores** | Contenedores | Container, Envases, Bultos, Bolsas, Empaques, Paletas | Mercancía | No |
@@ -23,6 +24,15 @@ Define la estructura de entidades que modela la logística, almacenamiento y ope
 ```
 Grupos Geográficos
 ├── Grupos Geográficos (recursivo)
+├── Central Administrativa
+│   └── Entidad Principal (Oficinas)
+│       ├── Depósitos
+│       │   └── Mercancía
+│       ├── Sub Entidades
+│       │   └── Depósitos
+│       │       └── Mercancía
+│       └── Vehículos (flota propia del banco)
+│           └── Mercancía
 ├── Entidad Principal (Oficinas)
 │   ├── Depósitos
 │   │   └── Mercancía
@@ -71,7 +81,9 @@ CREATE TABLE catalogos_tipos_entidad (
 
 INSERT INTO catalogos_tipos_entidad (nivel, etiqueta, subtipos, hijos_permitidos) VALUES
 ('Grupos', 'Grupos Geográficos', '["Zonas","Ciudades","Estados","Municipios","Continentes","Países","Flotas"]',
- '["Oficinas","Depósitos","Vehículos","Proveedores","Clientes","Grupos"]'),
+ '["Central Administrativa","Oficinas","Depósitos","Vehículos","Proveedores","Clientes","Grupos"]'),
+('Central Administrativa', 'Central Administrativa', '["Central Principal","Regional"]',
+ '["Oficinas"]'),
 ('Oficinas', 'Entidad Principal', '["Agencia","Sucursal","Oficina","CDA","Banco Central"]',
  '["Depósitos","Sub Entidades","Vehículos"]'),
 ('Sub Entidades', 'Sub Entidades', '["ATM","Caja","Taquilla","Punto de venta"]',
@@ -94,13 +106,15 @@ INSERT INTO catalogos_tipos_entidad (nivel, etiqueta, subtipos, hijos_permitidos
 
 ## Reglas de Negocio
 
-1. **Entidad Principal (Oficina)** define el "Contexto" — las operaciones ocurren dentro de una oficina.
-2. **Sub Entidades** definen la "Operación" — el punto específico donde ocurre la transacción.
-3. **Depósitos** almacenan mercancía.
-4. **Vehículos** solo pueden ser hijos de una empresa de transporte (Oficinas para flota propia, Proveedores para transporte tercerizado).
-5. **Mercancía** es la unidad comercializable — entidad hoja.
-6. **Grupos Geográficos** es el agrupador logístico más amplio; puede contener entidades de casi cualquier nivel.
-7. Una entidad solo puede ser padre de los niveles definidos en `hijos_permitidos`.
+1. **Central Administrativa** es una unidad organizacional que NO realiza transacciones. Su propósito es agrupar y controlar Oficinas (agencias/sucursales).
+2. **Central Administrativa** NO puede tener Sub Entidades ni Depósitos como hijos directos — solo puede contener Oficinas.
+3. **Entidad Principal (Oficina)** define el "Contexto" — las operaciones ocurren dentro de una oficina.
+4. **Sub Entidades** definen la "Operación" — el punto específico donde ocurre la transacción.
+5. **Depósitos** almacenan mercancía.
+6. **Vehículos** solo pueden ser hijos de una empresa de transporte (Oficinas para flota propia, Proveedores para transporte tercerizado).
+7. **Mercancía** es la unidad comercializable — entidad hoja.
+8. **Grupos Geográficos** es el agrupador logístico más amplio; puede contener entidades de casi cualquier nivel.
+9. Una entidad solo puede ser padre de los niveles definidos en `hijos_permitidos`.
 
 ## Notas de Implementación (Prototipo)
 

@@ -1,21 +1,38 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronRight, AlertTriangle, Search, X, Filter } from "lucide-react";
+import { ChevronRight, FolderOpen, AlertTriangle, Search, X, Filter, Circle } from "lucide-react";
 import { Checkbox } from "@coe/design-system";
 import { useEntitiesStore, type Entity } from "@stores/entitiesStore";
 import { ENTITY_TYPES, getEntityType } from "@data/entityCatalog";
 import { isEntityOperable } from "@data/entityRules";
+import { EntityIcon } from "./entityIcons";
 
-const ICON_MAP: Record<string, string> = {
-  FolderTree: "\u{1F333}",
-  Building2: "\u{1F3E2}",
-  CreditCard: "\u{1F0CF}",
-  Safe: "\u{1F6E1}",
-  Package: "\u{1F4E6}",
-  Truck: "\u{1F69A}",
-  PackageOpen: "\u{1F4E2}",
-  Users: "\u{1F465}",
-  Banknote: "\u{1F4B5}",
-};
+function groupKey(parentId: string, subtipo: string) {
+  return `group-${parentId}-${subtipo}`;
+}
+
+function GroupHeader({ parentId, subtipo, count, depth }: { parentId: string; subtipo: string; count: number; depth: number }) {
+  const { expandedIds, toggleExpand } = useEntitiesStore();
+  const gkey = groupKey(parentId, subtipo);
+  const isExpanded = expandedIds.has(gkey);
+  const label = `${subtipo}s`;
+
+  return (
+    <div>
+      <button
+        className="w-full flex items-center gap-1.5 px-2 py-1 rounded-corner-m text-left text-[12px] font-semibold uppercase tracking-wider text-[var(--color-neutro-500)] hover:bg-[var(--color-neutro-100)] transition-colors"
+        style={{ paddingLeft: `${12 + depth * 20}px` }}
+        onClick={() => toggleExpand(gkey)}
+      >
+        <span className={`shrink-0 w-4 h-4 flex items-center justify-center transition-transform ${isExpanded ? "rotate-90" : ""}`}>
+          <ChevronRight className="w-3 h-3" />
+        </span>
+        <FolderOpen className="w-4 h-4 shrink-0 text-[var(--color-neutro-400)]" />
+        <span className="truncate">{label}</span>
+        <span className="ml-auto text-[11px] opacity-60 shrink-0">{count}</span>
+      </button>
+    </div>
+  );
+}
 
 function TreeNode({ entity, depth, allEntities, hiddenLevels }: { entity: Entity; depth: number; allEntities: Entity[]; hiddenLevels: Set<string> }) {
   const { selectedId, expandedIds, selectEntity, toggleExpand, getChildren } = useEntitiesStore();
@@ -24,8 +41,17 @@ function TreeNode({ entity, depth, allEntities, hiddenLevels }: { entity: Entity
   const isExpanded = expandedIds.has(entity.id);
   const isSelected = selectedId === entity.id;
   const tipo = getEntityType(entity.nivel);
-  const icono = ICON_MAP[tipo?.icono ?? ""] ?? "\u{2022}";
   const operable = useMemo(() => isEntityOperable(entity, allEntities), [entity, allEntities]);
+
+  const grouped = useMemo(() => {
+    const groups: Record<string, Entity[]> = {};
+    for (const child of children) {
+      const key = child.subtipo ?? child.nivel;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(child);
+    }
+    return groups;
+  }, [children]);
 
   return (
     <>
@@ -44,15 +70,51 @@ function TreeNode({ entity, depth, allEntities, hiddenLevels }: { entity: Entity
         >
           {hasChildren ? <ChevronRight className="w-3.5 h-3.5" /> : <span className="w-3.5" />}
         </span>
-        {!operable && <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />}
-        <span className="shrink-0">{icono}</span>
-        <span className={`truncate ${!operable ? "text-red-400" : ""}`}>{entity.nombre}</span>
+        {!operable && entity.nivel !== "Central Administrativa" && <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />}
+        {entity.nivel === "Central Administrativa" && <Circle className="w-2 h-2 fill-[#0891b2] text-[#0891b2] shrink-0" />}
+        <EntityIcon nivel={entity.nivel} subtipo={entity.subtipo} className="w-5 h-5 shrink-0" style={{ color: isSelected ? "#fff" : tipo?.color, strokeWidth: 2 }} />
+        <span className={`truncate ${!operable && entity.nivel !== "Central Administrativa" ? "text-red-400" : ""}`}>{entity.nombre}</span>
         <span className="ml-auto text-[11px] opacity-60 shrink-0">{entity.codigo}</span>
       </button>
-      {hasChildren && isExpanded && children.map((child) => (
+      {hasChildren && isExpanded && (
+        <div className="space-y-0.5">
+          {Object.entries(grouped).map(([key, group]) =>
+            group.length > 1 ? (
+              <GroupedChildren
+                key={key}
+                parentId={entity.id}
+                subtipo={key}
+                children={group}
+                depth={depth + 1}
+                allEntities={allEntities}
+                hiddenLevels={hiddenLevels}
+              />
+            ) : (
+              <TreeNode key={group[0].id} entity={group[0]} depth={depth + 1} allEntities={allEntities} hiddenLevels={hiddenLevels} />
+            )
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+function GroupedChildren({
+  parentId, subtipo, children: items, depth, allEntities, hiddenLevels,
+}: {
+  parentId: string; subtipo: string; children: Entity[]; depth: number; allEntities: Entity[]; hiddenLevels: Set<string>;
+}) {
+  const { expandedIds } = useEntitiesStore();
+  const gkey = groupKey(parentId, subtipo);
+  const isExpanded = expandedIds.has(gkey);
+
+  return (
+    <div className="space-y-0.5">
+      <GroupHeader parentId={parentId} subtipo={subtipo} count={items.length} depth={depth} />
+      {isExpanded && items.map((child) => (
         <TreeNode key={child.id} entity={child} depth={depth + 1} allEntities={allEntities} hiddenLevels={hiddenLevels} />
       ))}
-    </>
+    </div>
   );
 }
 

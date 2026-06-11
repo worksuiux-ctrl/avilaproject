@@ -15,11 +15,12 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Search, X } from "lucide-react";
+import { Search, X, ChevronRight } from "lucide-react";
 import dagre from "dagre";
-import { useEntitiesStore } from "@stores/entitiesStore";
+import { useEntitiesStore, type Entity } from "@stores/entitiesStore";
 import { getEntityType } from "@data/entityCatalog";
 import { isEntityOperable } from "@data/entityRules";
+import { EntityIcon } from "./entityIcons";
 
 function EntityNode({ data }: { data: Record<string, unknown> }) {
   const tipo = getEntityType(data.nivel as string);
@@ -34,6 +35,7 @@ function EntityNode({ data }: { data: Record<string, unknown> }) {
       <div className="px-3 py-2">
         <div className="flex items-center gap-1.5">
           {!operable && <span className="text-red-400 text-[11px]">⚠</span>}
+          <EntityIcon nivel={data.nivel as string} subtipo={data.subtipo as string} className="w-5 h-5 shrink-0" style={{ color, strokeWidth: 2 }} />
           <div className="text-[13px] font-bold text-[var(--color-neutro-900)] leading-tight">{data.label as string}</div>
         </div>
         <div className="text-[11px] text-[var(--color-neutro-400)] font-mono mt-0.5">{data.codigo as string}</div>
@@ -51,13 +53,45 @@ function EntityNode({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-const NODE_TYPES = { entity: EntityNode as any };
+function GroupNode({ data }: { data: Record<string, unknown> }) {
+  const color = data.color as string;
+  return (
+    <div
+      className="rounded-corner-m bg-[var(--color-neutro-50)] border-2 border-dashed shadow-sm min-w-[160px] cursor-pointer hover:bg-[var(--color-neutro-100)] transition-colors"
+      style={{ borderColor: color }}
+    >
+      <Handle type="target" position={Position.Top} className="!bg-gray-400 !w-2 !h-2" />
+      <div className="px-4 py-3 flex items-center gap-2">
+        <EntityIcon nivel={data.nivel as string} subtipo={data.subtipo as string} className="w-6 h-6 shrink-0" style={{ color }} />
+        <div>
+          <div className="text-[14px] font-bold text-[var(--color-neutro-800)]">{data.label as string}</div>
+          <div className="text-[11px] text-[var(--color-neutro-500)]">{data.count as string} elementos</div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-[var(--color-neutro-400)] ml-auto shrink-0" />
+      </div>
+      <Handle type="source" position={Position.Bottom} className="!bg-gray-400 !w-2 !h-2" />
+    </div>
+  );
+}
+
+const NODE_TYPES = { entity: EntityNode as any, group: GroupNode as any };
+
+function groupKey(parentId: string, subtipo: string) {
+  return `group-${parentId}-${subtipo}`;
+}
+
+function isGroupNode(node: Node) {
+  return node.id.startsWith("group-");
+}
 
 function layoutNodes(nodes: Node[], edges: Edge[]): Node[] {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
   g.setGraph({ rankdir: "TB", nodesep: 60, ranksep: 100 });
-  nodes.forEach((n) => g.setNode(n.id, { width: 200, height: 90 }));
+  nodes.forEach((n) => {
+    const isGroup = n.id.startsWith("group-");
+    g.setNode(n.id, { width: isGroup ? 200 : 200, height: isGroup ? 65 : 90 });
+  });
   edges.forEach((e) => g.setEdge(e.source, e.target));
   dagre.layout(g);
   return nodes.map((n) => {
@@ -74,37 +108,14 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
   const entities = useEntitiesStore((s) => s.entities);
   const updateEntity = useEntitiesStore((s) => s.updateEntity);
   const selectedId = useEntitiesStore((s) => s.selectedId);
-  const [focusId, setFocusId] = useState<string | null>(null);
+  const rootEntityId = useMemo(() => entities.find((e) => !e.padreId)?.id ?? null, [entities]);
+  const [focusId, setFocusId] = useState<string | null>(rootEntityId);
   const rfInstance = useRef<any>(null);
-  const autoFocused = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (selectedId && !autoFocused.current) {
-      setFocusId(selectedId);
-      autoFocused.current = true;
-    }
-  }, [selectedId]);
-
-  function getAncestorsAndDescendants(id: string): Set<string> {
-    const set = new Set<string>([id]);
-    const stack = [id];
-    while (stack.length) {
-      const current = stack.pop()!;
-      entities.filter((e) => e.padreId === current).forEach((e) => { set.add(e.id); stack.push(e.id); });
-    }
-    let parent = entities.find((e) => e.id === id)?.padreId;
-    while (parent) {
-      set.add(parent);
-      parent = entities.find((e) => e.id === parent)?.padreId ?? null;
-    }
-    return set;
-  }
-
-  const filteredEntityIds = useMemo(() => {
-    if (!focusId) return null;
-    return getAncestorsAndDescendants(focusId);
-  }, [focusId, entities]);
+    if (rootEntityId && focusId === null) setFocusId(rootEntityId);
+  }, [rootEntityId, focusId]);
 
   const searchMatches = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -114,34 +125,145 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
       .slice(0, 20);
   }, [entities, searchQuery]);
 
-  const rawNodes: Node[] = useMemo(
-    () =>
-      entities
-        .filter((e) => !filteredEntityIds || filteredEntityIds.has(e.id))
-        .map((e) => ({
-          id: e.id,
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const focusedEntity = useMemo(() => entities.find((e) => e.id === focusId), [entities, focusId]);
+
+  const directChildren = useMemo(() => {
+    return entities.filter((e) => e.padreId === focusId);
+  }, [entities, focusId]);
+
+  const groupedChildren = useMemo(() => {
+    const groups: { subtipo: string; items: Entity[]; color: string }[] = [];
+    const grouped: Record<string, Entity[]> = {};
+    for (const child of directChildren) {
+      const key = child.subtipo ?? child.nivel;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(child);
+    }
+    for (const [subtipo, items] of Object.entries(grouped)) {
+      const tipo = getEntityType(items[0].nivel);
+      groups.push({ subtipo, items, color: tipo?.color ?? "#94a3b8" });
+    }
+    return groups;
+  }, [directChildren]);
+
+  const rawNodes: Node[] = useMemo(() => {
+    if (!focusId) return [];
+    const result: Node[] = [];
+
+    if (focusedEntity) {
+      result.push({
+        id: focusedEntity.id,
+        type: "entity",
+        position: { x: 0, y: 0 },
+        data: { label: focusedEntity.nombre, codigo: focusedEntity.codigo, nivel: focusedEntity.nivel, subtipo: focusedEntity.subtipo, operable: isEntityOperable(focusedEntity, entities) },
+      });
+    }
+
+    if (focusedEntity?.padreId) {
+      const parent = entities.find((e) => e.id === focusedEntity.padreId);
+      if (parent) {
+        result.push({
+          id: parent.id,
           type: "entity",
           position: { x: 0, y: 0 },
-          data: { label: e.nombre, codigo: e.codigo, nivel: e.nivel, operable: isEntityOperable(e, entities) },
-        })),
-    [entities, filteredEntityIds]
-  );
+          data: { label: parent.nombre, codigo: parent.codigo, nivel: parent.nivel, subtipo: parent.subtipo, operable: isEntityOperable(parent, entities) },
+        });
+      }
+    }
 
-  const rawEdges: Edge[] = useMemo(
-    () =>
-      entities
-        .filter((e) => e.padreId && (!filteredEntityIds || (filteredEntityIds.has(e.padreId) && filteredEntityIds.has(e.id))))
-        .map((e) => ({
-          id: `e-${e.padreId}-${e.id}`,
-          source: e.padreId!,
-          target: e.id,
+    for (const group of groupedChildren) {
+      if (group.items.length > 1) {
+        const gkey = groupKey(focusId, group.subtipo);
+        if (expandedGroups.has(gkey)) {
+          for (const item of group.items) {
+            result.push({
+              id: item.id,
+              type: "entity",
+              position: { x: 0, y: 0 },
+              data: { label: item.nombre, codigo: item.codigo, nivel: item.nivel, subtipo: item.subtipo, operable: isEntityOperable(item, entities) },
+            });
+          }
+        } else {
+          result.push({
+            id: gkey,
+            type: "group",
+            position: { x: 0, y: 0 },
+            data: { label: group.subtipo, count: String(group.items.length), color: group.color, nivel: group.items[0].nivel, subtipo: group.subtipo },
+          });
+        }
+      } else {
+        const item = group.items[0];
+        result.push({
+          id: item.id,
+          type: "entity",
+          position: { x: 0, y: 0 },
+          data: { label: item.nombre, codigo: item.codigo, nivel: item.nivel, operable: isEntityOperable(item, entities) },
+        });
+      }
+    }
+
+    return result;
+  }, [focusedEntity, entities, groupedChildren, expandedGroups, focusId]);
+
+  const rawEdges: Edge[] = useMemo(() => {
+    if (!focusId) return [];
+    const result: Edge[] = [];
+
+    if (focusedEntity?.padreId) {
+      result.push({
+        id: `e-${focusedEntity.padreId}-${focusedEntity.id}`,
+        source: focusedEntity.padreId,
+        target: focusedEntity.id,
+        type: "smoothstep",
+        style: { stroke: "#94a3b8", strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, strokeWidth: 2 },
+        reconnectable: "target" as const,
+      });
+    }
+
+    for (const group of groupedChildren) {
+      if (group.items.length > 1) {
+        const gkey = groupKey(focusId, group.subtipo);
+        if (expandedGroups.has(gkey)) {
+          for (const item of group.items) {
+            result.push({
+              id: `e-${focusId}-${item.id}`,
+              source: focusId,
+              target: item.id,
+              type: "smoothstep",
+              style: { stroke: "#94a3b8", strokeWidth: 2 },
+              markerEnd: { type: MarkerType.ArrowClosed, strokeWidth: 2 },
+              reconnectable: "target" as const,
+            });
+          }
+        } else {
+          result.push({
+            id: `e-${focusId}-${gkey}`,
+            source: focusId,
+            target: gkey,
+            type: "smoothstep",
+            style: { stroke: group.color, strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, strokeWidth: 2 },
+            reconnectable: false,
+          });
+        }
+      } else {
+        result.push({
+          id: `e-${focusId}-${group.items[0].id}`,
+          source: focusId,
+          target: group.items[0].id,
           type: "smoothstep",
           style: { stroke: "#94a3b8", strokeWidth: 2 },
           markerEnd: { type: MarkerType.ArrowClosed, strokeWidth: 2 },
           reconnectable: "target" as const,
-        })),
-    [entities, filteredEntityIds]
-  );
+        });
+      }
+    }
+
+    return result;
+  }, [focusedEntity, focusId, groupedChildren, expandedGroups]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -155,6 +277,7 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
   const onConnect = useCallback(
     (connection: any) => {
       if (!connection.source || !connection.target) return;
+      if (connection.target.startsWith("group-")) return;
       const entity = entities.find((e: any) => e.id === connection.target);
       if (entity) updateEntity(entity.id, { padreId: connection.source });
       setEdges((eds: Edge[]) => [
@@ -175,6 +298,7 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
 
   const onReconnect = useCallback(
     (oldEdge: Edge, newConnection: any) => {
+      if (newConnection.target.startsWith("group-")) return;
       const entity = entities.find((e: any) => e.id === newConnection.target);
       if (entity) updateEntity(entity.id, { padreId: newConnection.source });
       setEdges((eds: Edge[]) => reconnectEdge(oldEdge, newConnection, eds));
@@ -191,8 +315,26 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
   }, [focusId]);
 
   const onNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => onSelectEntity(node.id),
+    (_event: React.MouseEvent, node: Node) => {
+      if (!isGroupNode(node)) onSelectEntity(node.id);
+    },
     [onSelectEntity]
+  );
+
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (isGroupNode(node)) {
+        setExpandedGroups((prev) => {
+          const next = new Set(prev);
+          if (next.has(node.id)) next.delete(node.id);
+          else next.add(node.id);
+          return next;
+        });
+      } else {
+        setFocusId(node.id);
+      }
+    },
+    []
   );
 
   const styledNodes = useMemo(
@@ -216,6 +358,7 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
       onConnect={onConnect}
       onReconnect={onReconnect}
       onNodeClick={onNodeClick}
+      onNodeDoubleClick={onNodeDoubleClick}
       onInit={onInit}
       // @ts-ignore
       nodeTypes={NODE_TYPES}
@@ -266,14 +409,7 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
               </div>
             )}
           </div>
-          {focusId && (
-            <button
-              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-corner-m bg-[var(--color-verde-100)]/10 text-[var(--color-verde-100)] border border-[var(--color-verde-100)]/20 hover:bg-[var(--color-verde-100)]/20 transition-colors whitespace-nowrap"
-              onClick={() => setFocusId(null)}
-            >
-              <X className="w-3 h-3" /> Mostrar todo
-            </button>
-          )}
+
         </div>
       </Panel>
 
@@ -283,6 +419,7 @@ export function EntityDiagram({ onSelectEntity }: EntityDiagramProps) {
         className="!rounded-corner-m !border !border-[var(--color-neutro-200)]"
       />
       <MiniMap
+        style={{ transform: "scale(0.5)", transformOrigin: "bottom right" }}
         nodeStrokeColor="#94a3b8"
         nodeColor="#f1f5f9"
         nodeBorderRadius={4}

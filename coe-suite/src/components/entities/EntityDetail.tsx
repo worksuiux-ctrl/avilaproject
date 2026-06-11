@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Pencil, Trash2, Plus, AlertTriangle, CheckCircle } from "lucide-react";
+import { Pencil, Trash2, Plus, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { getEntityType } from "@data/entityCatalog";
 import { getEntitySchema } from "@data/entitySchemas";
@@ -99,7 +99,12 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
       )}
 
       {/* Validación operativa */}
-      {violations.length > 0 && (
+      {entity.nivel === "Central Administrativa" ? (
+        <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-corner-m flex items-center gap-2.5">
+          <Info className="w-4 h-4 text-cyan-600 shrink-0" />
+          <p className="text-[13px] text-cyan-700 font-medium">Unidad organizacional — no realiza transacciones</p>
+        </div>
+      ) : violations.length > 0 ? (
         <div className="p-3 bg-red-50 border border-red-200 rounded-corner-m flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
           <div>
@@ -109,8 +114,7 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
             ))}
           </div>
         </div>
-      )}
-      {violations.length === 0 && (
+      ) : (
         <div className="p-3 bg-[var(--color-verde-100)]/5 border border-[var(--color-verde-100)]/20 rounded-corner-m flex items-center gap-2.5">
           <CheckCircle className="w-4 h-4 text-[var(--color-verde-100)] shrink-0" />
           <p className="text-[13px] text-[var(--color-verde-100)] font-medium">Entidad operable — todas las reglas de negocio cumplidas</p>
@@ -143,15 +147,15 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
 
       {/* Info grid */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-[var(--color-neutro-100)] rounded-corner-m p-3">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <p className="text-[11px] text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Nivel</p>
           <p className="text-[13px] font-semibold text-[var(--color-neutro-900)]">{tipo?.etiqueta ?? entity.nivel}</p>
         </div>
-        <div className="bg-[var(--color-neutro-100)] rounded-corner-m p-3">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <p className="text-[11px] text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Subtipo</p>
           <p className="text-[13px] font-semibold text-[var(--color-neutro-900)]">{entity.subtipo || "—"}</p>
         </div>
-        <div className="bg-[var(--color-neutro-100)] rounded-corner-m p-3">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <p className="text-[11px] text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Estado</p>
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-corner-m text-[12px] font-medium ${
             entity.activo
@@ -161,7 +165,7 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
             {entity.activo ? "Activo" : "Inactivo"}
           </span>
         </div>
-        <div className="bg-[var(--color-neutro-100)] rounded-corner-m p-3">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <p className="text-[11px] text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Actualizado</p>
           <p className="text-[13px] font-semibold text-[var(--color-neutro-900)]">
             {new Date(entity.updatedAt).toLocaleDateString()}
@@ -171,7 +175,7 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
 
       {/* Hijos permitidos */}
       {tipo && (
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <p className="text-[12px] text-[var(--color-neutro-500)] mb-1 font-medium">Hijos permitidos</p>
           <div className="flex flex-wrap gap-1.5">
             {tipo.hijosPermitidos.length > 0 ? (
@@ -195,7 +199,7 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
 
       {/* Metadata */}
       {metadataEntries.length > 0 && (
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <p className="text-[12px] text-[var(--color-neutro-500)] mb-2 font-medium">Propiedades y Parámetros</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
             {metadataEntries.map((entry) => (
@@ -229,7 +233,7 @@ export function EntityDetail({ entityId, onEdit, onAddChild, onDelete }: EntityD
                 return (
                   <div
                     key={child.id}
-                    className="flex items-center justify-between px-3 py-2 rounded-corner-m bg-[var(--color-neutro-100)] text-[13px]"
+                    className="flex items-center justify-between px-3 py-2 rounded-corner-m bg-white border border-[var(--color-neutro-200)] text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-[var(--color-neutro-800)]">{child.nombre}</span>
