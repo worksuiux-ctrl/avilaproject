@@ -1,5 +1,5 @@
 export { Unidades } from "./Unidades";
-export { Divisas } from "./Divisas";
+export { DivisasPage as Divisas } from "./divisas";
 export { Proveedores } from "./Proveedores";
 export { Clientes } from "./Clientes";
 export { Grupos } from "./Grupos";
