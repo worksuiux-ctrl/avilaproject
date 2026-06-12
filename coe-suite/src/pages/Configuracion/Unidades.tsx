@@ -103,7 +103,7 @@ export function Unidades() {
             <EntityDiagram onSelectEntity={selectEntity} />
           </div>
         ) : (
-          <div className="w-[320px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto">
+          <div className="w-[410px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto">
             <div className="p-3 border-b border-[var(--color-neutro-200)]">
               <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
                 Explorador de Entidades
@@ -116,7 +116,7 @@ export function Unidades() {
         )}
 
         {/* Right: Detail */}
-        <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5">
           {selectedEntity ? (
             <EntityDetail
               entityId={selectedEntity.id}

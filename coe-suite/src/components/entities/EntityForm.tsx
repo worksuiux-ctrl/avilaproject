@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { Button, Select, Input, Checkbox, Textarea } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import { ENTITY_TYPES, getEntityType, findTiposPadre } from "@data/entityCatalog";
 import { getEntitySchema, type SchemaField } from "@data/entitySchemas";
 import { useEntitiesStore, type Entity } from "@stores/entitiesStore";
 
-const UNIDADES_TYPES = ENTITY_TYPES.filter((t) => t.nivel !== "Grupos" && t.nivel !== "Monedas");
+const UNIDADES_TYPES = ENTITY_TYPES.filter(
+  (t) => !["Grupos", "Monedas", "Vehículos", "Clientes", "Proveedores"].includes(t.nivel)
+);
 
 interface EntityFormProps {
   open: boolean;
@@ -22,22 +25,15 @@ function SchemaFieldRenderer({
   value: unknown;
   onChange: (key: string, val: unknown) => void;
 }) {
-  const baseClass =
-    "w-full border border-[var(--color-neutro-200)] rounded-corner-m px-3 py-2 text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-verde-100)]/30";
-
   switch (field.type) {
     case "select":
       return (
-        <select
-          className={baseClass}
+        <Select
+          placeholder="Seleccione..."
+          options={field.options?.map((o) => ({ value: o, label: o })) ?? []}
           value={(value as string) ?? ""}
-          onChange={(e) => onChange(field.key, e.target.value)}
-        >
-          <option value="">Seleccione...</option>
-          {field.options?.map((o) => (
-            <option key={o} value={o}>{o}</option>
-          ))}
-        </select>
+          onChange={(v) => onChange(field.key, v)}
+        />
       );
     case "multiSelect": {
       const selected = ((value as string[]) ?? []) as string[];
@@ -71,16 +67,14 @@ function SchemaFieldRenderer({
     case "geolocation":
       return (
         <div className="grid grid-cols-2 gap-2">
-          <input
-            className={baseClass}
+          <Input
             placeholder="Latitud"
             value={((value as { lat?: string })?.lat) ?? ""}
             onChange={(e) =>
               onChange(field.key, { ...((value as object) ?? {}), lat: e.target.value })
             }
           />
-          <input
-            className={baseClass}
+          <Input
             placeholder="Longitud"
             value={((value as { lng?: string })?.lng) ?? ""}
             onChange={(e) =>
@@ -91,20 +85,15 @@ function SchemaFieldRenderer({
       );
     case "switch":
       return (
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded-corner-m accent-[var(--color-verde-100)]"
-            checked={(value as boolean) ?? false}
-            onChange={(e) => onChange(field.key, e.target.checked)}
-          />
-          <span className="text-[13px] text-[var(--color-neutro-600)]">{field.placeholder ?? "Activar"}</span>
-        </label>
+        <Checkbox
+          label={field.placeholder ?? "Activar"}
+          checked={(value as boolean) ?? false}
+          onChange={(v) => onChange(field.key, v)}
+        />
       );
     case "textarea":
       return (
-        <textarea
-          className={`${baseClass} min-h-[72px] resize-y`}
+        <Textarea
           placeholder={field.placeholder}
           value={(value as string) ?? ""}
           onChange={(e) => onChange(field.key, e.target.value)}
@@ -112,8 +101,7 @@ function SchemaFieldRenderer({
       );
     case "number":
       return (
-        <input
-          className={baseClass}
+        <Input
           type="number"
           placeholder={field.placeholder}
           value={(value as number | string) ?? ""}
@@ -122,8 +110,7 @@ function SchemaFieldRenderer({
       );
     case "time":
       return (
-        <input
-          className={baseClass}
+        <Input
           type="time"
           value={(value as string) ?? ""}
           onChange={(e) => onChange(field.key, e.target.value)}
@@ -131,8 +118,7 @@ function SchemaFieldRenderer({
       );
     default:
       return (
-        <input
-          className={baseClass}
+        <Input
           type="text"
           placeholder={field.placeholder}
           value={(value as string) ?? ""}
@@ -160,20 +146,29 @@ export function EntityForm({ open, onClose, editEntity, parentId }: EntityFormPr
     e.nivel !== "Grupos" && findTiposPadre(nivel).some((t) => t.nivel === e.nivel)
   );
 
+  const shouldShowField = useCallback(
+    (f: SchemaField) => {
+      if (!f.dependsOn) return true;
+      if (f.dependsOn.field === "subtipo") return subtipo === f.dependsOn.value;
+      return metadata[f.dependsOn.field] === f.dependsOn.value;
+    },
+    [metadata, subtipo]
+  );
+
   const propiedadesFields = useMemo(
     () =>
       schema?.fields.filter(
-        (f) => f.section === "propiedades" && (!f.dependsOn || metadata[f.dependsOn.field] === f.dependsOn.value)
+        (f) => f.section === "propiedades" && shouldShowField(f)
       ) ?? [],
-    [schema, metadata]
+    [schema, shouldShowField]
   );
 
   const parametrosFields = useMemo(
     () =>
       schema?.fields.filter(
-        (f) => f.section === "parametros" && (!f.dependsOn || metadata[f.dependsOn.field] === f.dependsOn.value)
+        (f) => f.section === "parametros" && shouldShowField(f)
       ) ?? [],
-    [schema, metadata]
+    [schema, shouldShowField]
   );
 
   const tabs = [
@@ -233,72 +228,36 @@ export function EntityForm({ open, onClose, editEntity, parentId }: EntityFormPr
         {activeTab === "basicos" && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">Nivel</label>
-                <select
-                  className="w-full border border-[var(--color-neutro-200)] rounded-corner-m px-3 py-2 text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-verde-100)]/30"
-                  value={nivel}
-                  onChange={(e) => { setNivel(e.target.value); setSubtipo(""); setMetadata({}); }}
-                >
-                  {UNIDADES_TYPES.map((t) => (
-                    <option key={t.nivel} value={t.nivel}>{t.etiqueta}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Nivel"
+                options={UNIDADES_TYPES.map((t) => ({ value: t.nivel, label: t.etiqueta }))}
+                value={nivel}
+                onChange={(v) => { setNivel(v); setSubtipo(""); setMetadata({}); }}
+              />
               {tipoActual && tipoActual.subtipos.length > 0 && (
-                <div>
-                  <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">Subtipo</label>
-                  <select
-                    className="w-full border border-[var(--color-neutro-200)] rounded-corner-m px-3 py-2 text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-verde-100)]/30"
-                    value={subtipo}
-                    onChange={(e) => setSubtipo(e.target.value)}
-                  >
-                    <option value="">Seleccione...</option>
-                    {tipoActual.subtipos.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Subtipo"
+                  placeholder="Seleccione..."
+                  options={tipoActual.subtipos.map((s) => ({ value: s, label: s }))}
+                  value={subtipo}
+                  onChange={setSubtipo}
+                />
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">Código</label>
-                <input
-                  className="w-full border border-[var(--color-neutro-200)] rounded-corner-m px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[var(--color-verde-100)]/30"
-                  placeholder="Ej: BCO-001"
-                  value={codigo}
-                  onChange={(e) => setCodigo(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">Nombre</label>
-                <input
-                  className="w-full border border-[var(--color-neutro-200)] rounded-corner-m px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-[var(--color-verde-100)]/30"
-                  placeholder="Nombre de la entidad"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                />
-              </div>
+              <Input label="Código" placeholder="Ej: BCO-001" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
+              <Input label="Nombre" placeholder="Nombre de la entidad" value={nombre} onChange={(e) => setNombre(e.target.value)} />
             </div>
 
             {!editEntity && (
-              <div>
-                <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">
-                  Entidad Padre <span className="text-[var(--color-neutro-400)] font-normal">(opcional)</span>
-                </label>
-                <select
-                  className="w-full border border-[var(--color-neutro-200)] rounded-corner-m px-3 py-2 text-[13px] bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-verde-100)]/30"
-                  value={padreId ?? ""}
-                  onChange={(e) => setPadreId(e.target.value || null)}
-                >
-                  <option value="">Sin padre (raíz)</option>
-                  {padresPosibles.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre} ({p.codigo}) — {p.nivel}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Entidad Padre (opcional)"
+                placeholder="Sin padre (raíz)"
+                options={padresPosibles.map((p) => ({ value: p.id, label: `${p.nombre} (${p.codigo}) — ${p.nivel}` }))}
+                value={padreId ?? ""}
+                onChange={(v) => setPadreId(v || null)}
+              />
             )}
 
             {tipoActual && (
@@ -346,18 +305,8 @@ export function EntityForm({ open, onClose, editEntity, parentId }: EntityFormPr
         {error && <p className="text-[13px] text-red-500 font-medium">{error}</p>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button
-            className="px-4 py-2 text-[13px] rounded-corner-m border border-[var(--color-neutro-200)] text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)] transition-colors"
-            onClick={onClose}
-          >
-            Cancelar
-          </button>
-          <button
-            className="px-4 py-2 text-[13px] rounded-corner-m bg-[var(--color-verde-100)] text-white font-semibold hover:brightness-110 transition-all"
-            onClick={handleSubmit}
-          >
-            {editEntity ? "Guardar cambios" : "Crear entidad"}
-          </button>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
+          <Button size="sm" onClick={handleSubmit}>{editEntity ? "Guardar cambios" : "Crear entidad"}</Button>
         </div>
       </div>
     </Modal>

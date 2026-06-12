@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@coe/design-system": "git+http://200.74.216.124:8906/dise-o_ux_ui/coe-design-system.git",
+    "@iconify-json/hugeicons": "^1.2.29",
+    "@iconify/react": "^6.0.2",
     "@supabase/supabase-js": "^2.107.0",
     "@tanstack/react-query": "^5.101.0",
     "@types/dagre": "^0.7.54",
