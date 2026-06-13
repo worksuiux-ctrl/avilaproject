@@ -6,7 +6,7 @@ import { ConfigEngine } from "./pages/ConfigEngine/ConfigEngine";
 import { CoengineActivity } from "./pages/CoengineActivity/CoengineActivity";
 import { WarRoom } from "./pages/WarRoom/WarRoom";
 import { KpiEstrategico } from "./pages/KpiEstrategico/KpiEstrategico";
-import { Unidades, Divisas, Proveedores, Clientes, Grupos } from "./pages/Configuracion";
+import { Unidades, Divisas, Proveedores, Clientes, Grupos, MotorTransacciones } from "./pages/Configuracion";
 import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { SoporteTicket } from "./pages/SoporteTicket/SoporteTicket";
 import { SoporteFaq } from "./pages/SoporteFaq/SoporteFaq";
@@ -39,6 +39,7 @@ function App() {
             <Route path="/config/proveedores" element={<Proveedores />} />
             <Route path="/config/clientes" element={<Clientes />} />
             <Route path="/config/grupos" element={<Grupos />} />
+            <Route path="/config/motor-transacciones" element={<MotorTransacciones />} />
             {PENDING_ROUTES.map((v) => (
               <Route key={v} path={`/${v}`} element={<ComingSoon view={v} />} />
             ))}

@@ -1,0 +1,1 @@
+export { MotorTransaccionesPage } from "./MotorTransaccionesPage";
