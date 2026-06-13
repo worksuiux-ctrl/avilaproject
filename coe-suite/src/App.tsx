@@ -10,6 +10,7 @@ import { Unidades, Divisas, Proveedores, Clientes, Grupos } from "./pages/Config
 import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { SoporteTicket } from "./pages/SoporteTicket/SoporteTicket";
 import { SoporteFaq } from "./pages/SoporteFaq/SoporteFaq";
+import { Reportes } from "./pages/Reportes/Reportes";
 import { Login } from "./pages/Login/Login";
 
 const PENDING_ROUTES = [
@@ -33,6 +34,7 @@ function App() {
             <Route path="/kpi-gerencial" element={<KpiEstrategico />} />
             <Route path="/soporte/tickets" element={<SoporteTicket />} />
             <Route path="/soporte/faq" element={<SoporteFaq />} />
+            <Route path="/reportes" element={<Reportes />} />
             <Route path="/config" element={<Navigate to="/config/unidades" replace />} />
             <Route path="/config/unidades" element={<Unidades />} />
             <Route path="/config/divisas" element={<Divisas />} />
