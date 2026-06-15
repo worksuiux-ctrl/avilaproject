@@ -49,10 +49,9 @@ export const MODULES: Module[] = [
     id: "reportes",
     label: "Reportes",
     icon: "Report",
-    description: "Reportes operativos y regulatorios",
+    description: "Unificación de reportes operativos y regulatorios",
     items: [
-      { id: "op-reports", label: "Reportes Operativos", icon: "Report", route: "/op-reports" },
-      { id: "reg-reports", label: "Reportes Regulatorios", icon: "Report", route: "/reg-reports" },
+      { id: "reportes-main", label: "Reportes", icon: "Report", route: "/reportes" },
     ],
   },
   {
