@@ -11,11 +11,11 @@ import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { SoporteTicket } from "./pages/SoporteTicket/SoporteTicket";
 import { SoporteFaq } from "./pages/SoporteFaq/SoporteFaq";
 import { Login } from "./pages/Login/Login";
+import { OperacionesPage } from "./pages/Operaciones/OperacionesPage";
 
 const PENDING_ROUTES = [
   "kpi-operativo", "op-reports",
-  "reg-reports", "txns", "georef", "integrations", "audit",
-  "operaciones",
+  "reg-reports", "georef", "integrations", "audit",
 ];
 
 function App() {
@@ -40,6 +40,7 @@ function App() {
             <Route path="/config/clientes" element={<Clientes />} />
             <Route path="/config/grupos" element={<Grupos />} />
             <Route path="/config/motor-transacciones" element={<MotorTransacciones />} />
+            <Route path="/operaciones" element={<OperacionesPage />} />
             {PENDING_ROUTES.map((v) => (
               <Route key={v} path={`/${v}`} element={<ComingSoon view={v} />} />
             ))}

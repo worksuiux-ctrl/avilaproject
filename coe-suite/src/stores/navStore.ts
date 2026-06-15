@@ -19,7 +19,6 @@ const VIEW_META: Record<string, { t: string; d: string }> = {
   "bot-forecast": { t: "COENGINE BOT", d: "Automatización JIT · Aprovisionamiento Inteligente · Configurable por Canal" },
   "op-reports": { t: "Reportes Operativos", d: "Transacciones, auditoría y cumplimiento SLA" },
   "reg-reports": { t: "Reportes Regulatorios", d: "Reportes para entes regulatorios BCV, SUDEBAN, SBP" },
-  txns: { t: "Todas las Transacciones", d: "Historial completo de operaciones" },
   georef: { t: "Mapa Interactivo", d: "Georreferenciación de nodos y unidades" },
   config: { t: "Configuraciones", d: "Límites, estados, usuarios, tarifas y parámetros del sistema" },
   bovedas: { t: "Gestión de Bóvedas", d: "Administración de bóvedas, inventarios y asignaciones" },
@@ -30,6 +29,7 @@ const VIEW_META: Record<string, { t: string; d: string }> = {
   parametros: { t: "Parámetros del Sistema", d: "Configuración avanzada de parámetros operativos y financieros" },
   soportetickets: { t: "COE Tickets", d: "Soporte y Ayuda — COE Tickets" },
   soportefaq: { t: "FAQ", d: "Soporte y Ayuda — Preguntas Frecuentes" },
+  operaciones: { t: "Panel de Operaciones", d: "Simulador de operaciones transaccionales" },
 };
 
 // Auto-generate meta from navigation data for any missing entries

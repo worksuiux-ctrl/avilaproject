@@ -56,15 +56,6 @@ export const MODULES: Module[] = [
     ],
   },
   {
-    id: "transacciones",
-    label: "Transacciones",
-    icon: "ListCheck",
-    description: "Registro de operaciones",
-    items: [
-      { id: "txns", label: "Todas las Transacciones", icon: "ListCheck", route: "/txns" },
-    ],
-  },
-  {
     id: "georreferenciacion",
     label: "Georreferenciación",
     icon: "MapPin",

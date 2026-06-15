@@ -7,9 +7,10 @@ interface BundleFormProps {
   open: boolean;
   onClose: () => void;
   editId: string | null;
+  defaultDivisaId?: string;
 }
 
-export function BundleForm({ open, onClose, editId }: BundleFormProps) {
+export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFormProps) {
   const store = useDivisasStore();
   const existing = editId ? store.fajos.find((f) => f.id === editId) : null;
 
@@ -31,13 +32,13 @@ export function BundleForm({ open, onClose, editId }: BundleFormProps) {
       setCantidadBilletes(existing.cantidadBilletes);
       setActivo(existing.activo);
     } else {
-      setDivisaId("");
+      setDivisaId(defaultDivisaId ?? "");
       setDenominacionId("");
       setNombre("");
       setCantidadBilletes(0);
       setActivo(true);
     }
-  }, [existing, existingDenominacion?.divisaId]);
+  }, [existing, existingDenominacion?.divisaId, defaultDivisaId]);
 
   const denominacionesFiltradas = useMemo(
     () => store.denominaciones.filter((d) => d.divisaId === divisaId),

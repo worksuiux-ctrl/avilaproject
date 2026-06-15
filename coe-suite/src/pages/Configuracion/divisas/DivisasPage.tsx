@@ -274,6 +274,7 @@ export function DivisasPage() {
         open={fajoFormOpen}
         onClose={() => { setFajoFormOpen(false); setEditFajoId(null); }}
         editId={editFajoId}
+        defaultDivisaId={selectedId ?? ""}
       />
 
       <ClassificationForm

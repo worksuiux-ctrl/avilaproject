@@ -201,7 +201,7 @@ export function Sidebar() {
         type="button"
         onClick={() => handleNavigate("/dashboard")}
         className={`flex items-center border-b border-[var(--color-neutro-200)] ${collapsed ? "justify-center px-2" : "gap-3 px-4"} h-[58px] flex-shrink-0 sticky top-0 bg-white z-10 cursor-pointer w-full transition-colors hover:bg-[var(--color-neutro-100)]`}>
-        <img src="/Icono%20coe.png" alt="COE" className="w-8 h-8 block flex-shrink-0" />
+        <img src={`${import.meta.env.BASE_URL}Icono%20coe.png`} alt="COE" className="w-8 h-8 block flex-shrink-0" />
         <div className={`overflow-hidden transition-all duration-300 ${collapsed ? "max-w-0 opacity-0" : "max-w-[180px] opacity-100"}`}>
           <div className="whitespace-nowrap">
             <h1 className="font-['Inclusive_Sans','Inter',sans-serif] font-normal text-[20px] leading-none tracking-tight" style={{ color: "#3CB93C" }}>
