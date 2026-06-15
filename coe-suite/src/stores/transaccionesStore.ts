@@ -57,6 +57,8 @@ export interface ProcesoTransaccional {
   ambito: "interna" | "entre-agencias" | "externa";
   usaTransportista: boolean;
   transportistasPermitidos: string[];
+  usaCodigoRemesa: boolean;
+  usaCodigoEnvio: boolean;
   codigoRemesaFormato: string;
   codigoEnvioFormato: string;
   activo: boolean;
@@ -78,6 +80,8 @@ interface TransaccionesState {
   setUsaTransportista: (v: boolean) => void;
   toggleTransportistaPermitido: (id: string) => void;
   setDivisasPermitidas: (ids: string[]) => void;
+  setUsaCodigoRemesa: (v: boolean) => void;
+  setUsaCodigoEnvio: (v: boolean) => void;
   setCodigoRemesaFormato: (v: string) => void;
   setCodigoEnvioFormato: (v: string) => void;
   setActivo: (v: boolean) => void;
@@ -122,6 +126,8 @@ function resetProceso(): ProcesoTransaccional {
     ambito: "interna",
     usaTransportista: false,
     transportistasPermitidos: [],
+    usaCodigoRemesa: true,
+    usaCodigoEnvio: true,
     codigoRemesaFormato: "REM-{YYYYMMDD}-{NNNNNN}",
     codigoEnvioFormato: "ENV-{YYYYMMDD}-{NNNNNN}",
     activo: true,
@@ -148,6 +154,8 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       usaTransportista: true,
       transportistasPermitidos: ["trans-1", "trans-3"],
       divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: true,
+      usaCodigoEnvio: true,
       codigoRemesaFormato: "REM-{YYYYMMDD}-{NNNNNN}",
       codigoEnvioFormato: "ENV-{YYYYMMDD}-{NNNNNN}",
       activo: true,
@@ -229,6 +237,10 @@ export const useTransaccionesStore = create<TransaccionesState>()(
     })),
   setDivisasPermitidas: (ids) =>
     set((s) => ({ proceso: { ...s.proceso, divisasPermitidas: ids } })),
+  setUsaCodigoRemesa: (v) =>
+    set((s) => ({ proceso: { ...s.proceso, usaCodigoRemesa: v } })),
+  setUsaCodigoEnvio: (v) =>
+    set((s) => ({ proceso: { ...s.proceso, usaCodigoEnvio: v } })),
   setCodigoRemesaFormato: (v) =>
     set((s) => ({ proceso: { ...s.proceso, codigoRemesaFormato: v } })),
   setCodigoEnvioFormato: (v) =>
@@ -468,7 +480,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       return { procesosFinalizados: [...s.procesosFinalizados, copia] };
     }),
 }),
-  { name: "transacciones-store", version: 4, migrate: (persisted: unknown, version: number) => {
+    { name: "transacciones-store", version: 5, migrate: (persisted: unknown, version: number) => {
     const state = persisted as Record<string, unknown>;
     if (version < 1) {
       const templates = (state as any)?.procesosFinalizados as any[];
@@ -527,6 +539,21 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       const templates = (state as any)?.procesosFinalizados as any[];
       if (templates) {
         state.procesosFinalizados = templates.map((t: any) => addActivoDefault(t)) as any;
+      }
+    }
+    if (version < 5) {
+      const addCodigoToggles = (obj: Record<string, unknown>) => ({
+        ...obj,
+        usaCodigoRemesa: (obj as any).usaCodigoRemesa ?? true,
+        usaCodigoEnvio: (obj as any).usaCodigoEnvio ?? true,
+      });
+      const proceso = state.proceso as Record<string, unknown> | undefined;
+      if (proceso) {
+        (state.proceso as any) = addCodigoToggles(proceso);
+      }
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        state.procesosFinalizados = templates.map((t: any) => addCodigoToggles(t)) as any;
       }
     }
     return state as TransaccionesState;

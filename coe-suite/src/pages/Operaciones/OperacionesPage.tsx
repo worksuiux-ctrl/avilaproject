@@ -1112,8 +1112,8 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                     return c;
                   } catch { return ""; }
                 };
-                const codigoRemesa = template.codigoRemesaFormato ? generarCodigo2(template.codigoRemesaFormato) : "";
-                const codigoEnvio = template.codigoEnvioFormato ? generarCodigo2(template.codigoEnvioFormato) : "";
+                const codigoRemesa = template.usaCodigoRemesa && template.codigoRemesaFormato ? generarCodigo2(template.codigoRemesaFormato) : "";
+                const codigoEnvio = template.usaCodigoEnvio && template.codigoEnvioFormato ? generarCodigo2(template.codigoEnvioFormato) : "";
                 const instancia = crearInstancia(template.id, template.nombre, firstStep.id, dataConDenom, "agencia", origenId, destinoId, divisaId, monto, codigoRemesa, codigoEnvio);
                 onComplete(instancia);
               }

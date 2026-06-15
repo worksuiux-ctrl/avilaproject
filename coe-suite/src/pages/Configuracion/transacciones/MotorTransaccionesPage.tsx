@@ -574,6 +574,7 @@ function FusionadoTab({
 
   const [collapseName, setCollapseName] = useState(false);
   const [collapseOrigen, setCollapseOrigen] = useState(false);
+  const [collapseCodigos, setCollapseCodigos] = useState(false);
 
   if (!hasActiveOperation) {
     return (
@@ -766,31 +767,49 @@ function FusionadoTab({
 
         {/* Códigos card */}
         <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)]">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)] cursor-pointer select-none" onClick={() => setCollapseCodigos(!collapseCodigos)}>
             <span className="w-2 h-2 rounded-full bg-purple-500" />
-            <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Códigos de Transacción</p>
+            <p className="flex-1 text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Códigos de Transacción</p>
+            <ChevronDown className={`w-4 h-4 text-[var(--color-neutro-400)] transition-transform ${collapseCodigos ? "-rotate-90" : ""}`} />
           </div>
+          {!collapseCodigos && (
           <div className="p-4 space-y-3">
             {isViewingSaved ? (
               <div className="space-y-3">
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Formato código de remesa</p>
-                  <p className="text-[14px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoRemesaFormato ?? "—"}</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Aplica código de remesa</p>
+                  <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoRemesa ? "Sí" : "No"}</p>
+                  {displayProceso.usaCodigoRemesa && (
+                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono mt-1">{displayProceso.codigoRemesaFormato ?? "—"}</p>
+                  )}
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Formato código de envío</p>
-                  <p className="text-[14px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoEnvioFormato ?? "—"}</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Aplica código de envío</p>
+                  <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoEnvio ? "Sí" : "No"}</p>
+                  {displayProceso.usaCodigoEnvio && (
+                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono mt-1">{displayProceso.codigoEnvioFormato ?? "—"}</p>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Formato código de remesa</p>
-                  <Input value={proceso.codigoRemesaFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoRemesaFormato(e.target.value)} placeholder="Ej: REM-{YYYYMMDD}-{NNNNNN}" />
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de remesa</p>
+                    <Switch checked={proceso.usaCodigoRemesa} onChange={store.setUsaCodigoRemesa} />
+                  </div>
+                  {proceso.usaCodigoRemesa && (
+                    <Input value={proceso.codigoRemesaFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoRemesaFormato(e.target.value)} placeholder="Ej: REM-{YYYYMMDD}-{NNNNNN}" />
+                  )}
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Formato código de envío</p>
-                  <Input value={proceso.codigoEnvioFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoEnvioFormato(e.target.value)} placeholder="Ej: ENV-{YYYYMMDD}-{NNNNNN}" />
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de envío</p>
+                    <Switch checked={proceso.usaCodigoEnvio} onChange={store.setUsaCodigoEnvio} />
+                  </div>
+                  {proceso.usaCodigoEnvio && (
+                    <Input value={proceso.codigoEnvioFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoEnvioFormato(e.target.value)} placeholder="Ej: ENV-{YYYYMMDD}-{NNNNNN}" />
+                  )}
                 </div>
                 <p className="text-[10px] text-[var(--color-neutro-400)] italic">
                   <span className="font-mono">{`{YYYY}`}</span> año, <span className="font-mono">{`{MM}`}</span> mes, <span className="font-mono">{`{DD}`}</span> día, <span className="font-mono">{`{N}`}</span> número secuencial
@@ -798,6 +817,7 @@ function FusionadoTab({
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Property inspector */}
