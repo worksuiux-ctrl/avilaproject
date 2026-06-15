@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Heading, Text } from "@coe/design-system";
-import { LayoutDashboard, Save } from "lucide-react";
+import { LayoutDashboard, Save, Folder } from "lucide-react";
 import { useNavStore } from "@stores/navStore";
 import { useReportesStore } from "./stores/reportesStore";
 import { REPORTS_MOCK, FOLDERS_MOCK } from "./data/reportesMocks";
@@ -9,11 +9,13 @@ import { ReportPreview } from "./components/ReportPreview";
 import { SaveReportModal } from "./components/SaveReportModal";
 import { ExportMenu } from "./components/ExportMenu";
 import { CreateDashboardModal } from "./components/CreateDashboardModal";
+import { FolderModal } from "./components/FolderModal";
 
 export function Reportes() {
   const [selectedReportId, setSelectedReportId] = useState("");
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [dashboardModalOpen, setDashboardModalOpen] = useState(false);
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
   const {
     columnAggregations,
     groupByConfig,
@@ -71,7 +73,14 @@ export function Reportes() {
               onClick={() => setDashboardModalOpen(true)}
             >
               <LayoutDashboard className="w-4 h-4" />
-              Crear Dashboard
+              Crear Gráficos
+            </button>
+            <button
+              className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold bg-white border border-[var(--color-neutro-200)] text-[var(--color-neutro-700)] rounded-corner-m hover:bg-[var(--color-neutro-100)] transition-colors cursor-pointer"
+              onClick={() => setFolderModalOpen(true)}
+            >
+              <Folder className="w-4 h-4" />
+              Carpetas
             </button>
             <ExportMenu />
             {selectedReport.categoria === "plantilla" && (
@@ -144,6 +153,10 @@ export function Reportes() {
         open={dashboardModalOpen}
         onClose={() => setDashboardModalOpen(false)}
         report={selectedReport}
+      />
+      <FolderModal
+        open={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
       />
     </div>
   );

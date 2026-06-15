@@ -27,9 +27,10 @@ export function SaveReportModal({ open, onClose, report, columnConfig }: SaveRep
       id: `saved-${Date.now()}`,
       nombre: name.trim(),
       reporteBaseId: report.id,
-      folderId: selectedFolderId ?? "root",
+      folderId: selectedFolderId ?? "mis-reportes",
       columnConfig,
       createdAt: new Date().toISOString(),
+      tipo: "reporte",
     });
     setName("");
     setSelectedFolderId(null);
@@ -94,6 +95,7 @@ export function SaveReportModal({ open, onClose, report, columnConfig }: SaveRep
                 setSelectedFolderId(parentId);
                 setCreatingFolder(true);
               }}
+              rootFolderId="mis-reportes"
             />
           </div>
         </div>

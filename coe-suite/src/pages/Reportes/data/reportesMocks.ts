@@ -1,13 +1,10 @@
 import type { Reporte, Carpeta } from "./reportesTypes";
 
 export const FOLDERS_MOCK: Carpeta[] = [
-  { id: "root-1", nombre: "Mis Reportes", parentId: null },
-  { id: "root-2", nombre: "Reportes Compartidos", parentId: null },
-  { id: "f-daily", nombre: "Reportes Diarios", parentId: "root-1" },
-  { id: "f-weekly", nombre: "Reportes Semanales", parentId: "root-1" },
-  { id: "f-regulatory", nombre: "Regulatorios", parentId: "root-2" },
-  { id: "f-audit", nombre: "Auditoría", parentId: "root-2" },
-  { id: "f-may-2026", nombre: "Mayo 2026", parentId: "f-daily" },
+  { id: "catalogo", nombre: "Catálogo de Reportes", parentId: null },
+  { id: "catalogo-plantillas", nombre: "Plantillas", parentId: "catalogo" },
+  { id: "catalogo-regulatorios", nombre: "Regulatorios", parentId: "catalogo" },
+  { id: "mis-reportes", nombre: "Mis Reportes", parentId: null },
 ];
 
 export const REPORTS_MOCK: Reporte[] = [
