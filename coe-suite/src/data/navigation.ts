@@ -94,7 +94,7 @@ export const MODULES: Module[] = [
     description: "Conexiones con sistemas externos",
     items: [
       { id: "integrations", label: "Panel de Integraciones", icon: "Puzzle", route: "/integrations" },
-      { id: "interfaces", label: "Interfaces", icon: "Puzzle", route: "/interfaces" },
+      { id: "interfaces", label: "Interfaces", icon: "Network", route: "/interfaces" },
     ],
   },
   {

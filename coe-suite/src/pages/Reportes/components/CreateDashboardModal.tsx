@@ -194,7 +194,6 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
   const [selectedType, setSelectedType] = useState<ChartType | null>(null);
   const [config, setConfig] = useState<ChartConfig>(defaultConfig("bar"));
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
-  const [dashboardName, setDashboardName] = useState("");
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -238,17 +237,19 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
   };
 
   const handleSaveDashboard = () => {
-    if (!dashboardName.trim() || widgets.length === 0) return;
+    if (widgets.length === 0) return;
     const folderId = selectedFolderId ?? folders.find((f) => f.parentId === null)?.id ?? "root";
-    saveReport({
-      id: `dash-${Date.now()}`,
-      nombre: dashboardName.trim(),
-      reporteBaseId: report.id,
-      folderId,
-      columnConfig: report.columns.map((c) => ({ key: c.key, label: c.label, visible: c.visible, order: c.order })),
-      createdAt: new Date().toISOString(),
-    });
-    setDashboardName("");
+    for (const widget of widgets) {
+      saveReport({
+        id: `dash-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        nombre: widget.title,
+        reporteBaseId: report.id,
+        folderId,
+        columnConfig: report.columns.map((c) => ({ key: c.key, label: c.label, visible: c.visible, order: c.order })),
+        createdAt: new Date().toISOString(),
+        tipo: "dashboard",
+      });
+    }
     setSelectedFolderId(null);
     setWidgets([]);
     setStep("select");
@@ -370,11 +371,11 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
   };
 
   return (
-    <Dialog open={open} onClose={onClose} title={step === "preview" ? "Vista previa del Dashboard" : "Crear Dashboard"} size="md">
+    <Dialog open={open} onClose={onClose} title={step === "preview" ? "Vista previa del Gráfico" : "Crear Gráficos"} size="md">
       {step === "select" && (
         <div className="space-y-4">
           <p className="text-[13px] text-[var(--color-neutro-600)]">
-            Seleccione el tipo de indicador que desea agregar al dashboard:
+            Seleccione el tipo de indicador que desea agregar:
           </p>
           <div className="grid grid-cols-3 gap-2 max-h-[296px] overflow-y-auto">
             {CHART_TYPES.map((ct) => {
@@ -435,11 +436,8 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
               <ArrowLeft className="w-3 h-3" /> Seguir agregando
             </Button>
             <div className="flex items-center gap-1.5">
-              <Button variant="outline" onClick={() => setStep("save")} className="!text-[11px] !px-2 !py-1">
+              <Button variant="primary" onClick={() => setStep("save")} className="!text-[11px] !px-2 !py-1">
                 Guardar en carpeta
-              </Button>
-              <Button variant="primary" onClick={handleSaveDashboard} className="!text-[11px] !px-2 !py-1">
-                Guardar Dashboard
               </Button>
             </div>
           </div>
@@ -448,13 +446,6 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
 
       {step === "save" && (
         <div className="space-y-4">
-          <Input
-            label="Nombre del Dashboard"
-            placeholder="Ej: Dashboard operativo occidente"
-            value={dashboardName}
-            onChange={(e) => setDashboardName(e.target.value)}
-          />
-
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
@@ -492,6 +483,7 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
                   setSelectedFolderId(parentId);
                   setCreatingFolder(true);
                 }}
+                rootFolderId="mis-reportes"
               />
             </div>
           </div>
@@ -508,8 +500,8 @@ export function CreateDashboardModal({ open, onClose, report }: CreateDashboardM
             <Button variant="ghost" onClick={onClose} className="!text-[11px] !px-2 !py-1">
               Cancelar
             </Button>
-            <Button variant="primary" disabled={!dashboardName.trim() || widgets.length === 0} onClick={handleSaveDashboard} className="!text-[11px] !px-2 !py-1">
-              Guardar Dashboard
+            <Button variant="primary" disabled={widgets.length === 0} onClick={handleSaveDashboard} className="!text-[11px] !px-2 !py-1">
+                Guardar Gráficos
             </Button>
           </div>
         </div>

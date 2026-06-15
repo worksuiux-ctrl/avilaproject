@@ -11,6 +11,7 @@ import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { SoporteTicket } from "./pages/SoporteTicket/SoporteTicket";
 import { SoporteFaq } from "./pages/SoporteFaq/SoporteFaq";
 import { Reportes } from "./pages/Reportes/Reportes";
+import { Interfaces } from "./pages/Integraciones/Interfaces/Interfaces";
 import { Login } from "./pages/Login/Login";
 import { OperacionesPage } from "./pages/Operaciones/OperacionesPage";
 
@@ -35,6 +36,7 @@ function App() {
             <Route path="/soporte/tickets" element={<SoporteTicket />} />
             <Route path="/soporte/faq" element={<SoporteFaq />} />
             <Route path="/reportes" element={<Reportes />} />
+            <Route path="/interfaces" element={<Interfaces />} />
             <Route path="/config" element={<Navigate to="/config/unidades" replace />} />
             <Route path="/config/unidades" element={<Unidades />} />
             <Route path="/config/divisas" element={<Divisas />} />

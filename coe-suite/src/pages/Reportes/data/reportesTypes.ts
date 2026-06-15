@@ -34,6 +34,7 @@ export interface SavedReporte {
     order: number;
   }[];
   createdAt: string;
+  tipo: "reporte" | "dashboard";
 }
 
 export interface Carpeta {

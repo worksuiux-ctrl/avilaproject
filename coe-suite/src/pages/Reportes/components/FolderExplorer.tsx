@@ -8,6 +8,7 @@ interface FolderExplorerProps {
   selectedFolderId: string | null;
   onSelectFolder: (id: string | null) => void;
   onAddFolder: (parentId: string | null) => void;
+  rootFolderId?: string;
 }
 
 function FolderNode({
@@ -101,34 +102,47 @@ function FolderNode({
   );
 }
 
+function isDescendantOf(f: Carpeta, targetId: string, all: Carpeta[]): boolean {
+  if (f.parentId === targetId) return true;
+  if (!f.parentId) return false;
+  const parent = all.find((p) => p.id === f.parentId);
+  return parent ? isDescendantOf(parent, targetId, all) : false;
+}
+
 export function FolderExplorer({
   folders,
   savedReports,
   selectedFolderId,
   onSelectFolder,
   onAddFolder,
+  rootFolderId,
 }: FolderExplorerProps) {
-  const rootFolders = folders.filter((f) => f.parentId === null);
+  const filtered = rootFolderId
+    ? folders.filter((f) => f.id === rootFolderId || isDescendantOf(f, rootFolderId, folders))
+    : folders;
+
+  const rootFolders = filtered.filter((f) => f.parentId === null);
 
   return (
     <div className="space-y-1">
-      {/* Root */}
-      <div
-        className={`flex items-center gap-1.5 px-2 py-1.5 rounded-corner-m cursor-pointer text-[13px] transition-colors ${
-          selectedFolderId === null
-            ? "bg-[var(--color-verde-100)] text-white"
-            : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
-        }`}
-        onClick={() => onSelectFolder(null)}
-      >
-        <Folder className="w-4 h-4 shrink-0" />
-        <span className="font-medium">Raíz</span>
-      </div>
+      {!rootFolderId && (
+        <div
+          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-corner-m cursor-pointer text-[13px] transition-colors ${
+            selectedFolderId === null
+              ? "bg-[var(--color-verde-100)] text-white"
+              : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
+          }`}
+          onClick={() => onSelectFolder(null)}
+        >
+          <Folder className="w-4 h-4 shrink-0" />
+          <span className="font-medium">Raíz</span>
+        </div>
+      )}
       {rootFolders.map((f) => (
         <FolderNode
           key={f.id}
           folder={f}
-          folders={folders}
+          folders={filtered}
           savedReports={savedReports}
           selectedFolderId={selectedFolderId}
           onSelectFolder={onSelectFolder}
