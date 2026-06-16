@@ -13,12 +13,13 @@ import { SoporteFaq } from "./pages/SoporteFaq/SoporteFaq";
 import { Reportes } from "./pages/Reportes/Reportes";
 import { Interfaces } from "./pages/Integraciones/Interfaces/Interfaces";
 import { PanelIntegraciones } from "./pages/Integraciones/PanelIntegraciones/PanelIntegraciones";
+import { MapaInteractivo } from "./pages/Georreferenciacion/MapaInteractivo";
 import { Login } from "./pages/Login/Login";
 import { OperacionesPage } from "./pages/Operaciones/OperacionesPage";
 
 const PENDING_ROUTES = [
   "kpi-operativo", "op-reports",
-  "reg-reports", "georef", "audit",
+  "reg-reports", "audit",
 ];
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/interfaces" element={<Interfaces />} />
             <Route path="/integrations" element={<PanelIntegraciones />} />
+            <Route path="/georef" element={<MapaInteractivo />} />
             <Route path="/config" element={<Navigate to="/config/unidades" replace />} />
             <Route path="/config/unidades" element={<Unidades />} />
             <Route path="/config/divisas" element={<Divisas />} />
