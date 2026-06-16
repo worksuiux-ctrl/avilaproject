@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy } from "lucide-react";
-import { Button, Input, Select, Switch } from "@coe/design-system";
+import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2 } from "lucide-react";
+import { Button, Input, Select, Switch, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import {
   useTransaccionesStore,
@@ -17,6 +17,34 @@ import {
   TIPOS_APROBACION,
 } from "@stores/transaccionesStore";
 import { useDivisasStore } from "@stores/divisasStore";
+
+const UNIDADES_POR_AMBITO: Record<string, { value: string; label: string }[]> = {
+  interna: [
+    { value: "Bóveda", label: "Bóveda" },
+    { value: "Caja", label: "Caja" },
+    { value: "Taquilla", label: "Taquilla" },
+    { value: "Cajero", label: "Cajero / ATM" },
+    { value: "Punto de Venta", label: "Punto de Venta" },
+    { value: "Almacén", label: "Almacén" },
+  ],
+  "entre-agencias": [
+    { value: "Agencia", label: "Agencia" },
+    { value: "Bóveda", label: "Bóveda" },
+    { value: "Caja", label: "Caja" },
+    { value: "Taquilla", label: "Taquilla" },
+    { value: "Cajero", label: "Cajero / ATM" },
+    { value: "Camión", label: "Camión" },
+    { value: "Almacén", label: "Almacén" },
+  ],
+  externa: [
+    { value: "Agencia", label: "Agencia" },
+    { value: "Taquilla Externa", label: "Taquilla Externa" },
+    { value: "Camión", label: "Camión" },
+    { value: "Banco", label: "Banco" },
+    { value: "Almacén", label: "Almacén" },
+    { value: "Punto de Venta", label: "Punto de Venta" },
+  ],
+};
 
 export function MotorTransaccionesPage() {
   const store = useTransaccionesStore();
@@ -572,9 +600,7 @@ function FusionadoTab({
         ?.excepciones.find((e) => e.id === activeExceptionId.exId) ?? null
     : null;
 
-  const [collapseName, setCollapseName] = useState(false);
-  const [collapseOrigen, setCollapseOrigen] = useState(false);
-  const [collapseCodigos, setCollapseCodigos] = useState(false);
+  const [collapseDetalles, setCollapseDetalles] = useState(false);
 
   if (!hasActiveOperation) {
     return (
@@ -654,74 +680,53 @@ function FusionadoTab({
 
       {/* Center: form fields + inspector */}
       <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto">
-        {/* Name card */}
+        {/* Detalles de la Operación — unificado */}
         <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)] cursor-pointer select-none" onClick={() => setCollapseName(!collapseName)}>
-            <span className="w-2 h-2 rounded-full bg-[var(--color-verde-100)]" />
-            <p className="flex-1 text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Nombre de la Operación</p>
-            <ChevronDown className={`w-4 h-4 text-[var(--color-neutro-400)] transition-transform ${collapseName ? "-rotate-90" : ""}`} />
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)] cursor-pointer select-none" onClick={() => setCollapseDetalles(!collapseDetalles)}>
+            <Package className="w-4 h-4 text-[var(--color-verde-100)]" />
+            <p className="flex-1 text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Detalles de la Operación</p>
+            <ChevronDown className={`w-4 h-4 text-[var(--color-neutro-400)] transition-transform ${collapseDetalles ? "-rotate-90" : ""}`} />
           </div>
-          {!collapseName && (
-          <div className="p-4">
+          {!collapseDetalles && (
+          <div className="p-4 space-y-4">
             {isViewingSaved ? (
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-[16px] font-bold text-[var(--color-neutro-900)]">{displayProceso.nombre || "Sin nombre"}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--color-neutro-100)] text-[var(--color-neutro-600)] rounded-corner-m">{displayProceso.tipoCarga}</span>
-                    <span className={`flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-corner-m ${displayProceso.modoIngreso === "fajos" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
-                      {displayProceso.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
-                    </span>
-                    {displayProceso.activo !== false ? (
-                      <span className="px-2 py-0.5 text-[11px] font-medium bg-green-50 text-green-700 rounded-corner-m">Activo</span>
-                    ) : (
-                      <span className="px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 rounded-corner-m">Inactivo</span>
-                    )}
+              /* ── VIEW MODE ── */
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Nombre</p>
+                    <p className="text-[16px] font-bold text-[var(--color-neutro-900)]">{displayProceso.nombre || "Sin nombre"}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {displayProceso.activo !== false ? (
+                        <span className="px-2 py-0.5 text-[11px] font-medium bg-green-50 text-green-700 rounded-corner-m">Activo</span>
+                      ) : (
+                        <span className="px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 rounded-corner-m">Inactivo</span>
+                      )}
+                    </div>
                   </div>
+                  <Button size="sm" iconLeft={<Pencil className="w-4 h-4" />} onClick={() => onEditSaved(displayProceso.id, displayProceso.nombre || "Sin nombre")}>
+                    Editar
+                  </Button>
                 </div>
-                <Button size="sm" iconLeft={<Pencil className="w-4 h-4" />} onClick={() => onEditSaved(displayProceso.id, displayProceso.nombre || "Sin nombre")}>
-                  Editar
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Input value={proceso.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setNombre(e.target.value)} placeholder="Ej: Pase de Caja a ATM..." />
-                </div>
-                <div className="w-[200px]">
-                  <Select options={TIPOS_CARGA} value={proceso.tipoCarga} onChange={(v: string) => store.setTipoCarga(v)} />
-                </div>
-                <div className="flex bg-[var(--color-neutro-100)] rounded-corner-m p-0.5">
-                  <button
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-medium rounded-corner-m transition-all cursor-pointer ${proceso.modoIngreso === "fajos" ? "bg-white text-[var(--color-neutro-900)] shadow-sm ring-1 ring-[var(--color-neutro-200)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"}`}
-                    onClick={() => store.setModoIngreso("fajos")}
-                  >Fajos</button>
-                  <button
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-medium rounded-corner-m transition-all cursor-pointer ${proceso.modoIngreso === "piezas" ? "bg-white text-[var(--color-neutro-900)] shadow-sm ring-1 ring-[var(--color-neutro-200)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"}`}
-                    onClick={() => store.setModoIngreso("piezas")}
-                  >Piezas</button>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer shrink-0">
-                  <Switch checked={proceso.activo !== false} onChange={(v: boolean) => store.setActivo(v)} />
-                  <span className={`text-[12px] font-medium ${proceso.activo !== false ? "text-green-700" : "text-red-700"}`}>{proceso.activo !== false ? "Activo" : "Inactivo"}</span>
-                </label>
-              </div>
-            )}
-          </div>
-          )}
-        </div>
 
-        {/* Origen/Destino card */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)] cursor-pointer select-none" onClick={() => setCollapseOrigen(!collapseOrigen)}>
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <p className="flex-1 text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Origen - Destino</p>
-            <ChevronDown className={`w-4 h-4 text-[var(--color-neutro-400)] transition-transform ${collapseOrigen ? "-rotate-90" : ""}`} />
-          </div>
-          {!collapseOrigen && (
-          <div className="p-4">
-            {isViewingSaved ? (
-              <div className="space-y-2">
+                <hr className="border-[var(--color-neutro-100)]" />
+
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Mercancía a Transportar</p>
+                  <span className="px-2 py-0.5 text-[12px] font-medium bg-[var(--color-neutro-100)] text-[var(--color-neutro-600)] rounded-corner-m">{displayProceso.tipoCarga}</span>
+                  {(displayProceso.tipoCarga === "remesas" || displayProceso.tipoCarga === "valores") && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-corner-m ${displayProceso.modoIngreso === "fajos" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
+                        {displayProceso.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-[var(--color-neutro-100)]" />
+
+                <p className="text-[12px] text-blue-600 font-medium">{AMBITOS.find((a) => a.value === displayProceso.ambito)?.label ?? displayProceso.ambito}</p>
+
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Origen</p>
@@ -733,87 +738,163 @@ function FusionadoTab({
                     <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.destinoTipo ?? "—"}</p>
                   </div>
                 </div>
-                <p className="text-[12px] text-blue-600 font-medium">{AMBITOS.find((a) => a.value === displayProceso.ambito)?.label ?? displayProceso.ambito}</p>
+
+                {displayProceso.usaTransportista && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Transportistas permitidos</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {displayProceso.transportistasPermitidos.map((tId) => {
+                        const t = TRANSPORTISTAS.find((x) => x.id === tId);
+                        return t ? (
+                          <span key={tId} className="px-2 py-0.5 text-[12px] font-medium bg-blue-50 text-blue-700 rounded-corner-m">{t.nombre}</span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <hr className="border-[var(--color-neutro-100)]" />
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de remesa</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoRemesa ? "Sí" : "No"}</p>
+                  </div>
+                  {displayProceso.usaCodigoRemesa && (
+                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoRemesaFormato ?? "—"}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de envío</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoEnvio ? "Sí" : "No"}</p>
+                  </div>
+                  {displayProceso.usaCodigoEnvio && (
+                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoEnvioFormato ?? "—"}</p>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Tipo de origen</p>
-                    <Select options={TIPOS_UNIDAD} value={proceso.origenTipo ?? ""} onChange={(v: string) => store.setOrigenTipo(v || null)} placeholder="Seleccionar tipo..." />
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-[var(--color-neutro-300)] mt-6 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Tipo de destino</p>
-                    <Select options={TIPOS_UNIDAD} value={proceso.destinoTipo ?? ""} onChange={(v: string) => store.setDestinoTipo(v || null)} placeholder="Seleccionar tipo..." />
-                  </div>
-                </div>
+              /* ── EDIT MODE ── */
+              <div className="space-y-4">
+                {/* 1. Nombre + Activo */}
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Ámbito</p>
-                  <Select options={AMBITOS} value={proceso.ambito} onChange={(v: string) => store.setAmbito(v as "interna" | "entre-agencias" | "externa")} />
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Nombre de la operación</p>
+                      <Input value={proceso.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setNombre(e.target.value)} placeholder="Ej: Pase de Caja a ATM..." />
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer pt-5 shrink-0">
+                      <Switch checked={proceso.activo !== false} onChange={(v: boolean) => store.setActivo(v)} />
+                      <span className={`text-[12px] font-medium ${proceso.activo !== false ? "text-green-700" : "text-red-700"}`}>{proceso.activo !== false ? "Activo" : "Inactivo"}</span>
+                    </label>
+                  </div>
                 </div>
+
                 <hr className="border-[var(--color-neutro-100)]" />
-                <div className="flex items-center gap-4">
+
+                {/* 2. Mercancía a Transportar */}
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Mercancía a Transportar</p>
+                  <Select options={TIPOS_CARGA} value={proceso.tipoCarga} onChange={(v: string) => store.setTipoCarga(v)} />
+                  {proceso.tipoCarga === "remesas" && (
+                    <div className="mt-3 space-y-3">
+                      <div>
+                        <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase mb-1">Divisas permitidas</p>
+                        <DivisaSelector ids={proceso.divisasPermitidas} onChange={(ids: string[]) => store.setDivisasPermitidas(ids)} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase mb-1">Modo de ingreso</p>
+                        <div className="flex bg-[var(--color-neutro-100)] rounded-corner-m p-0.5 w-fit">
+                          <button
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-corner-m transition-all cursor-pointer ${proceso.modoIngreso === "fajos" ? "bg-white text-[var(--color-neutro-900)] shadow-sm ring-1 ring-[var(--color-neutro-200)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"}`}
+                            onClick={() => store.setModoIngreso("fajos")}
+                          >Fajos</button>
+                          <button
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-corner-m transition-all cursor-pointer ${proceso.modoIngreso === "piezas" ? "bg-white text-[var(--color-neutro-900)] shadow-sm ring-1 ring-[var(--color-neutro-200)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"}`}
+                            onClick={() => store.setModoIngreso("piezas")}
+                          >Piezas</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {proceso.tipoCarga === "valores" && (
+                    <div className="mt-3">
+                      <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase mb-1">Divisas permitidas (para valoración)</p>
+                      <DivisaSelector ids={proceso.divisasPermitidas} onChange={(ids: string[]) => store.setDivisasPermitidas(ids)} />
+                    </div>
+                  )}
+                </div>
+
+                <hr className="border-[var(--color-neutro-100)]" />
+
+                {/* 3. Ámbito */}
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Ámbito</p>
+                  <Select options={AMBITOS} value={proceso.ambito} onChange={(v: string) => {
+                    store.setAmbito(v as "interna" | "entre-agencias" | "externa");
+                    if (v === "interna") store.setUsaTransportista(false);
+                  }} />
+                </div>
+
+                {/* 4. Origen - Destino (filtered by ámbito) */}
+                <div>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Origen y Destino</p>
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="flex-1">
+                      <Select options={[{ value: "", label: "Seleccionar..." }, ...(UNIDADES_POR_AMBITO[proceso.ambito] ?? TIPOS_UNIDAD)]}
+                        value={proceso.origenTipo ?? ""} onChange={(v: string) => store.setOrigenTipo(v || null)} placeholder="Tipo de origen..." />
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-[var(--color-neutro-300)] shrink-0" />
+                    <div className="flex-1">
+                      <Select options={[{ value: "", label: "Seleccionar..." }, ...(UNIDADES_POR_AMBITO[proceso.ambito] ?? TIPOS_UNIDAD)]}
+                        value={proceso.destinoTipo ?? ""} onChange={(v: string) => store.setDestinoTipo(v || null)} placeholder="Tipo de destino..." />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Transportista */}
+                <div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Switch checked={proceso.usaTransportista} onChange={proceso.ambito === "interna" ? undefined : store.setUsaTransportista} />
                     <span className={`text-[13px] ${proceso.ambito === "interna" ? "text-[var(--color-neutro-400)]" : "text-[var(--color-neutro-700)]"}`}>Usa transportista de valores</span>
                   </label>
+                  {proceso.usaTransportista && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {TRANSPORTISTAS.map((t) => {
+                        const selected = proceso.transportistasPermitidos.includes(t.id);
+                        return (
+                          <button key={t.id} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors cursor-pointer ${selected ? "bg-blue-500 text-white border-blue-500" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-blue-300"}`} onClick={() => store.toggleTransportistaPermitido(t.id)}>
+                            <CheckCheck className={`w-3 h-3 ${selected ? "block" : "hidden"}`} />
+                            {t.nombre}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-          )}
-        </div>
 
-        {/* Códigos card */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)] cursor-pointer select-none" onClick={() => setCollapseCodigos(!collapseCodigos)}>
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
-            <p className="flex-1 text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Códigos de Transacción</p>
-            <ChevronDown className={`w-4 h-4 text-[var(--color-neutro-400)] transition-transform ${collapseCodigos ? "-rotate-90" : ""}`} />
-          </div>
-          {!collapseCodigos && (
-          <div className="p-4 space-y-3">
-            {isViewingSaved ? (
-              <div className="space-y-3">
+                <hr className="border-[var(--color-neutro-100)]" />
+
+                {/* 6. Códigos de transacción */}
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Aplica código de remesa</p>
-                  <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoRemesa ? "Sí" : "No"}</p>
-                  {displayProceso.usaCodigoRemesa && (
-                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono mt-1">{displayProceso.codigoRemesaFormato ?? "—"}</p>
-                  )}
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Aplica código de envío</p>
-                  <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoEnvio ? "Sí" : "No"}</p>
-                  {displayProceso.usaCodigoEnvio && (
-                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono mt-1">{displayProceso.codigoEnvioFormato ?? "—"}</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de remesa</p>
-                    <Switch checked={proceso.usaCodigoRemesa} onChange={store.setUsaCodigoRemesa} />
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Códigos de Transacción</p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Checkbox label="Código de remesa" checked={proceso.usaCodigoRemesa} onChange={(v: boolean) => store.setUsaCodigoRemesa(v)} />
+                    </div>
+                    {proceso.usaCodigoRemesa && (
+                      <Input value={proceso.codigoRemesaFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoRemesaFormato(e.target.value)} placeholder="Ej: REM-{YYYYMMDD}-{NNNNNN}" className="flex-1" />
+                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Checkbox label="Código de envío" checked={proceso.usaCodigoEnvio} onChange={(v: boolean) => store.setUsaCodigoEnvio(v)} />
+                    </div>
+                    {proceso.usaCodigoEnvio && (
+                      <Input value={proceso.codigoEnvioFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoEnvioFormato(e.target.value)} placeholder="Ej: ENV-{YYYYMMDD}-{NNNNNN}" className="flex-1" />
+                    )}
                   </div>
-                  {proceso.usaCodigoRemesa && (
-                    <Input value={proceso.codigoRemesaFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoRemesaFormato(e.target.value)} placeholder="Ej: REM-{YYYYMMDD}-{NNNNNN}" />
-                  )}
+                  <p className="text-[10px] text-[var(--color-neutro-400)] italic mt-2">
+                    <span className="font-mono">{`{YYYY}`}</span> año, <span className="font-mono">{`{MM}`}</span> mes, <span className="font-mono">{`{DD}`}</span> día, <span className="font-mono">{`{N}`}</span> número secuencial
+                  </p>
                 </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de envío</p>
-                    <Switch checked={proceso.usaCodigoEnvio} onChange={store.setUsaCodigoEnvio} />
-                  </div>
-                  {proceso.usaCodigoEnvio && (
-                    <Input value={proceso.codigoEnvioFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoEnvioFormato(e.target.value)} placeholder="Ej: ENV-{YYYYMMDD}-{NNNNNN}" />
-                  )}
-                </div>
-                <p className="text-[10px] text-[var(--color-neutro-400)] italic">
-                  <span className="font-mono">{`{YYYY}`}</span> año, <span className="font-mono">{`{MM}`}</span> mes, <span className="font-mono">{`{DD}`}</span> día, <span className="font-mono">{`{N}`}</span> número secuencial
-                </p>
               </div>
             )}
           </div>
@@ -1082,122 +1163,139 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false }: 
   const valueClass = "text-[13px] text-[var(--color-neutro-900)] py-1";
 
   return (
-    <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
-      <div>
-        <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Estado activo</p>
-        {readOnly ? (
-          <p className="text-[14px] font-bold text-[var(--color-neutro-900)]">{step.nombre}</p>
-        ) : (
-          <Input value={step.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStepProperty(sid, "nombre", e.target.value)} className="!text-[14px] !font-bold" />
-        )}
+    <div className="p-3 space-y-3 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+
+      {/* ── General ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Información General</p>
+        <div>
+          {readOnly ? (
+            <p className="text-[14px] font-bold text-[var(--color-neutro-900)]">{step.nombre}</p>
+          ) : (
+            <Input value={step.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStepProperty(sid, "nombre", e.target.value)} className="!text-[14px] !font-bold" placeholder="Nombre del estado..." />
+          )}
+        </div>
       </div>
 
-      <div>
-        <p className={labelClass}>Evento Contable</p>
-        {readOnly ? (
-          <p className={valueClass}>
-            {EVENTOS_CONTABLES.find((e) => e.value === step.eventoContable)?.label ?? step.eventoContable}
-            {step.eventoContable !== "ninguno" && step.unidadEvento && (
-              <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_EVENTO.find((u) => u.value === step.unidadEvento)?.label ?? step.unidadEvento}</span>
-            )}
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            <Select options={EVENTOS_CONTABLES} value={step.eventoContable} onChange={(v: string) => {
-              updateStepProperty(sid, "eventoContable", v);
-              if (v === "ninguno") updateStepProperty(sid, "unidadEvento", null);
-              else if (v === "descuenta" && !step.unidadEvento) updateStepProperty(sid, "unidadEvento", "emisora");
-              else if (v === "suma" && !step.unidadEvento) updateStepProperty(sid, "unidadEvento", "receptora");
+      {/* ── Operational ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Configuración Operativa</p>
+
+        <div>
+          <p className={labelClass}>Evento Contable</p>
+          {readOnly ? (
+            <p className={valueClass}>
+              {EVENTOS_CONTABLES.find((e) => e.value === step.eventoContable)?.label ?? step.eventoContable}
+              {step.eventoContable !== "ninguno" && step.unidadEvento && (
+                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_EVENTO.find((u) => u.value === step.unidadEvento)?.label ?? step.unidadEvento}</span>
+              )}
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              <Select options={EVENTOS_CONTABLES} value={step.eventoContable} onChange={(v: string) => {
+                updateStepProperty(sid, "eventoContable", v);
+                if (v === "ninguno") updateStepProperty(sid, "unidadEvento", null);
+                else if (v === "descuenta" && !step.unidadEvento) updateStepProperty(sid, "unidadEvento", "emisora");
+                else if (v === "suma" && !step.unidadEvento) updateStepProperty(sid, "unidadEvento", "receptora");
+              }} />
+              {step.eventoContable !== "ninguno" && (
+                <Select options={UNIDADES_EVENTO} value={step.unidadEvento ?? ""} onChange={(v: string) => updateStepProperty(sid, "unidadEvento", v)} />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Perfil Responsable</p>
+          {readOnly ? (
+            <p className={valueClass}>{step.unidadResponsableId ? PERFILES_RESPONSABLE.find((e) => e.value === step.unidadResponsableId)?.label ?? step.unidadResponsableId : "Sin asignar"}</p>
+          ) : (
+            <Select options={[{ value: "", label: "Sin asignar" }, ...PERFILES_RESPONSABLE.map((e) => ({ value: e.value, label: e.label }))]}
+              value={step.unidadResponsableId ?? ""} onChange={(v: string) => updateStepProperty(sid, "unidadResponsableId", v || null)} />
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Transferencia de Carga</p>
+          {readOnly ? (
+            <p className={valueClass}>{step.transferenciaCarga ? (step.transferenciaCarga === "entrega" ? "Entrega carga" : "Recibe carga") : "Sin transferencia"}</p>
+          ) : (
+            <Select
+              options={[
+                { value: "", label: "Sin transferencia" },
+                { value: "entrega", label: "Entrega carga" },
+                { value: "recepcion", label: "Recibe carga" },
+              ]}
+              value={step.transferenciaCarga ?? ""}
+              onChange={(v: string) => updateStepProperty(sid, "transferenciaCarga", v || null)}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ── Control ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Control de Flujo</p>
+
+        <div>
+          <p className={labelClass}>Aprobación</p>
+          {readOnly ? (
+            <p className={valueClass}>{TIPOS_APROBACION.find((t) => t.value === step.tipoAprobacion)?.label ?? step.tipoAprobacion}</p>
+          ) : (
+            <Select options={TIPOS_APROBACION} value={step.tipoAprobacion} onChange={(v: string) => {
+              updateStepProperty(sid, "tipoAprobacion", v);
+              updateStepProperty(sid, "requiereAprobacion", v !== "ninguno");
             }} />
-            {step.eventoContable !== "ninguno" && (
-              <Select options={UNIDADES_EVENTO} value={step.unidadEvento ?? ""} onChange={(v: string) => updateStepProperty(sid, "unidadEvento", v)} />
-            )}
-          </div>
-        )}
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Tiempo máximo (minutos)</p>
+          {readOnly ? (
+            <p className={valueClass}>{step.timeoutMinutos > 0 ? `${step.timeoutMinutos} min` : "Sin límite"}</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Input type="number" value={step.timeoutMinutos} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStepProperty(sid, "timeoutMinutos", Number(e.target.value))} className="flex-1" />
+              <span className="text-[12px] text-[var(--color-neutro-500)]">0 = sin límite</span>
+            </div>
+          )}
+          {step.timeoutMinutos > 0 && (
+            <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              Se levantará alerta si supera los {step.timeoutMinutos} minutos
+            </p>
+          )}
+        </div>
       </div>
 
-      <div>
-        <p className={labelClass}>Perfil Responsable</p>
-        {readOnly ? (
-          <p className={valueClass}>{step.unidadResponsableId ? PERFILES_RESPONSABLE.find((e) => e.value === step.unidadResponsableId)?.label ?? step.unidadResponsableId : "Sin asignar"}</p>
-        ) : (
-          <Select options={[{ value: "", label: "Sin asignar" }, ...PERFILES_RESPONSABLE.map((e) => ({ value: e.value, label: e.label }))]}
-            value={step.unidadResponsableId ?? ""} onChange={(v: string) => updateStepProperty(sid, "unidadResponsableId", v || null)} />
-        )}
+      {/* ── Data Capture ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Captura de Datos</p>
+
+        <div>
+          {readOnly ? (
+            <div>
+              <p className={labelClass}>Variables</p>
+              <p className={valueClass}>{step.requiereVariables ? (step.variables || "Sí (sin especificar)") : "No requiere"}</p>
+            </div>
+          ) : (
+            <>
+              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                <Switch checked={step.requiereVariables} onChange={(v: boolean) => updateStepProperty(sid, "requiereVariables", v)} />
+                <span className="text-[13px] text-[var(--color-neutro-700)]">Requiere captura de variables</span>
+              </label>
+              {step.requiereVariables && (
+                <input value={step.variables} onChange={(e) => updateStepProperty(sid, "variables", e.target.value)}
+                  className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                  placeholder="Ej: Número de precinto, peso, lote..." />
+              )}
+            </>
+          )}
+        </div>
+
+        <CamposFormularioSection stepId={step.id} camposSeleccionados={step.camposSeleccionados} origenTipo={origenTipo} destinoTipo={destinoTipo} readOnly={readOnly} />
       </div>
 
-      <div>
-        <p className={labelClass}>Transferencia de Carga</p>
-        {readOnly ? (
-          <p className={valueClass}>{step.transferenciaCarga ? (step.transferenciaCarga === "entrega" ? "Entrega carga" : "Recibe carga") : "Sin transferencia"}</p>
-        ) : (
-          <Select
-            options={[
-              { value: "", label: "Sin transferencia" },
-              { value: "entrega", label: "Entrega carga" },
-              { value: "recepcion", label: "Recibe carga" },
-            ]}
-            value={step.transferenciaCarga ?? ""}
-            onChange={(v: string) => updateStepProperty(sid, "transferenciaCarga", v || null)}
-          />
-        )}
-      </div>
-
-      <hr className="border-[var(--color-neutro-100)]" />
-
-      <div>
-        <p className={labelClass}>Aprobación</p>
-        {readOnly ? (
-          <p className={valueClass}>{TIPOS_APROBACION.find((t) => t.value === step.tipoAprobacion)?.label ?? step.tipoAprobacion}</p>
-        ) : (
-          <Select options={TIPOS_APROBACION} value={step.tipoAprobacion} onChange={(v: string) => {
-            updateStepProperty(sid, "tipoAprobacion", v);
-            updateStepProperty(sid, "requiereAprobacion", v !== "ninguno");
-          }} />
-        )}
-      </div>
-
-      <div>
-        {readOnly ? (
-          <div>
-            <p className={labelClass}>Variables</p>
-            <p className={valueClass}>{step.requiereVariables ? (step.variables || "Sí (sin especificar)") : "No requiere"}</p>
-          </div>
-        ) : (
-          <>
-            <label className="flex items-center gap-2 cursor-pointer mb-2">
-              <Switch checked={step.requiereVariables} onChange={(v: boolean) => updateStepProperty(sid, "requiereVariables", v)} />
-              <span className="text-[13px] text-[var(--color-neutro-700)]">Requiere captura de variables</span>
-            </label>
-            {step.requiereVariables && (
-              <input value={step.variables} onChange={(e) => updateStepProperty(sid, "variables", e.target.value)}
-                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
-                placeholder="Ej: Número de precinto, peso, lote..." />
-            )}
-          </>
-        )}
-      </div>
-
-      <div>
-        <p className={labelClass}>Tiempo máximo (minutos)</p>
-        {readOnly ? (
-          <p className={valueClass}>{step.timeoutMinutos > 0 ? `${step.timeoutMinutos} min` : "Sin límite"}</p>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Input type="number" value={step.timeoutMinutos} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStepProperty(sid, "timeoutMinutos", Number(e.target.value))} className="flex-1" />
-            <span className="text-[12px] text-[var(--color-neutro-500)]">0 = sin límite</span>
-          </div>
-        )}
-        {step.timeoutMinutos > 0 && (
-          <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Se levantará alerta si supera los {step.timeoutMinutos} minutos
-          </p>
-        )}
-      </div>
-
-      <hr className="border-[var(--color-neutro-100)]" />
-      <CamposFormularioSection stepId={step.id} camposSeleccionados={step.camposSeleccionados} origenTipo={origenTipo} destinoTipo={destinoTipo} readOnly={readOnly} />
     </div>
   );
 }
@@ -1210,143 +1308,200 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
   const valueClass = "text-[13px] text-[var(--color-neutro-900)] py-1";
 
   const currentStepIdx = steps?.findIndex((s) => s.id === stepId) ?? -1;
+  const pasoAnterior = (steps && currentStepIdx > 0) ? steps[currentStepIdx - 1] : null;
   const pasosAnteriores = steps?.filter((_, i) => i < currentStepIdx) ?? [];
+  const retrocedeAlAnterior = exception.retrocedeA === pasoAnterior?.id;
 
   const retrocedeOptions = [
     { value: "", label: "No retrocede" },
     ...pasosAnteriores.map((s) => ({ value: s.id, label: s.nombre })),
   ];
 
+  const pasoDestino = exception.retrocedeA
+    ? pasosAnteriores.find((s) => s.id === exception.retrocedeA)
+    : null;
+
   return (
-    <div className="p-3 space-y-4" onClick={(e) => e.stopPropagation()}>
-      <div className="flex items-center gap-2">
-        {exception.esTerminal ? <OctagonX className="w-4 h-4 text-red-500 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />}
-        <div className="flex-1">
-          <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Ruta alterna</p>
+    <div className="p-3 space-y-3 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+
+      {/* ── Header ── */}
+      <div className="flex items-center gap-2 bg-[var(--color-neutro-50)] rounded-corner-m p-3">
+        {exception.esTerminal ? <OctagonX className="w-5 h-5 text-red-500 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />}
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide mb-0.5">
+            {exception.esTerminal ? "Ruta Terminal" : "Ruta Alterna"}
+          </p>
           {readOnly ? (
-            <p className="text-[14px] font-bold text-[var(--color-neutro-900)]">{exception.nombre}</p>
+            <p className="text-[14px] font-bold text-[var(--color-neutro-900)] truncate">{exception.nombre}</p>
           ) : (
             <Input value={exception.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExcepcionProperty(stepId, eid, "nombre", e.target.value)} className="!text-[14px] !font-bold" placeholder="Nombre de la ruta alterna..." />
           )}
         </div>
       </div>
 
-      <div>
-        <p className={labelClass}>Estado terminal</p>
+      {/* ── Terminal / Fin ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3">
         {readOnly ? (
-          <p className={valueClass}>{exception.esTerminal ? "Sí (finaliza la transacción)" : "No"}</p>
+          <div>
+            <p className={labelClass}>Comportamiento</p>
+            <p className={valueClass}>
+              {exception.esTerminal
+                ? "Finaliza la transacción (estado terminal)"
+                : pasoDestino
+                  ? `Retrocede al estado "${pasoDestino.nombre}"`
+                  : "Solo registra la ruta, no altera el flujo"}
+            </p>
+          </div>
         ) : (
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Switch checked={exception.esTerminal} onChange={(v: boolean) => setExcepcionTerminal(stepId, eid, v)} />
-            <span className="text-[13px] text-[var(--color-neutro-700)]">Estado terminal (finaliza la transacción)</span>
+          <label className={`flex items-center gap-2 cursor-pointer ${exception.esTerminal ? "opacity-50" : ""}`}
+            title={exception.esTerminal ? "Desmarcar como terminal para configurar retroceso" : undefined}>
+            <Switch checked={exception.esTerminal} onChange={(v: boolean) => {
+              setExcepcionTerminal(stepId, eid, v);
+              if (v) updateExcepcionProperty(stepId, eid, "retrocedeA", null);
+            }} />
+            <div>
+              <span className="text-[13px] text-[var(--color-neutro-700)]">Estado terminal</span>
+              <p className="text-[10px] text-[var(--color-neutro-400)]">Finaliza la transacción al activarse</p>
+            </div>
           </label>
         )}
       </div>
 
-      {pasosAnteriores.length > 0 && (
-        <div>
-          <p className={labelClass}>Retroceder a paso anterior</p>
-          {readOnly ? (
-            <p className={valueClass}>{exception.retrocedeA ? (pasosAnteriores.find((s) => s.id === exception.retrocedeA)?.nombre ?? "Paso anterior") : "No retrocede"}</p>
-          ) : (
-            <>
+      {/* ── Retroceso ── (only if NOT terminal) */}
+      {!exception.esTerminal && pasosAnteriores.length > 0 && (
+        <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+          <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide flex items-center gap-1.5">
+            <Undo2 className="w-3 h-3" /> Retroceso
+          </p>
+
+          {!readOnly && pasoAnterior && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch checked={retrocedeAlAnterior}
+                onChange={(v: boolean) => {
+                  updateExcepcionProperty(stepId, eid, "retrocedeA", v ? pasoAnterior.id : null);
+                }} />
+              <div>
+                <span className="text-[13px] text-[var(--color-neutro-700)]">Volver al estado anterior</span>
+                <p className="text-[10px] text-[var(--color-neutro-400)]">La transacción retrocederá a &quot;{pasoAnterior.nombre}&quot;</p>
+              </div>
+            </label>
+          )}
+
+          {!readOnly && (
+            <div>
+              <p className="text-[11px] text-[var(--color-neutro-500)] mb-1">O retroceder a un estado específico:</p>
               <Select
                 options={retrocedeOptions}
                 value={exception.retrocedeA ?? ""}
                 onChange={(v: string) => updateExcepcionProperty(stepId, eid, "retrocedeA", v || null)}
               />
-              {exception.retrocedeA && (
-                <p className="text-[11px] text-blue-600 mt-1">
-                  Al activarse, la transacción volverá al estado &quot;{pasosAnteriores.find((s) => s.id === exception.retrocedeA)?.nombre}&quot;
+              {exception.retrocedeA && pasoDestino && (
+                <p className="text-[11px] text-blue-600 mt-1 flex items-center gap-1">
+                  <Undo2 className="w-3 h-3" />
+                  La transacción volverá al estado &quot;{pasoDestino.nombre}&quot;
+                </p>
+              )}
+            </div>
+          )}
+
+          {readOnly && (
+            <p className={valueClass}>
+              {exception.retrocedeA
+                ? `Retrocede a "${pasoDestino?.nombre ?? "paso anterior"}"`
+                : "Sin retroceso"}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── Operational ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Configuración Operativa</p>
+
+        <div>
+          <p className={labelClass}>Evento Contable</p>
+          {readOnly ? (
+            <p className={valueClass}>
+              {EVENTOS_CONTABLES.find((e) => e.value === exception.eventoContable)?.label ?? exception.eventoContable}
+              {exception.eventoContable !== "ninguno" && exception.unidadEvento && (
+                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_EVENTO.find((u) => u.value === exception.unidadEvento)?.label ?? exception.unidadEvento}</span>
+              )}
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              <Select options={EVENTOS_CONTABLES} value={exception.eventoContable} onChange={(v: string) => {
+                updateExcepcionProperty(stepId, eid, "eventoContable", v);
+                if (v === "ninguno") updateExcepcionProperty(stepId, eid, "unidadEvento", null);
+                else if (v === "descuenta" && !exception.unidadEvento) updateExcepcionProperty(stepId, eid, "unidadEvento", "emisora");
+                else if (v === "suma" && !exception.unidadEvento) updateExcepcionProperty(stepId, eid, "unidadEvento", "receptora");
+              }} />
+              {exception.eventoContable !== "ninguno" && (
+                <Select options={UNIDADES_EVENTO} value={exception.unidadEvento ?? ""} onChange={(v: string) => updateExcepcionProperty(stepId, eid, "unidadEvento", v)} />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Perfil Responsable</p>
+          {readOnly ? (
+            <p className={valueClass}>{exception.unidadResponsableId ? PERFILES_RESPONSABLE.find((e) => e.value === exception.unidadResponsableId)?.label ?? exception.unidadResponsableId : "Sin asignar"}</p>
+          ) : (
+            <Select options={[{ value: "", label: "Sin asignar" }, ...PERFILES_RESPONSABLE.map((e) => ({ value: e.value, label: e.label }))]}
+              value={exception.unidadResponsableId ?? ""} onChange={(v: string) => updateExcepcionProperty(stepId, eid, "unidadResponsableId", v || null)} />
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Transferencia de Carga</p>
+          {readOnly ? (
+            <p className={valueClass}>{exception.transferenciaCarga ? (exception.transferenciaCarga === "entrega" ? "Entrega carga" : "Recibe carga") : "Sin transferencia"}</p>
+          ) : (
+            <Select
+              options={[
+                { value: "", label: "Sin transferencia" },
+                { value: "entrega", label: "Entrega carga" },
+                { value: "recepcion", label: "Recibe carga" },
+              ]}
+              value={exception.transferenciaCarga ?? ""}
+              onChange={(v: string) => updateExcepcionProperty(stepId, eid, "transferenciaCarga", v || null)}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ── Control ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Control de Flujo</p>
+
+        <div>
+          <p className={labelClass}>Aprobación</p>
+          {readOnly ? (
+            <p className={valueClass}>{TIPOS_APROBACION.find((t) => t.value === exception.tipoAprobacion)?.label ?? exception.tipoAprobacion}</p>
+          ) : (
+            <Select options={TIPOS_APROBACION} value={exception.tipoAprobacion} onChange={(v: string) => {
+              updateExcepcionProperty(stepId, eid, "tipoAprobacion", v);
+              updateExcepcionProperty(stepId, eid, "requiereAprobacion", v !== "ninguno");
+            }} />
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Tiempo máximo (minutos)</p>
+          {readOnly ? (
+            <p className={valueClass}>{exception.timeoutMinutos > 0 ? `${exception.timeoutMinutos} min` : "Sin límite"}</p>
+          ) : (
+            <>
+              <Input type="number" value={exception.timeoutMinutos} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExcepcionProperty(stepId, eid, "timeoutMinutos", Number(e.target.value))} />
+              {exception.timeoutMinutos > 0 && (
+                <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Alerta si supera los {exception.timeoutMinutos} minutos
                 </p>
               )}
             </>
           )}
         </div>
-      )}
-
-      <hr className="border-[var(--color-neutro-100)]" />
-
-      <div>
-        <p className={labelClass}>Evento Contable</p>
-        {readOnly ? (
-          <p className={valueClass}>
-            {EVENTOS_CONTABLES.find((e) => e.value === exception.eventoContable)?.label ?? exception.eventoContable}
-            {exception.eventoContable !== "ninguno" && exception.unidadEvento && (
-              <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_EVENTO.find((u) => u.value === exception.unidadEvento)?.label ?? exception.unidadEvento}</span>
-            )}
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            <Select options={EVENTOS_CONTABLES} value={exception.eventoContable} onChange={(v: string) => {
-              updateExcepcionProperty(stepId, eid, "eventoContable", v);
-              if (v === "ninguno") updateExcepcionProperty(stepId, eid, "unidadEvento", null);
-              else if (v === "descuenta" && !exception.unidadEvento) updateExcepcionProperty(stepId, eid, "unidadEvento", "emisora");
-              else if (v === "suma" && !exception.unidadEvento) updateExcepcionProperty(stepId, eid, "unidadEvento", "receptora");
-            }} />
-            {exception.eventoContable !== "ninguno" && (
-              <Select options={UNIDADES_EVENTO} value={exception.unidadEvento ?? ""} onChange={(v: string) => updateExcepcionProperty(stepId, eid, "unidadEvento", v)} />
-            )}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <p className={labelClass}>Perfil Responsable</p>
-        {readOnly ? (
-          <p className={valueClass}>{exception.unidadResponsableId ? PERFILES_RESPONSABLE.find((e) => e.value === exception.unidadResponsableId)?.label ?? exception.unidadResponsableId : "Sin asignar"}</p>
-        ) : (
-          <Select options={[{ value: "", label: "Sin asignar" }, ...PERFILES_RESPONSABLE.map((e) => ({ value: e.value, label: e.label }))]}
-            value={exception.unidadResponsableId ?? ""} onChange={(v: string) => updateExcepcionProperty(stepId, eid, "unidadResponsableId", v || null)} />
-        )}
-      </div>
-
-      <div>
-        <p className={labelClass}>Transferencia de Carga</p>
-        {readOnly ? (
-          <p className={valueClass}>{exception.transferenciaCarga ? (exception.transferenciaCarga === "entrega" ? "Entrega carga" : "Recibe carga") : "Sin transferencia"}</p>
-        ) : (
-          <Select
-            options={[
-              { value: "", label: "Sin transferencia" },
-              { value: "entrega", label: "Entrega carga" },
-              { value: "recepcion", label: "Recibe carga" },
-            ]}
-            value={exception.transferenciaCarga ?? ""}
-            onChange={(v: string) => updateExcepcionProperty(stepId, eid, "transferenciaCarga", v || null)}
-          />
-        )}
-      </div>
-
-      <hr className="border-[var(--color-neutro-100)]" />
-
-      <div>
-        <p className={labelClass}>Aprobación</p>
-        {readOnly ? (
-          <p className={valueClass}>{TIPOS_APROBACION.find((t) => t.value === exception.tipoAprobacion)?.label ?? exception.tipoAprobacion}</p>
-        ) : (
-          <Select options={TIPOS_APROBACION} value={exception.tipoAprobacion} onChange={(v: string) => {
-            updateExcepcionProperty(stepId, eid, "tipoAprobacion", v);
-            updateExcepcionProperty(stepId, eid, "requiereAprobacion", v !== "ninguno");
-          }} />
-        )}
-      </div>
-
-      <div>
-        <p className={labelClass}>Tiempo máximo (minutos)</p>
-        {readOnly ? (
-          <p className={valueClass}>{exception.timeoutMinutos > 0 ? `${exception.timeoutMinutos} min` : "Sin límite"}</p>
-        ) : (
-          <>
-            <Input type="number" value={exception.timeoutMinutos} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExcepcionProperty(stepId, eid, "timeoutMinutos", Number(e.target.value))} />
-            {exception.timeoutMinutos > 0 && (
-              <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Alerta si supera los {exception.timeoutMinutos} minutos
-              </p>
-            )}
-          </>
-        )}
       </div>
     </div>
   );

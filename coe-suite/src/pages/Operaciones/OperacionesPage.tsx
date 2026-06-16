@@ -651,7 +651,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
       const fajo = activeFajos.find((f) => f.id === fajoId);
       if (!fajo) return s;
       const den = denomList.find((d) => d.id === fajo.denominacionId);
-      return s + qty * fajo.cantidadBilletes * (den?.valor ?? 0);
+      return s + qty * fajo.cantidadUnidades * (den?.valor ?? 0);
     }, 0);
     const indivTotal = Object.entries(b.individual).reduce((s, [denId, qty]) => {
       const den = denomList.find((d) => d.id === denId);
@@ -763,7 +763,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                       const fajo = activeFajos.find((f) => f.id === fajoId);
                       if (!fajo) return s;
                       const den = denomList.find((d) => d.id === fajo.denominacionId);
-                      return s + qty * fajo.cantidadBilletes * (den?.valor ?? 0);
+                      return s + qty * fajo.cantidadUnidades * (den?.valor ?? 0);
                     }, 0) + Object.entries(batch.individual).reduce((s, [denId, qty]) => {
                       const den = denomList.find((d) => d.id === denId);
                       return s + qty * (den?.valor ?? 0);
@@ -829,7 +829,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                                   <div key={fajo.id} className="flex items-center gap-3 px-2 py-1 hover:bg-[var(--color-neutro-50)] rounded-corner-m">
                                     <div className="flex-1 min-w-0">
                                       <p className="text-[12px] font-medium text-[var(--color-neutro-700)]">{fajo.nombre}</p>
-                                      <p className="text-[10px] text-[var(--color-neutro-400)]">{fajo.cantidadBilletes} billetes · ${(fajo.cantidadBilletes * g.den.valor).toLocaleString()} c/u</p>
+                                      <p className="text-[10px] text-[var(--color-neutro-400)]">{fajo.cantidadUnidades} {g.den.tipo === "Moneda" ? "monedas" : "billetes"} · ${(fajo.cantidadUnidades * g.den.valor).toLocaleString()} c/u</p>
                                     </div>
                                     <input type="number" min={0} value={batch.fajos[fajo.id] ?? ""}
                                       onChange={(e) => {
@@ -839,7 +839,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                                         setBatches(newBatches);
                                       }}
                                       placeholder="0" className="w-24 text-[14px] font-medium px-3 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white text-right" />
-                                    <p className="text-[12px] font-semibold text-[var(--color-neutro-700)] w-24 text-right">${((batch.fajos[fajo.id] || 0) * fajo.cantidadBilletes * g.den.valor).toLocaleString()}</p>
+                                    <p className="text-[12px] font-semibold text-[var(--color-neutro-700)] w-24 text-right">${((batch.fajos[fajo.id] || 0) * fajo.cantidadUnidades * g.den.valor).toLocaleString()}</p>
                                   </div>
                                 ))}
                               </div>
@@ -997,7 +997,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                       const fajo = fajos.find((f) => f.id === fid);
                       if (!fajo) return s;
                       const den = denomList.find((d) => d.id === fajo.denominacionId);
-                      return s + (batch.fajos[fid] ?? 0) * fajo.cantidadBilletes * (den?.valor ?? 0);
+                      return s + (batch.fajos[fid] ?? 0) * fajo.cantidadUnidades * (den?.valor ?? 0);
                     }, 0);
                     batchTotal += indivIds.reduce((s, did) => {
                       const den = denomList.find((d) => d.id === did);
@@ -1018,7 +1018,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                             return (
                               <div key={fid} className="flex items-center justify-between text-[12px]">
                                 <span className="text-[var(--color-neutro-600)]">{den?.nombre ?? ""} — {fajo.nombre}</span>
-                                <span className="font-medium text-[var(--color-neutro-900)]">{qty} fajos × ${(fajo.cantidadBilletes * (den?.valor ?? 0)).toLocaleString()} = ${(qty * fajo.cantidadBilletes * (den?.valor ?? 0)).toLocaleString()}</span>
+                                <span className="font-medium text-[var(--color-neutro-900)]">{qty} fajos × ${(fajo.cantidadUnidades * (den?.valor ?? 0)).toLocaleString()} = ${(qty * fajo.cantidadUnidades * (den?.valor ?? 0)).toLocaleString()}</span>
                               </div>
                             );
                           })}
@@ -1071,9 +1071,9 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                       denominacionId: fajo.denominacionId,
                       denominacionNombre: den?.nombre ?? "",
                       cantidadFajos: qty,
-                      cantidadBilletes: fajo.cantidadBilletes,
-                      valorPorFajo: fajo.cantidadBilletes * (den?.valor ?? 0),
-                      total: qty * fajo.cantidadBilletes * (den?.valor ?? 0),
+                      cantidadBilletes: fajo.cantidadUnidades,
+                      valorPorFajo: fajo.cantidadUnidades * (den?.valor ?? 0),
+                      total: qty * fajo.cantidadUnidades * (den?.valor ?? 0),
                     };
                   }).filter(Boolean),
                   individual: Object.fromEntries(

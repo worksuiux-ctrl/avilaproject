@@ -11,6 +11,8 @@ export default defineConfig({
       '@components': resolve(__dirname, 'src/components'),
       '@data': resolve(__dirname, 'src/data'),
       '@stores': resolve(__dirname, 'src/stores'),
+      '@services': resolve(__dirname, 'src/services'),
+      '@integrations': resolve(__dirname, 'src/integrations'),
     },
   },
 })

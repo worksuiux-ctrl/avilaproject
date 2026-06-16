@@ -49,7 +49,7 @@ export function BundleTable({ fajos, onEdit, onDelete }: BundleTableProps) {
               </td>
               <td className="px-4 py-3 text-[var(--color-neutro-700)]">{denom?.nombre ?? "—"}</td>
               <td className="px-4 py-3 font-medium text-[var(--color-neutro-900)]">{f.nombre}</td>
-              <td className="px-4 py-3 text-right font-mono font-semibold text-[var(--color-neutro-900)]">{f.cantidadBilletes.toLocaleString()}</td>
+              <td className="px-4 py-3 text-right font-mono font-semibold text-[var(--color-neutro-900)]">{f.cantidadUnidades.toLocaleString()}</td>
               <td className="px-4 py-3 text-right font-mono text-[var(--color-neutro-500)]">{denom ? denom.peso.toFixed(2) : "—"}</td>
               <td className="px-4 py-3 text-right font-mono text-[var(--color-neutro-600)]">{f.pesoEstimado.toFixed(2)}</td>
               <td className="px-4 py-3 text-center">

@@ -196,6 +196,11 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       usaTransportista: false,
       transportistasPermitidos: [],
       divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
       steps: [
         {
           id: "bc-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, destino", timeoutMinutos: 0, excepciones: [
@@ -582,10 +587,9 @@ export const TRANSPORTISTAS = [
 export const TIPOS_CARGA = [
   { value: "remesas", label: "Remesas" },
   { value: "valores", label: "Valores" },
-  { value: "documentacion", label: "Documentación" },
-  { value: "combustible", label: "Combustible" },
-  { value: "mercancias", label: "Mercancías" },
-  { value: "otro", label: "Otro" },
+  { value: "comodities", label: "Comodities" },
+  { value: "productos", label: "Productos" },
+  { value: "alimentos", label: "Alimentos" },
 ];
 
 export const EVENTOS_CONTABLES = [

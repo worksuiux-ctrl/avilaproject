@@ -21,7 +21,7 @@ export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFor
   const [divisaId, setDivisaId] = useState("");
   const [denominacionId, setDenominacionId] = useState("");
   const [nombre, setNombre] = useState("");
-  const [cantidadBilletes, setCantidadBilletes] = useState(0);
+  const [cantidadUnidades, setCantidadUnidades] = useState(0);
   const [activo, setActivo] = useState(true);
 
   useEffect(() => {
@@ -29,13 +29,13 @@ export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFor
       setDivisaId(existingDenominacion?.divisaId ?? "");
       setDenominacionId(existing.denominacionId);
       setNombre(existing.nombre);
-      setCantidadBilletes(existing.cantidadBilletes);
+      setCantidadUnidades(existing.cantidadUnidades);
       setActivo(existing.activo);
     } else {
       setDivisaId(defaultDivisaId ?? "");
       setDenominacionId("");
       setNombre("");
-      setCantidadBilletes(0);
+      setCantidadUnidades(0);
       setActivo(true);
     }
   }, [existing, existingDenominacion?.divisaId, defaultDivisaId]);
@@ -51,16 +51,16 @@ export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFor
   );
 
   const pesoEstimado = useMemo(() => {
-    if (!denominacionSel || cantidadBilletes <= 0) return 0;
-    return parseFloat((denominacionSel.peso * cantidadBilletes).toFixed(2));
-  }, [denominacionSel, cantidadBilletes]);
+    if (!denominacionSel || cantidadUnidades <= 0) return 0;
+    return parseFloat((denominacionSel.peso * cantidadUnidades).toFixed(2));
+  }, [denominacionSel, cantidadUnidades]);
 
   function handleSave() {
-    if (!nombre || cantidadBilletes <= 0 || !denominacionId) return;
+    if (!nombre || cantidadUnidades <= 0 || !denominacionId) return;
     const data = {
       denominacionId,
       nombre,
-      cantidadBilletes,
+      cantidadUnidades,
       pesoEstimado,
       activo,
     };
@@ -69,13 +69,13 @@ export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFor
     onClose();
   }
 
-  const invalid = !nombre || cantidadBilletes <= 0 || !denominacionId;
+  const invalid = !nombre || cantidadUnidades <= 0 || !denominacionId;
 
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={editId ? "Editar Configuración de Fajo" : "Nueva Configuración de Fajo"}
+      title={editId ? "Editar Configuración de Fajo / Paquete" : "Nuevo Fajo / Paquete de Monedas"}
       size="md"
       actions={
         <div className="flex items-center justify-end gap-2">
@@ -104,11 +104,11 @@ export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFor
         />
         <Input label="Nombre del Fajo *" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Fajo Completo, Fajo Medio" />
         <Input
-          label="Cantidad de Billetes *"
+          label="Cantidad de unidades *"
           type="number"
           min={1}
-          value={cantidadBilletes}
-          onChange={(e) => setCantidadBilletes(parseInt(e.target.value) || 0)}
+          value={cantidadUnidades}
+          onChange={(e) => setCantidadUnidades(parseInt(e.target.value) || 0)}
           placeholder="Ej: 100"
         />
         {denominacionSel && (
@@ -118,8 +118,8 @@ export function BundleForm({ open, onClose, editId, defaultDivisaId }: BundleFor
             </p>
             <p className="text-[var(--color-neutro-600)]">
               Peso total estimado: <strong>{pesoEstimado.toFixed(2)} g</strong>
-              {cantidadBilletes > 0 && denominacionSel.peso > 0 && (
-                <span> ({cantidadBilletes} × {denominacionSel.peso} g)</span>
+              {cantidadUnidades > 0 && denominacionSel.peso > 0 && (
+                <span> ({cantidadUnidades} × {denominacionSel.peso} g)</span>
               )}
             </p>
           </div>

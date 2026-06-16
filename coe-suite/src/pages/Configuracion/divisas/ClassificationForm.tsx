@@ -16,6 +16,7 @@ export function ClassificationForm({ open, onClose, editId }: ClassificationForm
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [color, setColor] = useState("#22c55e");
+  const [divisasAplicables, setDivisasAplicables] = useState<string[]>([]);
   const [activo, setActivo] = useState(true);
 
   useEffect(() => {
@@ -23,18 +24,26 @@ export function ClassificationForm({ open, onClose, editId }: ClassificationForm
       setNombre(existing.nombre);
       setDescripcion(existing.descripcion);
       setColor(existing.color);
+      setDivisasAplicables(existing.divisasAplicables ?? []);
       setActivo(existing.activo);
     } else {
       setNombre("");
       setDescripcion("");
       setColor("#22c55e");
+      setDivisasAplicables([]);
       setActivo(true);
     }
   }, [existing]);
 
+  function toggleDivisa(id: string) {
+    setDivisasAplicables((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
+    );
+  }
+
   function handleSave() {
     if (!nombre) return;
-    const data = { nombre: nombre.trim(), descripcion, color, activo };
+    const data = { nombre: nombre.trim(), descripcion, color, divisasAplicables, activo };
     if (editId) store.updateClasificacion(editId, data);
     else store.addClasificacion(data);
     onClose();
@@ -68,6 +77,27 @@ export function ClassificationForm({ open, onClose, editId }: ClassificationForm
               className="w-10 h-10 rounded-corner-m border border-[var(--color-neutro-200)] cursor-pointer"
             />
             <span className="text-[12px] text-[var(--color-neutro-500)]">{color}</span>
+          </div>
+        </div>
+        <div>
+          <label className="block text-[12px] font-medium text-[var(--color-neutro-600)] mb-1">Aplica a divisas</label>
+          <p className="text-[10px] text-[var(--color-neutro-400)] mb-1.5">Seleccione las divisas a las que aplica esta clasificación (vacío = todas)</p>
+          <div className="flex flex-wrap gap-1.5">
+            {store.divisas.filter((d) => d.activo).map((d) => {
+              const selected = divisasAplicables.length === 0 || divisasAplicables.includes(d.id);
+              return (
+                <button key={d.id} type="button"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors cursor-pointer ${
+                    selected
+                      ? "bg-green-50 text-green-700 border-green-300"
+                      : "bg-white text-[var(--color-neutro-400)] border-[var(--color-neutro-200)] hover:border-[var(--color-neutro-300)] opacity-50"
+                  }`}
+                  onClick={() => toggleDivisa(d.id)}
+                >
+                  {d.simbolo} {d.codigoISO}
+                </button>
+              );
+            })}
           </div>
         </div>
         <Checkbox label="Clasificación activa" checked={activo} onChange={setActivo} />
