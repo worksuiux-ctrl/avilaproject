@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, EyeOff, Pencil, ArrowLeft, ArrowRight, Settings2, Sigma, X } from "lucide-react";
 import { useGruposStore } from "@stores/gruposStore";
-import type { Reporte, ReporteColumn, ReporteRow, ColumnAggregation, GroupByConfig } from "../data/reportesTypes";
+import type { Reporte, ReporteColumn, ReporteRow, ColumnAggregation, GroupByConfig, AggregationType } from "../data/reportesTypes";
 import { ColumnManager } from "./ColumnManager";
 import { AggregationBar } from "./AggregationBar";
 
@@ -14,6 +14,40 @@ interface ReportPreviewProps {
 }
 
 const FILTER_CLASS = "w-full h-[34px] px-2.5 py-1.5 text-[12px] border border-[var(--color-neutro-200)] rounded-corner-m bg-white focus:outline-none focus:ring-1 focus:ring-[var(--color-verde-100)]/30 box-border";
+
+function calcAggregation(
+  type: AggregationType,
+  numericValues: number[],
+  _allRows: ReporteRow[],
+  _key: string,
+  rawValues?: unknown[]
+): number | string {
+  switch (type) {
+    case "sum":
+      return numericValues.reduce((a, b) => a + b, 0);
+    case "avg": {
+      if (numericValues.length === 0) return "";
+      const sum = numericValues.reduce((a, b) => a + b, 0);
+      return Math.round((sum / numericValues.length) * 100) / 100;
+    }
+    case "count":
+      return rawValues ? rawValues.length : numericValues.length;
+    case "max": {
+      if (numericValues.length === 0) return "";
+      return Math.max(...numericValues);
+    }
+    case "min": {
+      if (numericValues.length === 0) return "";
+      return Math.min(...numericValues);
+    }
+    case "countUnique": {
+      if (rawValues) return new Set(rawValues.map((v) => String(v))).size;
+      return new Set(numericValues).size;
+    }
+    default:
+      return "";
+  }
+}
 
 function getUniqueValues(data: ReporteRow[], key: string): string[] {
   const values = new Set<string>();
@@ -146,9 +180,19 @@ export function ReportPreview({
     return data;
   }, [report.data, filters, sortKey, sortDir, selectedGroupId, grupos]);
 
+  const divisaFilter = filters["divisa"] ?? "";
+
   const visibleColumns = useMemo(
-    () => columns.filter((c) => c.visible).sort((a, b) => a.order - b.order),
-    [columns]
+    () => columns
+      .filter((c) => c.visible)
+      .filter((c) => {
+        if (!divisaFilter) return true;
+        if (c.key.startsWith("usd_") && divisaFilter !== "USD") return false;
+        if (c.key.startsWith("ves_") && divisaFilter !== "VES") return false;
+        return true;
+      })
+      .sort((a, b) => a.order - b.order),
+    [columns, divisaFilter]
   );
 
   const handleToggleVisibility = (key: string) => {
@@ -273,15 +317,15 @@ export function ReportPreview({
     if (!groupByConfig.enabled || !groupByConfig.columnKey) {
       const totalsRow: Record<string, unknown> = { id: "__totals__" };
       visibleColumns.forEach((col) => {
-        if (col.dataType === "number") {
-          const agg = columnAggregations.find((a) => a.columnKey === col.key);
-          if (!agg) { totalsRow[col.key] = ""; return; }
+        const agg = columnAggregations.find((a) => a.columnKey === col.key);
+        if (!agg) { totalsRow[col.key] = ""; return; }
+        if (agg.type === "count" || agg.type === "countUnique") {
+          const rawValues = sortedFilteredData.map((r) => r[col.key]).filter((v) => v != null && v !== "");
+          totalsRow[col.key] = calcAggregation(agg.type, [], sortedFilteredData, col.key, rawValues);
+        } else if (col.dataType === "number") {
           const values = sortedFilteredData.map((r) => Number(r[col.key])).filter((v) => !isNaN(v));
           if (values.length === 0) { totalsRow[col.key] = ""; return; }
-          totalsRow[col.key] =
-            agg.type === "sum"
-              ? values.reduce((a, b) => a + b, 0)
-              : Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100;
+          totalsRow[col.key] = calcAggregation(agg.type, values, sortedFilteredData, col.key);
         } else {
           totalsRow[col.key] = "";
         }
@@ -302,15 +346,15 @@ export function ReportPreview({
       rows.forEach((row) => result.push(row));
       const subTotals: Record<string, unknown> = { id: `subtotal-${groupVal}`, _isTotals: true };
       visibleColumns.forEach((col) => {
-        if (col.dataType === "number") {
-          const agg = columnAggregations.find((a) => a.columnKey === col.key);
-          if (!agg) { subTotals[col.key] = ""; return; }
+        const agg = columnAggregations.find((a) => a.columnKey === col.key);
+        if (!agg) { subTotals[col.key] = ""; return; }
+        if (agg.type === "count" || agg.type === "countUnique") {
+          const rawValues = rows.map((r) => r[col.key]).filter((v) => v != null && v !== "");
+          subTotals[col.key] = calcAggregation(agg.type, [], rows, col.key, rawValues);
+        } else if (col.dataType === "number") {
           const values = rows.map((r) => Number(r[col.key])).filter((v) => !isNaN(v));
           if (values.length === 0) { subTotals[col.key] = ""; return; }
-          subTotals[col.key] =
-            agg.type === "sum"
-              ? values.reduce((a, b) => a + b, 0)
-              : Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100;
+          subTotals[col.key] = calcAggregation(agg.type, values, rows, col.key);
         } else {
           subTotals[col.key] = "";
         }
@@ -363,7 +407,14 @@ export function ReportPreview({
 
       {/* Filter row — for plantilla: all columns; for regulatorio: only date + grupo */}
         <div className="flex items-start gap-3 flex-wrap">
-          {report.columns
+          {(divisaFilter
+            ? report.columns.filter((c) => {
+                if (c.key.startsWith("usd_") && divisaFilter !== "USD") return false;
+                if (c.key.startsWith("ves_") && divisaFilter !== "VES") return false;
+                return true;
+              })
+            : report.columns
+          )
             .filter((c) => c.visible && (isPlantilla || c.dataType === "date"))
             .sort((a, b) => a.order - b.order)
             .map((col) => {
@@ -617,8 +668,10 @@ export function ReportPreview({
                   <tr key={row.id} className="bg-[var(--color-neutro-100)] font-bold border-t-2 border-[var(--color-neutro-300)]">
                     {visibleColumns.map((col) => (
                       <td key={col.key} className="px-3 py-2 text-[var(--color-neutro-700)] whitespace-nowrap">
-                        {col.dataType === "number" && row[col.key] !== ""
-                          ? Number(row[col.key]).toLocaleString("es-ES", { minimumFractionDigits: 2 })
+                        {row[col.key] !== "" && typeof row[col.key] === "number"
+                          ? Number.isInteger(row[col.key] as number)
+                            ? (row[col.key] as number).toLocaleString("es-ES")
+                            : (row[col.key] as number).toLocaleString("es-ES", { minimumFractionDigits: 2 })
                           : col.order === 0 ? "Totales" : ""}
                       </td>
                     ))}

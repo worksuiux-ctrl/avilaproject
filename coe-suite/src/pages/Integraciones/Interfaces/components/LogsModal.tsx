@@ -44,7 +44,7 @@ export function LogsModal({ open, onClose, interfaceName, logs }: LogsModalProps
         <Table
           columns={columns}
           data={logs}
-          pageSize={4}
+          pageSize={3}
         />
       </div>
       <div className="flex items-center justify-end gap-2 mt-4">

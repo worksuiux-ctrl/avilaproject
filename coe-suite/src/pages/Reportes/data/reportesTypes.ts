@@ -43,7 +43,7 @@ export interface Carpeta {
   parentId: string | null;
 }
 
-export type AggregationType = "sum" | "avg";
+export type AggregationType = "sum" | "avg" | "count" | "max" | "min" | "countUnique";
 
 export interface ColumnAggregation {
   columnKey: string;
