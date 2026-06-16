@@ -93,7 +93,7 @@ export const MODULES: Module[] = [
     icon: "Puzzle",
     description: "Conexiones con sistemas externos",
     items: [
-      { id: "integrations", label: "Panel de Integraciones", icon: "Puzzle", route: "/integrations" },
+      { id: "integrations", label: "Panel de Integraciones", icon: "ServerStack", route: "/integrations" },
       { id: "interfaces", label: "Interfaces", icon: "Network", route: "/interfaces" },
     ],
   },

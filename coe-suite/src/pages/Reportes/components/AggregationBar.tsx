@@ -1,6 +1,6 @@
 import { Select } from "@coe/design-system";
 import { Sigma } from "lucide-react";
-import type { ReporteColumn, ColumnAggregation, GroupByConfig } from "../data/reportesTypes";
+import type { ReporteColumn, ColumnAggregation, GroupByConfig, AggregationType } from "../data/reportesTypes";
 
 interface AggregationBarProps {
   columns: ReporteColumn[];
@@ -22,6 +22,10 @@ export function AggregationBar({
   const aggOptions = [
     { value: "sum", label: "Sumar" },
     { value: "avg", label: "Promediar" },
+    { value: "count", label: "Contar" },
+    { value: "max", label: "Máximo" },
+    { value: "min", label: "Mínimo" },
+    { value: "countUnique", label: "Contar Únicos" },
   ];
 
   const columnOptions = columns
@@ -71,7 +75,7 @@ export function AggregationBar({
                       onChange={(v) => {
                         if (v) {
                           const next = aggregations.filter((a) => a.columnKey !== opt.value);
-                          next.push({ columnKey: opt.value, type: v as "sum" | "avg" });
+                          next.push({ columnKey: opt.value, type: v as AggregationType });
                           onAggregationsChange(next);
                         } else {
                           onAggregationsChange(aggregations.filter((a) => a.columnKey !== opt.value));
