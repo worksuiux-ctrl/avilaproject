@@ -4,6 +4,7 @@ import { Modal } from "../../../components/ui/Modal";
 import { useCalendarioStore, type CalendarioConfig, type ClasificacionDia, type AlcanceConfig } from "../../../stores/calendarioFinancieroStore";
 import { useEntitiesStore } from "../../../stores/entitiesStore";
 import { useGruposStore } from "../../../stores/gruposStore";
+import { DeleteDialog } from "../../../components/shared/DeleteDialog";
 import { ChevronLeft, ChevronRight, CalendarDays, Search, X } from "lucide-react";
 
 type VistaCalendario = "mes" | "semana" | "año";
@@ -59,15 +60,24 @@ function getMonthDays(year: number, month: number): { day: number; other: boolea
   return cells;
 }
 
-function ClasificacionBadge({ clasificacion, label }: { clasificacion: ClasificacionDia; label?: string }) {
+const ALCANCE_LABEL: Record<AlcanceConfig, string> = {
+  todas: "Todas",
+  unidades: "Unidad(es)",
+  grupos: "Grupo(s)",
+};
+
+function ClasificacionBadge({ clasificacion, alcance, label }: { clasificacion: ClasificacionDia; alcance?: AlcanceConfig; label?: string }) {
   const color = CLASIFICACION_COLORS[clasificacion];
   return (
-    <span
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight truncate max-w-full"
+    <div
+      className="w-full flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium leading-tight truncate"
       style={{ backgroundColor: color + "20", color, border: `1px solid ${color}40` }}
     >
-      {label ?? clasificacion}
-    </span>
+      <span className="flex-1 min-w-0 truncate">{label ?? clasificacion}</span>
+      {alcance && (
+        <span className="shrink-0 text-[9px] font-normal opacity-70">{ALCANCE_LABEL[alcance]}</span>
+      )}
+    </div>
   );
 }
 
@@ -96,7 +106,7 @@ function DayCell({ day, configs, disabled, isToday, onClick, onBadgeClick }: Day
       <div className="flex flex-col gap-0.5 w-full min-w-0">
         {configs.slice(0, 3).map((cfg) => (
           <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer">
-            <ClasificacionBadge clasificacion={cfg.clasificacion} />
+            <ClasificacionBadge clasificacion={cfg.clasificacion} alcance={cfg.alcance} />
           </div>
         ))}
         {configs.length > 3 && (
@@ -135,7 +145,7 @@ function WeekColumn({ year, month, day, configs, disabled, isToday, onClick, onB
       <div className="flex flex-col gap-1 w-full min-w-0">
         {configs.slice(0, 4).map((cfg) => (
           <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer">
-            <ClasificacionBadge clasificacion={cfg.clasificacion} label={cfg.descripcion} />
+            <ClasificacionBadge clasificacion={cfg.clasificacion} alcance={cfg.alcance} label={cfg.descripcion} />
           </div>
         ))}
         {configs.length > 4 && (
@@ -193,6 +203,7 @@ export function CalendarioFinancieroPage() {
   const [unidadSearch, setUnidadSearch] = useState("");
   const [grupoSearch, setGrupoSearch] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const store = useCalendarioStore();
   const entities = useEntitiesStore((s) => s.entities);
@@ -346,7 +357,12 @@ export function CalendarioFinancieroPage() {
     if (!selectedDate || !editingConfigId) return;
     store.removeConfig(editingConfigId);
     setModalOpen(false);
+    setDeleteDialogOpen(false);
   }, [selectedDate, editingConfigId, store]);
+
+  const confirmDelete = useCallback(() => {
+    setDeleteDialogOpen(true);
+  }, []);
 
   const handleClasificacionChange = useCallback((v: string) => {
     const val = v as ClasificacionDia;
@@ -553,7 +569,7 @@ export function CalendarioFinancieroPage() {
         actions={
           <div className="flex items-center justify-between w-full">
             {isEditing ? (
-              <Button variant="danger" size="sm" onClick={handleDelete}>
+              <Button variant="danger" size="sm" onClick={confirmDelete}>
                 Eliminar esta configuración
               </Button>
             ) : <div />}
@@ -739,6 +755,15 @@ export function CalendarioFinancieroPage() {
           )}
         </div>
       </Modal>
+
+      <DeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Eliminar configuración"
+        description="¿Estás seguro de que deseas eliminar esta configuración del calendario?"
+        itemName={selectedDate ? formatDateLabel(selectedDate) : ""}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
