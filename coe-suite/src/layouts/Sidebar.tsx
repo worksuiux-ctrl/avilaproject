@@ -183,7 +183,7 @@ export function Sidebar() {
   };
 
   const handleNavigate = (route: string) => {
-    navStore(route.replace("/", "") || "dashboard");
+    navStore(route.replaceAll("/", "") || "dashboard");
     navigate(route);
   };
 
