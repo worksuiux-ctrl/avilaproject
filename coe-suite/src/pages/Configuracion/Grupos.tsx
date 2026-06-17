@@ -1,14 +1,38 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Plus, Search, Globe, Calculator, ChevronRight, MapPin, Pencil, Trash2, X, Users, Package, Truck } from "lucide-react";
 import { Button, Select, Input, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
+import { SearchableSelect } from "@components/ui/SearchableSelect";
 import { useGruposStore, type Grupo } from "@stores/gruposStore";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { useClientesStore } from "@stores/clientesStore";
 import { useProveedoresStore } from "@stores/proveedoresStore";
 import { DeleteDialog } from "@components/shared/DeleteDialog";
 
+const GEOJSON_URL = "/data/venezuela-estados.geojson";
 const GEO_SUBTIPOS = ["Continente", "País", "Estado/Provincia", "Ciudad", "Zona", "Municipio"];
+
+interface MapEntity {
+  name: string;
+  subtipo: string;
+  lat: string;
+  lng: string;
+}
+
+function computeCentroid(feature: GeoJSON.Feature): { lat: number; lng: number } {
+  const coords = feature.geometry!.coordinates as any[];
+  const rings = feature.geometry!.type === "MultiPolygon" ? coords.flat() : coords;
+  const allPoints = rings.flat();
+  let minLat = Infinity, maxLat = -Infinity;
+  let minLng = Infinity, maxLng = -Infinity;
+  for (const [lng, lat] of allPoints) {
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+    minLng = Math.min(minLng, lng);
+    maxLng = Math.max(maxLng, lng);
+  }
+  return { lat: (minLat + maxLat) / 2, lng: (minLng + maxLng) / 2 };
+}
 
 const MEMBER_ICONS: Record<string, typeof Package> = {
   unidades: Package,
@@ -393,16 +417,99 @@ function GrupoDetail({ grupo, onEdit, onAddChild, onDelete, onAddMember }: {
 /* ── Grupo Form Modal ── */
 function GrupoFormModal({ open, editId, parentId, onClose }: { open: boolean; editId: string | null; parentId: string | null; onClose: () => void }) {
   const store = useGruposStore();
-  const existing = editId ? store.grupos.find((g) => g.id === editId) : null;
 
-  const [codigo, setCodigo] = useState(existing?.codigo ?? "");
-  const [nombre, setNombre] = useState(existing?.nombre ?? "");
-  const [tipo, setTipo] = useState<"Geográfico" | "Contable">(existing?.tipo ?? "Geográfico");
-  const [subtipo, setSubtipo] = useState(existing?.subtipo ?? "");
-  const [activo, setActivo] = useState(existing?.activo ?? true);
-  const [lat, setLat] = useState(existing?.coordenadas?.lat ?? "");
-  const [lng, setLng] = useState(existing?.coordenadas?.lng ?? "");
-  const [pid, setPid] = useState<string | null>(existing?.padreId ?? parentId ?? null);
+  const [codigo, setCodigo] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [tipo, setTipo] = useState<"Geográfico" | "Contable">("Geográfico");
+  const [subtipo, setSubtipo] = useState("");
+  const [activo, setActivo] = useState(true);
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [pid, setPid] = useState<string | null>(null);
+
+  const [mapEntities, setMapEntities] = useState<MapEntity[]>([]);
+  const fromEntityRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const existing = editId ? store.grupos.find((g) => g.id === editId) : null;
+    setCodigo(existing?.codigo ?? "");
+    setNombre(existing?.nombre ?? "");
+    setTipo(existing?.tipo ?? "Geográfico");
+    setSubtipo(existing?.subtipo ?? "");
+    setActivo(existing?.activo ?? true);
+    setLat(existing?.coordenadas?.lat ?? "");
+    setLng(existing?.coordenadas?.lng ?? "");
+    setPid(existing?.padreId ?? parentId ?? null);
+    fromEntityRef.current = false;
+  }, [open, editId]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch(GEOJSON_URL)
+      .then((r) => r.json())
+      .then((fc: GeoJSON.FeatureCollection) => {
+        const entities: MapEntity[] = fc.features.map((f) => {
+          const name = f.properties!.shapeName as string;
+          const centroid = computeCentroid(f);
+          return { name, subtipo: "Estado/Provincia", lat: centroid.lat.toFixed(4), lng: centroid.lng.toFixed(4) };
+        });
+        entities.sort((a, b) => a.name.localeCompare(b.name));
+        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+        for (const f of fc.features) {
+          const c = computeCentroid(f);
+          minLat = Math.min(minLat, parseFloat(c.lat.toFixed(4)));
+          maxLat = Math.max(maxLat, parseFloat(c.lat.toFixed(4)));
+          minLng = Math.min(minLng, parseFloat(c.lng.toFixed(4)));
+          maxLng = Math.max(maxLng, parseFloat(c.lng.toFixed(4)));
+        }
+        entities.unshift({
+          name: "Venezuela",
+          subtipo: "País",
+          lat: ((minLat + maxLat) / 2).toFixed(4),
+          lng: ((minLng + maxLng) / 2).toFixed(4),
+        });
+        setMapEntities(entities);
+      })
+      .catch(() => {});
+  }, [open]);
+
+  const filteredEntities = useMemo(
+    () => mapEntities.filter((e) => e.subtipo === subtipo),
+    [mapEntities, subtipo],
+  );
+
+  const mapEntityOptions = filteredEntities.map((e) => ({ value: e.name, label: `${e.name} (${e.subtipo})` }));
+
+  function handleSelectMapEntity(name: string) {
+    const entity = mapEntities.find((e) => e.name === name);
+    if (!entity) return;
+    fromEntityRef.current = true;
+    setNombre(entity.name);
+    setSubtipo(entity.subtipo);
+    setLat(entity.lat);
+    setLng(entity.lng);
+  }
+
+  const entityPlaceholder =
+    subtipo === "País" ? "Seleccionar país..." :
+    subtipo === "Estado/Provincia" ? "Seleccionar estado..." :
+    "Seleccionar...";
+  const entitySearchPlaceholder =
+    subtipo === "País" ? "Buscar país..." :
+    subtipo === "Estado/Provincia" ? "Buscar estado..." :
+    "Buscar...";
+
+  useEffect(() => {
+    if (!fromEntityRef.current) return;
+    const matches = mapEntities.some((e) => e.name === nombre && e.subtipo === subtipo);
+    if (!matches) {
+      setNombre("");
+      setLat("");
+      setLng("");
+    }
+    fromEntityRef.current = false;
+  }, [subtipo]);
 
   const isGeo = tipo === "Geográfico";
   const subtipos = isGeo ? GEO_SUBTIPOS : ["Contable"];
@@ -434,9 +541,23 @@ function GrupoFormModal({ open, editId, parentId, onClose }: { open: boolean; ed
           <Select label="Subtipo" options={subtipos.map((s) => ({ value: s, label: s }))} value={subtipo} onChange={setSubtipo} />
         </div>
         {isGeo && (
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Latitud" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="Ej: 10.4806" />
-            <Input label="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="Ej: -66.9036" />
+          <div className="space-y-3">
+            {["País", "Estado/Provincia"].includes(subtipo) && (
+              <div>
+                <label className="block text-[12px] font-medium text-[var(--color-neutro-600)] mb-1">Entidad del mapa</label>
+                <SearchableSelect
+                  options={mapEntityOptions}
+                  value={mapEntities.find((e) => e.name === nombre)?.name ?? ""}
+                  onChange={handleSelectMapEntity}
+                  placeholder={entityPlaceholder}
+                  searchPlaceholder={entitySearchPlaceholder}
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Latitud" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="Ej: 10.4806" />
+              <Input label="Longitud" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="Ej: -66.9036" />
+            </div>
           </div>
         )}
         <Select

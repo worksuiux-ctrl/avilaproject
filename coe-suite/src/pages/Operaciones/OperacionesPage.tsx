@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import type React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight, ChevronDown, ChevronRight, FileText, Plus, Package, FolderOpen, LayoutGrid, List, Calendar, CheckCheck } from "lucide-react";
 import { Button, Badge, Select, Input } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
@@ -131,6 +131,10 @@ export function OperacionesPage() {
               <List className="w-4 h-4" />
             </button>
           </div>
+          <Link to="/operaciones/conteo" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-corner-m border border-[var(--color-verde-100)] text-[var(--color-verde-100)] hover:bg-[var(--color-verde-100)] hover:text-white transition-colors">
+            <Package className="w-3.5 h-3.5" />
+            Mesa de Conteo
+          </Link>
           <Button iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}>
             Nueva Transacción
           </Button>
@@ -418,6 +422,11 @@ function KanbanBoard({ template, instances, onSelect, onAdvanceNoData, inst }: {
                         {isComplete && <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />}
                       </div>
                       {instancia.codigoRemesa && <p className="text-[10px] font-mono text-[var(--color-verde-100)] mb-1">{instancia.codigoRemesa}</p>}
+                      {step.id === "demo-s-5b" && !isComplete && !isException && (
+                        <Link to="/operaciones/conteo" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--color-verde-100)] hover:underline mb-1 cursor-pointer">
+                          <Package className="w-3 h-3" /> Ir a Mesa de Conteo
+                        </Link>
+                      )}
                       <p className="text-[11px] text-[var(--color-neutro-500)]">{instancia.createdAt}</p>
                       {!isComplete && !isException && (
                         <div className="flex items-center gap-1 mt-2 pt-1.5 border-t border-[var(--color-neutro-100)]">
@@ -1918,6 +1927,23 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
           </div>
         )}
       </div>
+
+      {/* En Conteo → link to Mesa */}
+      {currentStep?.id === "demo-s-5b" && !isComplete && !isTerminated && (
+        <div className="bg-amber-50 border border-amber-200 rounded-corner-m p-4">
+          <div className="flex items-center gap-3">
+            <Package className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="flex-1">
+              <p className="text-[13px] font-bold text-amber-800">Remesa en proceso de conteo</p>
+              <p className="text-[12px] text-amber-700">Las bolsas se están contabilizando en la Mesa de Conteo</p>
+            </div>
+            <Link to="/operaciones/conteo" className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-semibold rounded-corner-m bg-amber-600 text-white hover:bg-amber-700 transition-colors">
+              <Package className="w-4 h-4" />
+              Ir a Mesa de Conteo
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Advance / Exceptions */}
       {nextStep && !isComplete && !isTerminated && template && (

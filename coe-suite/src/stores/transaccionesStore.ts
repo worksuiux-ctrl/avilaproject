@@ -182,9 +182,13 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         {
           id: "demo-s-5", nombre: "Recibido", orden: 5, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, excepciones: [
             { id: "demo-e-6", nombre: "Diferencia de peso", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "Diferencia encontrada", timeoutMinutos: 120 },
-          ], camposSeleccionados: ["agencia-codigo", "agencia-nombre", "agencia-responsable"], serviciosCategorias: ["Manipulación", "Conteo"] },
+          ], camposSeleccionados: ["agencia-codigo", "agencia-nombre", "agencia-responsable"], serviciosCategorias: ["Manipulación"] },
         {
-          id: "demo-s-6", nombre: "Confirmado", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+          id: "demo-s-5b", nombre: "En Conteo", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
+            { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
+          ], camposSeleccionados: [], serviciosCategorias: ["Conteo"] },
+        {
+          id: "demo-s-6", nombre: "Confirmado", orden: 7, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
       ],
     },
     {
@@ -505,7 +509,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       return { procesosFinalizados: [...s.procesosFinalizados, copia] };
     }),
 }),
-    { name: "transacciones-store", version: 5, migrate: (persisted: unknown, version: number) => {
+    { name: "transacciones-store", version: 7, migrate: (persisted: unknown, version: number) => {
     const state = persisted as Record<string, unknown>;
     if (version < 1) {
       const templates = (state as any)?.procesosFinalizados as any[];
@@ -579,6 +583,49 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       const templates = (state as any)?.procesosFinalizados as any[];
       if (templates) {
         state.procesosFinalizados = templates.map((t: any) => addCodigoToggles(t)) as any;
+      }
+    }
+    if (version < 6) {
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        state.procesosFinalizados = templates.map((t: any) => {
+          if (t.id !== "demo-remesa-agencia") return t;
+          const steps = t.steps as any[];
+          const idxRecibido = steps.findIndex((s: any) => s.id === "demo-s-5");
+          if (idxRecibido === -1) return t;
+          const idxConteo = steps.findIndex((s: any) => s.id === "demo-s-5b");
+          if (idxConteo !== -1) return t;
+          const envConteo = {
+            id: "demo-s-5b", nombre: "En Conteo", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
+              { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
+            ], camposSeleccionados: [], serviciosCategorias: ["Conteo"],
+          };
+          const newSteps = [...steps];
+          newSteps.splice(idxRecibido + 1, 0, envConteo);
+          return { ...t, steps: newSteps.map((s: any, i: number) => ({ ...s, orden: i + 1 })) };
+        }) as any;
+      }
+    }
+    if (version < 7) {
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        state.procesosFinalizados = templates.map((t: any) => {
+          if (t.id !== "demo-remesa-agencia") return t;
+          const steps = t.steps as any[];
+          // insert "En Conteo" if missing (fix from v6 bad migration)
+          const idxConteo = steps.findIndex((s: any) => s.id === "demo-s-5b");
+          if (idxConteo !== -1) return t;
+          const idxRecibido = steps.findIndex((s: any) => s.id === "demo-s-5");
+          if (idxRecibido === -1) return t;
+          const envConteo = {
+            id: "demo-s-5b", nombre: "En Conteo", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
+              { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
+            ], camposSeleccionados: [], serviciosCategorias: ["Conteo"],
+          };
+          const newSteps = [...steps];
+          newSteps.splice(idxRecibido + 1, 0, envConteo);
+          return { ...t, steps: newSteps.map((s: any, i: number) => ({ ...s, orden: i + 1 })) };
+        }) as any;
       }
     }
     return state as TransaccionesState;

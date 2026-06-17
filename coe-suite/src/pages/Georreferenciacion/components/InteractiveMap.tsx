@@ -8,6 +8,30 @@ const DEFAULT_ZOOM = 5.2;
 
 const GEOJSON_URL = "/data/venezuela-estados.geojson";
 
+const REGION_STATES: Record<string, string[]> = {
+  Capital: ["Distrito Capital", "Miranda", "La Guaira"],
+  Central: ["Aragua", "Carabobo", "Cojedes"],
+  "Centro Occidental": ["Falcón", "Lara", "Portuguesa", "Yaracuy"],
+  "Los Andes": ["Barinas", "Mérida", "Táchira", "Trujillo"],
+  Oriente: ["Anzoátegui", "Monagas", "Sucre", "Nueva Esparta"],
+  Guayana: ["Bolívar", "Amazonas", "Delta Amacuro"],
+  Llanos: ["Apure", "Guárico"],
+  Zuliana: ["Zulia"],
+  Insular: ["Nueva Esparta", "Dependencias Federales"],
+};
+
+const GROUP_REGION_MAP: Record<string, string> = {
+  "grp-2": "Capital",
+  "grp-3": "Central",
+  "grp-4": "Centro Occidental",
+  "grp-5": "Zuliana",
+  "grp-6": "Los Andes",
+  "grp-7": "Llanos",
+  "grp-8": "Oriente",
+  "grp-9": "Guayana",
+  "grp-10": "Insular",
+};
+
 function getZoomForSubtipo(subtipo: string): number {
   switch (subtipo) {
     case "Continente": return 4;
@@ -18,6 +42,15 @@ function getZoomForSubtipo(subtipo: string): number {
     case "Ciudad": return 10;
     default: return 6;
   }
+}
+
+function matchGroupToStates(group: Grupo): string[] {
+  const key = GROUP_REGION_MAP[group.id];
+  if (key) return REGION_STATES[key] ?? [];
+  const match = Object.keys(REGION_STATES).find((r) =>
+    group.nombre.toLowerCase().includes(r.toLowerCase()),
+  );
+  return match ? REGION_STATES[match] : [];
 }
 
 interface InteractiveMapProps {
@@ -37,6 +70,7 @@ export function InteractiveMap({ selectedGroup }: InteractiveMapProps) {
       center: VENEZUELA_CENTER,
       zoom: DEFAULT_ZOOM,
       attributionControl: false,
+      bearingSnap: 0,
     });
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
@@ -66,22 +100,22 @@ export function InteractiveMap({ selectedGroup }: InteractiveMapProps) {
       });
 
       map.addLayer({
-        id: "estados-fill",
-        type: "fill",
-        source: "venezuela-estados",
-        paint: {
-          "fill-color": "transparent",
-          "fill-opacity": 0.4,
-        },
-      });
-
-      map.addLayer({
         id: "estados-outline",
         type: "line",
         source: "venezuela-estados",
         paint: {
           "line-color": "#475569",
           "line-width": 0.5,
+        },
+      });
+
+      map.addLayer({
+        id: "estados-fill",
+        type: "fill",
+        source: "venezuela-estados",
+        paint: {
+          "fill-color": "transparent",
+          "fill-opacity": 0.4,
         },
       });
 
@@ -127,7 +161,35 @@ export function InteractiveMap({ selectedGroup }: InteractiveMapProps) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !selectedGroup?.coordenadas) return;
+    if (!map || !map.getSource("venezuela-estados")) return;
+
+    const regionLayerId = "estados-region";
+
+    if (selectedGroup?.tipo !== "Geográfico") {
+      if (map.getLayer(regionLayerId)) map.removeLayer(regionLayerId);
+    } else {
+      if (map.getLayer(regionLayerId)) map.removeLayer(regionLayerId);
+
+      const layer: maplibregl.LayerSpecification = {
+        id: regionLayerId,
+        type: "fill",
+        source: "venezuela-estados",
+        paint: {
+          "fill-color": "#93c5fd",
+          "fill-opacity": 0.4,
+        },
+      };
+
+      if (selectedGroup.subtipo !== "Continente" && selectedGroup.subtipo !== "País") {
+        const states = matchGroupToStates(selectedGroup);
+        if (states.length === 0) return;
+        layer.filter = ["in", ["get", "shapeName"], ["literal", states]];
+      }
+
+      map.addLayer(layer, "estados-fill");
+    }
+
+    if (!selectedGroup?.coordenadas) return;
     const lng = parseFloat(selectedGroup.coordenadas.lng);
     const lat = parseFloat(selectedGroup.coordenadas.lat);
     if (isNaN(lng) || isNaN(lat)) return;

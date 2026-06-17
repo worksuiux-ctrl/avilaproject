@@ -71,9 +71,9 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
     ],
   },
 
-  /* ───────── Sub Entidades ───────── */
+  /* ───────── Dispositivos ───────── */
   {
-    nivel: "Sub Entidades",
+    nivel: "Dispositivos",
     fields: [
       { key: "modeloFabricante", label: "Modelo/Fabricante", type: "select", options: [...MODELOS_ATM, ...MODELOS_POS], section: "propiedades" },
       { key: "modoInstalacion", label: "Modo de Instalación", type: "select", options: ["Empotrado", "Stand-alone", "Móvil"], section: "propiedades" },

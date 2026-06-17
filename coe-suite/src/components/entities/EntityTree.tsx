@@ -44,8 +44,27 @@ function TreeNode({ entity, depth, allEntities, hiddenLevels }: { entity: Entity
   const operable = useMemo(() => isEntityOperable(entity, allEntities), [entity, allEntities]);
 
   const grouped = useMemo(() => {
+    const order: Record<string, number> = {
+      "Depósitos": 0,
+      "Dispositivos": 1,
+      "Oficinas": 2,
+    };
+    const subOrder: Record<string, number> = {
+      "Bóveda": 0,
+      "Caja": 1,
+      "ATM": 2,
+      "Taquilla": 3,
+    };
+    const sorted = [...children].sort((a, b) => {
+      const nivA = order[a.nivel] ?? 99;
+      const nivB = order[b.nivel] ?? 99;
+      if (nivA !== nivB) return nivA - nivB;
+      const subA = subOrder[a.subtipo] ?? 99;
+      const subB = subOrder[b.subtipo] ?? 99;
+      return subA - subB;
+    });
     const groups: Record<string, Entity[]> = {};
-    for (const child of children) {
+    for (const child of sorted) {
       const key = child.subtipo ?? child.nivel;
       if (!groups[key]) groups[key] = [];
       groups[key].push(child);
@@ -255,11 +274,45 @@ export function EntityTree() {
                 }
                 return <TreeNode key={e.id} entity={e} depth={depth} allEntities={entities} hiddenLevels={hiddenLevels} />;
               })
-          : entities
-              .filter((e) => e.padreId === null && entityVisible(e))
-              .map((root) => (
-                <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
-              ))}
+          : (() => {
+              const internal = entities.filter((e) => e.padreId === null && entityVisible(e) && e.nivel !== "Entidad Bancaria");
+              const external = entities.filter((e) => e.padreId === null && entityVisible(e) && e.nivel === "Entidad Bancaria");
+              const grupos = internal.reduce<{ nivel: string; items: Entity[] }[]>((acc, e) => {
+                const last = acc[acc.length - 1];
+                if (last && last.nivel === e.nivel) last.items.push(e);
+                else acc.push({ nivel: e.nivel, items: [e] });
+                return acc;
+              }, []);
+              return (
+                <>
+                  {grupos.map((g) =>
+                    g.items.length === 1 ? (
+                      <TreeNode key={g.items[0].id} entity={g.items[0]} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
+                    ) : (
+                      <div key={g.nivel} className="border-l-2 border-[var(--color-neutro-200)] ml-2 pl-2 space-y-0.5">
+                        {g.items.map((root) => (
+                          <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
+                        ))}
+                      </div>
+                    )
+                  )}
+                  {external.length > 0 && internal.length > 0 && (
+                    <div className="border-t border-[var(--color-neutro-200)] my-3" />
+                  )}
+                  {external.length > 0 && (
+                    <div className="px-2 py-1.5">
+                      <p className="text-[11px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide flex items-center gap-1.5">
+                        <Circle className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                        Externas
+                      </p>
+                    </div>
+                  )}
+                  {external.map((root) => (
+                    <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
+                  ))}
+                </>
+              );
+            })()}
         {rootIds.length === 0 && (
           <p className="text-[13px] text-[var(--color-neutro-400)] p-4 text-center">
             {query ? "Sin resultados" : hiddenLevels.size === UNIDADES_LEVELS.length ? "Todos los tipos están ocultos" : "No hay entidades"}

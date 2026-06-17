@@ -32,7 +32,7 @@ export function validateEntity(entity: Entity, entities: Entity[]): RuleViolatio
       }
       break;
 
-    case "Sub Entidades":
+    case "Dispositivos":
       if (!entity.padreId) {
         violations.push({
           field: "padreId",
@@ -45,6 +45,19 @@ export function validateEntity(entity: Entity, entities: Entity[]): RuleViolatio
           violations.push({
             field: "padreId",
             message: "La entidad padre asignada no está activa",
+            severity: "error",
+          });
+        }
+      }
+      break;
+
+    case "Oficinas":
+      if (entity.subtipo === "Taquilla" && entity.padreId) {
+        const padre = entities.find((e) => e.id === entity.padreId);
+        if (padre && padre.nivel === "Oficinas" && padre.subtipo !== "Agencia" && padre.subtipo !== "Sucursal") {
+          violations.push({
+            field: "padreId",
+            message: "Una taquilla solo puede pertenecer a una Agencia o Sucursal",
             severity: "error",
           });
         }
@@ -87,6 +100,19 @@ export function validateEntity(entity: Entity, entities: Entity[]): RuleViolatio
       }
       break;
     }
+
+    case "Entidad Bancaria":
+      if (entity.subtipo === "Banco Central") {
+        const existing = entities.filter((e) => e.subtipo === "Banco Central" && e.id !== entity.id);
+        if (existing.length > 0) {
+          violations.push({
+            field: "subtipo",
+            message: "Solo puede existir un Banco Central en el sistema",
+            severity: "error",
+          });
+        }
+      }
+      break;
   }
 
   return violations;

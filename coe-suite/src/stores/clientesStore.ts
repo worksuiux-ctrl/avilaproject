@@ -23,6 +23,8 @@ export interface Sucursal {
   direccion: string;
   contacto: string;
   activo: boolean;
+  latitud: number;
+  longitud: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -153,14 +155,14 @@ const CLIENTES_DEMO: Cliente[] = [
 ];
 
 const SUCURSALES_DEMO: Sucursal[] = [
-  { id: "suc-1", clienteId: "cli-1", codigo: "FAR-CCS-01", nombre: "Farmatodo Sabana Grande", direccion: "Av. Sabana Grande, Caracas", contacto: "Laura Méndez", activo: true, createdAt: "2026-01-20", updatedAt: "2026-01-20" },
-  { id: "suc-2", clienteId: "cli-1", codigo: "FAR-CCS-02", nombre: "Farmatodo Las Mercedes", direccion: "Centro Comercial Galerías, Las Mercedes", contacto: "José Rivas", activo: true, createdAt: "2026-01-25", updatedAt: "2026-01-25" },
-  { id: "suc-3", clienteId: "cli-1", codigo: "FAR-VLC-01", nombre: "Farmatodo Valencia", direccion: "Av. Bolívar, Valencia", contacto: "Marta Linares", activo: true, createdAt: "2026-02-01", updatedAt: "2026-02-01" },
-  { id: "suc-4", clienteId: "cli-2", codigo: "SPL-CCS-01", nombre: "Plaza's Centro", direccion: "CCCT, Chuao, Caracas", contacto: "Pedro Guerra", activo: true, createdAt: "2026-02-10", updatedAt: "2026-02-10" },
-  { id: "suc-5", clienteId: "cli-2", codigo: "SPL-MRD-01", nombre: "Plaza's Miranda", direccion: "Centro Comercial Lider, Miranda", contacto: "Rosa Arvelo", activo: true, createdAt: "2026-02-15", updatedAt: "2026-02-15" },
-  { id: "suc-6", clienteId: "cli-4", codigo: "RLE-CCS-01", nombre: "La Estación Sabana Grande", direccion: "Av. Sabana Grande, Edif. La Estación, Caracas", contacto: "Andrés Torres", activo: true, createdAt: "2026-03-05", updatedAt: "2026-03-05" },
-  { id: "suc-7", clienteId: "cli-5", codigo: "BDP-CCS-01", nombre: "Banco del Pueblo CCS Centro", direccion: "Av. Urdaneta, Caracas", contacto: "Carmen Díaz", activo: true, createdAt: "2026-03-15", updatedAt: "2026-03-15" },
-  { id: "suc-8", clienteId: "cli-5", codigo: "BDP-MRQ-01", nombre: "Banco del Pueblo Maracaibo", direccion: "Av. 5 de Julio, Maracaibo", contacto: "Luis Salazar", activo: true, createdAt: "2026-03-20", updatedAt: "2026-03-20" },
+  { id: "suc-1", clienteId: "cli-1", codigo: "FAR-CCS-01", nombre: "Farmatodo Sabana Grande", direccion: "Av. Sabana Grande, Caracas", contacto: "Laura Méndez", activo: true, latitud: 10.4900, longitud: -66.8800, createdAt: "2026-01-20", updatedAt: "2026-01-20" },
+  { id: "suc-2", clienteId: "cli-1", codigo: "FAR-CCS-02", nombre: "Farmatodo Las Mercedes", direccion: "Centro Comercial Galerías, Las Mercedes", contacto: "José Rivas", activo: true, latitud: 10.4780, longitud: -66.8700, createdAt: "2026-01-25", updatedAt: "2026-01-25" },
+  { id: "suc-3", clienteId: "cli-1", codigo: "FAR-VLC-01", nombre: "Farmatodo Valencia", direccion: "Av. Bolívar, Valencia", contacto: "Marta Linares", activo: true, latitud: 10.1620, longitud: -68.0030, createdAt: "2026-02-01", updatedAt: "2026-02-01" },
+  { id: "suc-4", clienteId: "cli-2", codigo: "SPL-CCS-01", nombre: "Plaza's Centro", direccion: "CCCT, Chuao, Caracas", contacto: "Pedro Guerra", activo: true, latitud: 10.4850, longitud: -66.8600, createdAt: "2026-02-10", updatedAt: "2026-02-10" },
+  { id: "suc-5", clienteId: "cli-2", codigo: "SPL-MRD-01", nombre: "Plaza's Miranda", direccion: "Centro Comercial Lider, Miranda", contacto: "Rosa Arvelo", activo: true, latitud: 10.2500, longitud: -66.4500, createdAt: "2026-02-15", updatedAt: "2026-02-15" },
+  { id: "suc-6", clienteId: "cli-4", codigo: "RLE-CCS-01", nombre: "La Estación Sabana Grande", direccion: "Av. Sabana Grande, Edif. La Estación, Caracas", contacto: "Andrés Torres", activo: true, latitud: 10.4900, longitud: -66.8800, createdAt: "2026-03-05", updatedAt: "2026-03-05" },
+  { id: "suc-7", clienteId: "cli-5", codigo: "BDP-CCS-01", nombre: "Banco del Pueblo CCS Centro", direccion: "Av. Urdaneta, Caracas", contacto: "Carmen Díaz", activo: true, latitud: 10.4880, longitud: -66.8900, createdAt: "2026-03-15", updatedAt: "2026-03-15" },
+  { id: "suc-8", clienteId: "cli-5", codigo: "BDP-MRQ-01", nombre: "Banco del Pueblo Maracaibo", direccion: "Av. 5 de Julio, Maracaibo", contacto: "Luis Salazar", activo: true, latitud: 10.6316, longitud: -71.6405, createdAt: "2026-03-20", updatedAt: "2026-03-20" },
 ];
 
 const ACUERDOS_DEMO: AcuerdoComercial[] = [

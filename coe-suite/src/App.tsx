@@ -15,7 +15,7 @@ import { Interfaces } from "./pages/Integraciones/Interfaces/Interfaces";
 import { PanelIntegraciones } from "./pages/Integraciones/PanelIntegraciones/PanelIntegraciones";
 import { MapaInteractivo } from "./pages/Georreferenciacion/MapaInteractivo";
 import { Login } from "./pages/Login/Login";
-import { OperacionesPage } from "./pages/Operaciones/OperacionesPage";
+import { OperacionesPage, MesaConteoPage } from "./pages/Operaciones";
 
 const PENDING_ROUTES = [
   "kpi-operativo", "op-reports",
@@ -49,6 +49,7 @@ function App() {
             <Route path="/config/grupos" element={<Grupos />} />
             <Route path="/config/motor-transacciones" element={<MotorTransacciones />} />
             <Route path="/operaciones" element={<OperacionesPage />} />
+            <Route path="/operaciones/conteo" element={<MesaConteoPage />} />
             {PENDING_ROUTES.map((v) => (
               <Route key={v} path={`/${v}`} element={<ComingSoon view={v} />} />
             ))}

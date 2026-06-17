@@ -81,6 +81,8 @@ export interface SucursalProveedor {
   contacto: string;
   telefono: string;
   activo: boolean;
+  latitud: number;
+  longitud: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -509,10 +511,10 @@ interface ProveedoresState {
 }
 
 const SUCURSALES_DEMO: SucursalProveedor[] = [
-  { id: "suc-prov-1", proveedorId: "prov-1", codigo: "SC-CCS-001", nombre: "Sucursal Caracas Centro", direccion: "Av. Universidad, Edif. Central, Caracas", contacto: "Luis Medina", telefono: "+58 212-555.0102", activo: true, createdAt: "2026-01-15", updatedAt: "2026-01-15" },
-  { id: "suc-prov-2", proveedorId: "prov-1", codigo: "SC-VLC-001", nombre: "Sucursal Valencia", direccion: "Calle 100, Zona Industrial, Valencia", contacto: "Marta Rivas", telefono: "+58 241-555.0103", activo: true, createdAt: "2026-02-01", updatedAt: "2026-02-01" },
-  { id: "suc-prov-3", proveedorId: "prov-2", codigo: "SC-MRQ-001", nombre: "Depósito Maracaibo", direccion: "Av. 5 de Julio, Maracaibo", contacto: "José López", telefono: "+58 261-555.0203", activo: true, createdAt: "2026-02-15", updatedAt: "2026-02-15" },
-  { id: "suc-prov-4", proveedorId: "prov-4", codigo: "SC-CCS-002", nombre: "Oficina Las Mercedes", direccion: "Av. Principal de Las Mercedes, Caracas", contacto: "Carmen Díaz", telefono: "+58 212-555.0405", activo: true, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "suc-prov-1", proveedorId: "prov-1", codigo: "SC-CCS-001", nombre: "Sucursal Caracas Centro", direccion: "Av. Universidad, Edif. Central, Caracas", contacto: "Luis Medina", telefono: "+58 212-555.0102", activo: true, latitud: 10.4850, longitud: -66.9000, createdAt: "2026-01-15", updatedAt: "2026-01-15" },
+  { id: "suc-prov-2", proveedorId: "prov-1", codigo: "SC-VLC-001", nombre: "Sucursal Valencia", direccion: "Calle 100, Zona Industrial, Valencia", contacto: "Marta Rivas", telefono: "+58 241-555.0103", activo: true, latitud: 10.1620, longitud: -68.0030, createdAt: "2026-02-01", updatedAt: "2026-02-01" },
+  { id: "suc-prov-3", proveedorId: "prov-2", codigo: "SC-MRQ-001", nombre: "Depósito Maracaibo", direccion: "Av. 5 de Julio, Maracaibo", contacto: "José López", telefono: "+58 261-555.0203", activo: true, latitud: 10.6316, longitud: -71.6405, createdAt: "2026-02-15", updatedAt: "2026-02-15" },
+  { id: "suc-prov-4", proveedorId: "prov-4", codigo: "SC-CCS-002", nombre: "Oficina Las Mercedes", direccion: "Av. Principal de Las Mercedes, Caracas", contacto: "Carmen Díaz", telefono: "+58 212-555.0405", activo: true, latitud: 10.4780, longitud: -66.8700, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
 ];
 
 const DEPOSITOS_DEMO: DepositoProveedor[] = [

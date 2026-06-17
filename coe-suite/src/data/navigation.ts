@@ -33,6 +33,7 @@ export const MODULES: Module[] = [
     description: "Gestión por perfil — Banco, BCV, Transportista, Corporativo, Negocios",
     items: [
       { id: "operaciones-main", label: "Panel de Operaciones", icon: "Briefcase", route: "/operaciones" },
+      { id: "operaciones-conteo", label: "Mesa de Conteo", icon: "Package", route: "/operaciones/conteo" },
     ],
   },
   {
