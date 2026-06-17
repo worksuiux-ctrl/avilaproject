@@ -8,6 +8,8 @@ import { useNavStore } from "../../../stores/navStore";
 import { DeleteDialog } from "../../../components/shared/DeleteDialog";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, CalendarDays, Search, X } from "lucide-react";
+import { getEntityType } from "../../../data/entityCatalog";
+import { EntityIcon } from "../../../components/entities/entityIcons";
 
 type VistaCalendario = "mes" | "semana" | "año";
 
@@ -183,6 +185,84 @@ const EMPTY_FORM = {
   gruposIds: [] as string[],
 };
 
+interface ArbolUnidadNodeProps {
+  entityId: string;
+  depth: number;
+  selectedIds: Set<string>;
+  expandedIds: Set<string>;
+  onToggle: (id: string) => void;
+  onToggleExpand: (id: string) => void;
+  search: string;
+}
+
+function ArbolUnidadNode({ entityId, depth, selectedIds, expandedIds, onToggle, onToggleExpand, search }: ArbolUnidadNodeProps) {
+  const entity = useEntitiesStore((s) => s.entities.find((e) => e.id === entityId));
+  const children = useEntitiesStore((s) => s.entities.filter((e) => e.padreId === entityId));
+  if (!entity) return null;
+
+  const tipo = getEntityType(entity.nivel);
+  const hasChildren = children.length > 0;
+  const isExpanded = expandedIds.has(entityId);
+  const isSelected = selectedIds.has(entityId);
+
+  const filteredChildren = useMemo(() => {
+    if (!search.trim()) return children;
+    const q = search.toLowerCase();
+    const matchFn = (e: { id: string; nombre: string; codigo: string; nivel: string; subtipo: string }): boolean =>
+      e.nombre.toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q) || e.nivel.toLowerCase().includes(q) || e.subtipo.toLowerCase().includes(q);
+    const matches = new Set<string>();
+    const walk = (eId: string) => {
+      const e = useEntitiesStore.getState().entities.find((en) => en.id === eId);
+      if (!e) return;
+      if (matchFn(e)) matches.add(eId);
+      useEntitiesStore.getState().entities.filter((ch) => ch.padreId === eId).forEach((ch) => walk(ch.id));
+    };
+    children.forEach((ch) => walk(ch.id));
+    return children.filter((c) => matches.has(c.id));
+  }, [children, search]);
+
+  return (
+    <div>
+      <div
+        className={`flex items-center gap-1.5 px-2 py-1 rounded-corner-m text-[13px] transition-colors ${
+          isSelected ? "bg-[var(--color-verde-100)]/10" : "hover:bg-[var(--color-neutro-50)]"
+        }`}
+        style={{ paddingLeft: `${8 + depth * 20}px` }}
+      >
+        <span
+          className={`shrink-0 w-4 h-4 flex items-center justify-center transition-transform ${isExpanded ? "rotate-90" : ""} cursor-pointer`}
+          onClick={(e) => { e.stopPropagation(); if (hasChildren) onToggleExpand(entityId); }}
+        >
+          {hasChildren ? <ChevronRight className="w-3.5 h-3.5 text-[var(--color-neutro-400)]" /> : <span className="w-3.5" />}
+        </span>
+        <Checkbox
+          checked={isSelected}
+          onChange={() => onToggle(entityId)}
+        />
+        <EntityIcon nivel={entity.nivel} subtipo={entity.subtipo} className="w-4 h-4 shrink-0" style={{ color: tipo?.color ?? "#6B7280" }} />
+        <span className="flex-1 min-w-0 truncate">{entity.nombre}</span>
+        <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{entity.codigo}</span>
+      </div>
+      {hasChildren && isExpanded && (
+        <div>
+          {filteredChildren.map((child) => (
+            <ArbolUnidadNode
+              key={child.id}
+              entityId={child.id}
+              depth={depth + 1}
+              selectedIds={selectedIds}
+              expandedIds={expandedIds}
+              onToggle={onToggle}
+              onToggleExpand={onToggleExpand}
+              search={search}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CalendarioFinancieroPage() {
   const today = useMemo(() => new Date(), []);
   const [vista, setVista] = useState<VistaCalendario>("mes");
@@ -206,6 +286,7 @@ export function CalendarioFinancieroPage() {
   const [grupoSearch, setGrupoSearch] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [unidadExpandedIds, setUnidadExpandedIds] = useState<Set<string>>(new Set());
 
   const store = useCalendarioStore();
   const entities = useEntitiesStore((s) => s.entities);
@@ -364,8 +445,8 @@ export function CalendarioFinancieroPage() {
     if (!selectedDate || !editingConfigId) return;
     store.removeConfig(editingConfigId);
     setModalOpen(false);
-    toast.success("Configuración eliminada", { description: formatDateLabel(selectedDate) });
     setDeleteDialogOpen(false);
+    toast.success("Configuración eliminada", { description: formatDateLabel(selectedDate) });
   }, [selectedDate, editingConfigId, store]);
 
   const confirmDelete = useCallback(() => {
@@ -393,31 +474,6 @@ export function CalendarioFinancieroPage() {
     }));
   }, [currentWeekStart]);
 
-  const NIVEL_ORDER = ["Central Administrativa", "Oficinas", "Depósitos", "Anaqueles", "Dispositivos"];
-
-  const unidadesDisponibles = useMemo(() => {
-    return entities
-      .filter((e) => e.activo)
-      .map((e) => ({ id: e.id, label: `${e.codigo} — ${e.nombre}`, nivel: e.nivel, subtipo: e.subtipo }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [entities]);
-
-  const unidadesPorNivel = useMemo(() => {
-    const groups = new Map<string, typeof unidadesDisponibles>();
-    for (const nivel of NIVEL_ORDER) groups.set(nivel, []);
-    for (const u of unidadesDisponibles) {
-      const arr = groups.get(u.nivel);
-      if (arr) arr.push(u);
-    }
-    return groups;
-  }, [unidadesDisponibles]);
-
-  const filteredUnidades = useMemo(() => {
-    if (!unidadSearch.trim()) return null;
-    const q = unidadSearch.toLowerCase();
-    return unidadesDisponibles.filter((u) => u.label.toLowerCase().includes(q) || u.nivel.toLowerCase().includes(q) || u.subtipo.toLowerCase().includes(q));
-  }, [unidadesDisponibles, unidadSearch]);
-
   const gruposDisponibles = useMemo(() => {
     return grupos
       .filter((g) => g.tipo === "Geográfico" && g.activo)
@@ -435,18 +491,42 @@ export function CalendarioFinancieroPage() {
     setFormUnidadesIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }, []);
 
-  const toggleUnidadNivel = useCallback((nivel: string, ids: string[]) => {
-    const allSelected = ids.every((id) => formUnidadesIds.includes(id));
-    if (allSelected) {
-      setFormUnidadesIds((prev) => prev.filter((id) => !ids.includes(id)));
-    } else {
-      setFormUnidadesIds((prev) => [...new Set([...prev, ...ids])]);
-    }
-  }, [formUnidadesIds]);
-
   const toggleGrupo = useCallback((id: string) => {
     setFormGruposIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }, []);
+
+  const toggleUnidadExpand = useCallback((id: string) => {
+    setUnidadExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const getRootEntities = useCallback(() => {
+    return entities.filter((e) => e.padreId === null);
+  }, [entities]);
+
+  const selectedIdsSet = useMemo(() => new Set(formUnidadesIds), [formUnidadesIds]);
+
+  const rootIds = useMemo(() => {
+    if (!unidadSearch.trim()) {
+      return entities.filter((e) => e.padreId === null).map((e) => e.id);
+    }
+    const q = unidadSearch.toLowerCase();
+    const matched = new Set<string>();
+    const walk = (eId: string) => {
+      const e = entities.find((en) => en.id === eId);
+      if (!e) return;
+      if (e.nombre.toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q) || e.nivel.toLowerCase().includes(q) || e.subtipo.toLowerCase().includes(q))
+        matched.add(eId);
+      entities.filter((ch) => ch.padreId === eId).forEach((ch) => walk(ch.id));
+    };
+    entities.filter((e) => e.padreId === null).forEach((e) => walk(e.id));
+    const hasMatch = (eId: string): boolean => matched.has(eId) || entities.filter((ch) => ch.padreId === eId).some((ch) => hasMatch(ch.id));
+    return entities.filter((e) => e.padreId === null && hasMatch(e.id)).map((e) => e.id);
+  }, [entities, unidadSearch]);
 
   const isEditing = editingConfigId !== null;
 
@@ -693,60 +773,22 @@ export function CalendarioFinancieroPage() {
                   </button>
                 )}
               </div>
-              <div className="max-h-[260px] overflow-y-auto">
-                {filteredUnidades !== null ? (
-                  filteredUnidades.length === 0 ? (
-                    <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
-                  ) : (
-                    filteredUnidades.map((u) => (
-                      <label
-                        key={u.id}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
-                          formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
-                        }`}
-                      >
-                        <Checkbox
-                          checked={formUnidadesIds.includes(u.id)}
-                          onChange={() => toggleUnidad(u.id)}
-                        />
-                        <span className="flex-1 min-w-0 truncate">{u.label}</span>
-                        <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
-                      </label>
-                    ))
-                  )
+              <div className="max-h-[260px] overflow-y-auto p-1 space-y-0.5">
+                {rootIds.length === 0 ? (
+                  <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
                 ) : (
-                  NIVEL_ORDER.map((nivel) => {
-                    const items = unidadesPorNivel.get(nivel) ?? [];
-                    if (items.length === 0) return null;
-                    const allSelected = items.every((u) => formUnidadesIds.includes(u.id));
-                    return (
-                      <div key={nivel}>
-                        <div
-                          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-neutro-50)] border-b border-[var(--color-neutro-100)] cursor-pointer select-none"
-                          onClick={() => toggleUnidadNivel(nivel, items.map((u) => u.id))}
-                        >
-                          <Checkbox checked={allSelected} onChange={() => toggleUnidadNivel(nivel, items.map((u) => u.id))} />
-                          <span className="text-[12px] font-semibold text-[var(--color-neutro-700)] flex-1">{nivel}</span>
-                          <span className="text-[11px] text-[var(--color-neutro-400)]">{items.length} unidad{items.length !== 1 ? "es" : ""}</span>
-                        </div>
-                        {items.map((u) => (
-                          <label
-                            key={u.id}
-                            className={`flex items-center gap-2 px-3 py-1 pl-9 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
-                              formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
-                            }`}
-                          >
-                            <Checkbox
-                              checked={formUnidadesIds.includes(u.id)}
-                              onChange={() => toggleUnidad(u.id)}
-                            />
-                            <span className="flex-1 min-w-0 truncate">{u.label}</span>
-                            <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
-                          </label>
-                        ))}
-                      </div>
-                    );
-                  })
+                  rootIds.map((id) => (
+                    <ArbolUnidadNode
+                      key={id}
+                      entityId={id}
+                      depth={0}
+                      selectedIds={selectedIdsSet}
+                      expandedIds={unidadExpandedIds}
+                      onToggle={toggleUnidad}
+                      onToggleExpand={toggleUnidadExpand}
+                      search={unidadSearch}
+                    />
+                  ))
                 )}
               </div>
               {formUnidadesIds.length > 0 && (
