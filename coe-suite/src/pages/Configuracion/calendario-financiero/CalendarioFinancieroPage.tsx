@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Heading, Text, Button, Select, Input } from "@coe/design-system";
+import { Heading, Text, Button, Select, Input, Checkbox } from "@coe/design-system";
 import { Modal } from "../../../components/ui/Modal";
 import { useCalendarioStore, type CalendarioConfig, type ClasificacionDia, type AlcanceConfig } from "../../../stores/calendarioFinancieroStore";
 import { useEntitiesStore } from "../../../stores/entitiesStore";
@@ -630,32 +630,24 @@ export function CalendarioFinancieroPage() {
             <Text variant="small" className="text-[var(--color-neutro-600)] font-semibold mb-2 block">
               Alcance / Granularidad
             </Text>
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-1 bg-[var(--color-neutro-50)] rounded-corner-m p-0.5">
               {[
-                { value: "todas" as AlcanceConfig, label: "Todas las Unidades del Sistema" },
-                { value: "unidades" as AlcanceConfig, label: "Solo unas Unidades específicas" },
-                { value: "grupos" as AlcanceConfig, label: "Por Grupos Geográficos" },
+                { value: "todas" as AlcanceConfig, label: "Todas las Unidades" },
+                { value: "unidades" as AlcanceConfig, label: "Unidades específicas" },
+                { value: "grupos" as AlcanceConfig, label: "Grupos Geográficos" },
               ].map((opt) => (
-                <label
+                <button
                   key={opt.value}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-corner-m border cursor-pointer transition-colors ${
+                  type="button"
+                  onClick={() => handleAlcanceChange(opt.value)}
+                  className={`flex-1 px-3 py-1.5 text-[12px] font-medium rounded-corner-m border-none cursor-pointer transition-all text-center ${
                     formAlcance === opt.value
-                      ? "border-[var(--color-verde-100)] bg-[var(--color-verde-100)]/5"
-                      : "border-[var(--color-neutro-200)] hover:border-[var(--color-neutro-300)]"
+                      ? "bg-white text-[var(--color-verde-100)] shadow-sm border border-[var(--color-neutro-200)] font-semibold"
+                      : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="alcance"
-                    value={opt.value}
-                    checked={formAlcance === opt.value}
-                    onChange={() => handleAlcanceChange(opt.value)}
-                    className="accent-[var(--color-verde-100)]"
-                  />
-                  <Text variant="small" className={formAlcance === opt.value ? "font-semibold" : ""}>
-                    {opt.label}
-                  </Text>
-                </label>
+                  {opt.label}
+                </button>
               ))}
             </div>
           </div>
@@ -691,11 +683,9 @@ export function CalendarioFinancieroPage() {
                         formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
                       }`}
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={formUnidadesIds.includes(u.id)}
                         onChange={() => toggleUnidad(u.id)}
-                        className="accent-[var(--color-verde-100)] shrink-0"
                       />
                       <span className="flex-1 min-w-0 truncate">{u.label}</span>
                       <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
@@ -742,11 +732,9 @@ export function CalendarioFinancieroPage() {
                         formGruposIds.includes(g.id) ? "bg-[var(--color-verde-100)]/5" : ""
                       }`}
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         checked={formGruposIds.includes(g.id)}
                         onChange={() => toggleGrupo(g.id)}
-                        className="accent-[var(--color-verde-100)] shrink-0"
                       />
                       <span className="flex-1 min-w-0 truncate">{g.label}</span>
                       <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{g.subtipo}</span>
