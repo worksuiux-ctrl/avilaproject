@@ -1,8 +1,10 @@
 import { useState, useMemo, useCallback } from "react";
-import { Heading, Text, Button, Select, Input, Badge, Checkbox } from "@coe/design-system";
+import { Heading, Text, Button, Select, Input, Badge } from "@coe/design-system";
 import { Modal } from "../../../components/ui/Modal";
 import { useCalendarioStore, type CalendarioConfig, type ClasificacionDia, type AlcanceConfig } from "../../../stores/calendarioFinancieroStore";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { useEntitiesStore } from "../../../stores/entitiesStore";
+import { useGruposStore } from "../../../stores/gruposStore";
+import { ChevronLeft, ChevronRight, CalendarDays, Search, X } from "lucide-react";
 
 type VistaCalendario = "mes" | "semana" | "año";
 
@@ -10,12 +12,11 @@ const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const DIAS_SEMANA_LARGO = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-const CLASIFICACION_OPTIONS = [
+const CLASIFICACION_BASE = [
   { value: "Hábil", label: "Día Hábil" },
   { value: "No Hábil", label: "Día No Hábil" },
   { value: "Feriado Nacional", label: "Feriado Nacional" },
   { value: "Feriado Bancario", label: "Feriado Bancario" },
-  { value: "Fin de Semana", label: "Fin de Semana" },
 ];
 
 const CLASIFICACION_COLORS: Record<ClasificacionDia, string> = {
@@ -58,12 +59,7 @@ function getMonthDays(year: number, month: number): { day: number; other: boolea
   return cells;
 }
 
-interface ClasificacionBadgeProps {
-  clasificacion: ClasificacionDia;
-  label?: string;
-}
-
-function ClasificacionBadge({ clasificacion, label }: ClasificacionBadgeProps) {
+function ClasificacionBadge({ clasificacion, label }: { clasificacion: ClasificacionDia; label?: string }) {
   const color = CLASIFICACION_COLORS[clasificacion];
   return (
     <span
@@ -76,12 +72,8 @@ function ClasificacionBadge({ clasificacion, label }: ClasificacionBadgeProps) {
 }
 
 interface DayCellProps {
-  year: number;
-  month: number;
-  day: number;
-  configs: CalendarioConfig[];
-  disabled: boolean;
-  isToday: boolean;
+  year: number; month: number; day: number;
+  configs: CalendarioConfig[]; disabled: boolean; isToday: boolean;
   onClick: () => void;
 }
 
@@ -96,7 +88,7 @@ function DayCell({ day, configs, disabled, isToday, onClick }: DayCellProps) {
           : "bg-white text-[var(--color-neutro-800)] hover:border-[var(--color-verde-100)] hover:shadow-sm cursor-pointer border-[var(--color-neutro-200)]"
       } ${isToday ? "ring-2 ring-[var(--color-verde-100)] ring-offset-1" : ""}`}
     >
-      <span className={`text-[11px] font-semibold leading-tight px-0.5 ${isToday ? "text-[var(--color-verde-100)]" : disabled ? "" : ""}`}>
+      <span className={`text-[11px] font-semibold leading-tight px-0.5 ${isToday ? "text-[var(--color-verde-100)]" : ""}`}>
         {day}
       </span>
       <div className="flex flex-col gap-0.5 w-full min-w-0">
@@ -113,17 +105,7 @@ function DayCell({ day, configs, disabled, isToday, onClick }: DayCellProps) {
   );
 }
 
-interface WeekColumnProps {
-  year: number;
-  month: number;
-  day: number;
-  configs: CalendarioConfig[];
-  disabled: boolean;
-  isToday: boolean;
-  onClick: () => void;
-}
-
-function WeekColumn({ year, month, day, configs, disabled, isToday, onClick }: WeekColumnProps) {
+function WeekColumn({ year, month, day, configs, disabled, isToday, onClick }: DayCellProps) {
   const date = new Date(year, month, day);
   const dayName = DIAS_SEMANA_LARGO[date.getDay()];
   return (
@@ -184,8 +166,14 @@ export function CalendarioFinancieroPage() {
   const [formDescripcion, setFormDescripcion] = useState("");
   const [formAlcance, setFormAlcance] = useState<AlcanceConfig>("todas");
   const [formFinSemana, setFormFinSemana] = useState<"sábado" | "domingo" | "ambos" | null>(null);
+  const [formUnidadesIds, setFormUnidadesIds] = useState<string[]>([]);
+  const [formGruposIds, setFormGruposIds] = useState<string[]>([]);
+  const [unidadSearch, setUnidadSearch] = useState("");
+  const [grupoSearch, setGrupoSearch] = useState("");
 
   const store = useCalendarioStore();
+  const entities = useEntitiesStore((s) => s.entities);
+  const grupos = useGruposStore((s) => s.grupos);
 
   const configsMap = useMemo(() => {
     const map = new Map<string, CalendarioConfig[]>();
@@ -196,6 +184,18 @@ export function CalendarioFinancieroPage() {
     }
     return map;
   }, [store.configs]);
+
+  const selectedDateDayOfWeek = useMemo(() => {
+    if (!selectedDate) return -1;
+    return new Date(selectedDate + "T12:00:00").getDay();
+  }, [selectedDate]);
+
+  const clasificacionOptions = useMemo(() => {
+    if (selectedDateDayOfWeek === 0 || selectedDateDayOfWeek === 6) {
+      return [...CLASIFICACION_BASE, { value: "Fin de Semana", label: "Fin de Semana" }];
+    }
+    return CLASIFICACION_BASE;
+  }, [selectedDateDayOfWeek]);
 
   const handlePrev = useCallback(() => {
     if (vista === "mes") {
@@ -257,11 +257,15 @@ export function CalendarioFinancieroPage() {
       setFormDescripcion(last.descripcion);
       setFormAlcance(last.alcance);
       setFormFinSemana(last.finSemanaAplica);
+      setFormUnidadesIds(last.unidadesIds);
+      setFormGruposIds(last.gruposIds);
     } else {
       setFormClasificacion("Hábil");
       setFormDescripcion("");
       setFormAlcance("todas");
       setFormFinSemana(null);
+      setFormUnidadesIds([]);
+      setFormGruposIds([]);
     }
     setModalOpen(true);
   }, [configsMap]);
@@ -274,8 +278,8 @@ export function CalendarioFinancieroPage() {
       clasificacion: formClasificacion,
       descripcion: formDescripcion,
       alcance: formAlcance,
-      unidadesIds: [],
-      gruposIds: [],
+      unidadesIds: formAlcance === "unidades" ? formUnidadesIds : [],
+      gruposIds: formAlcance === "grupos" ? formGruposIds : [],
       finSemanaAplica: formClasificacion === "Fin de Semana" ? formFinSemana : null,
     };
     if (existing.length === 0) {
@@ -284,7 +288,7 @@ export function CalendarioFinancieroPage() {
       store.updateConfig(existing[existing.length - 1].id, data);
     }
     setModalOpen(false);
-  }, [selectedDate, formClasificacion, formDescripcion, formAlcance, formFinSemana, configsMap, store]);
+  }, [selectedDate, formClasificacion, formDescripcion, formAlcance, formFinSemana, formUnidadesIds, formGruposIds, configsMap, store]);
 
   const handleDelete = useCallback(() => {
     if (!selectedDate) return;
@@ -293,17 +297,55 @@ export function CalendarioFinancieroPage() {
     setModalOpen(false);
   }, [selectedDate, configsMap, store]);
 
+  const handleClasificacionChange = useCallback((v: string) => {
+    const val = v as ClasificacionDia;
+    setFormClasificacion(val);
+    if (val !== "Fin de Semana") setFormFinSemana(null);
+  }, []);
+
   const monthDays = useMemo(() => getMonthDays(currentYear, currentMonth), [currentYear, currentMonth]);
 
   const weekDays = useMemo(() => {
     const days = getWeekDays(currentWeekStart.getFullYear(), currentWeekStart.getMonth(), currentWeekStart.getDate());
     return days.map((d) => ({
-      year: d.getFullYear(),
-      month: d.getMonth(),
-      day: d.getDate(),
+      year: d.getFullYear(), month: d.getMonth(), day: d.getDate(),
       key: fechaKey(d.getFullYear(), d.getMonth(), d.getDate()),
     }));
   }, [currentWeekStart]);
+
+  const unidadesDisponibles = useMemo(() => {
+    return entities
+      .filter((e) => (e.nivel === "Oficinas" || e.nivel === "Dispositivos") && e.activo)
+      .map((e) => ({ id: e.id, label: `${e.codigo} — ${e.nombre}`, nivel: e.nivel, subtipo: e.subtipo }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [entities]);
+
+  const gruposDisponibles = useMemo(() => {
+    return grupos
+      .filter((g) => g.tipo === "Geográfico" && g.activo)
+      .map((g) => ({ id: g.id, label: `${g.codigo} — ${g.nombre}`, subtipo: g.subtipo }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [grupos]);
+
+  const filteredUnidades = useMemo(() => {
+    if (!unidadSearch.trim()) return unidadesDisponibles;
+    const q = unidadSearch.toLowerCase();
+    return unidadesDisponibles.filter((u) => u.label.toLowerCase().includes(q) || u.nivel.toLowerCase().includes(q) || u.subtipo.toLowerCase().includes(q));
+  }, [unidadesDisponibles, unidadSearch]);
+
+  const filteredGrupos = useMemo(() => {
+    if (!grupoSearch.trim()) return gruposDisponibles;
+    const q = grupoSearch.toLowerCase();
+    return gruposDisponibles.filter((g) => g.label.toLowerCase().includes(q) || g.subtipo.toLowerCase().includes(q));
+  }, [gruposDisponibles, grupoSearch]);
+
+  const toggleUnidad = useCallback((id: string) => {
+    setFormUnidadesIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }, []);
+
+  const toggleGrupo = useCallback((id: string) => {
+    setFormGruposIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  }, []);
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -367,13 +409,8 @@ export function CalendarioFinancieroPage() {
                   const isTodayFlag = isToday(offsetYear, normMonth, cell.day);
                   return (
                     <DayCell
-                      key={idx}
-                      year={offsetYear}
-                      month={normMonth}
-                      day={cell.day}
-                      configs={configs}
-                      disabled={disabled}
-                      isToday={isTodayFlag}
+                      key={idx} year={offsetYear} month={normMonth} day={cell.day}
+                      configs={configs} disabled={disabled} isToday={isTodayFlag}
                       onClick={() => handleDayClick(offsetYear, normMonth, cell.day)}
                     />
                   );
@@ -391,13 +428,8 @@ export function CalendarioFinancieroPage() {
                   const isTodayFlag = isToday(wd.year, wd.month, wd.day);
                   return (
                     <WeekColumn
-                      key={wd.key}
-                      year={wd.year}
-                      month={wd.month}
-                      day={wd.day}
-                      configs={configs}
-                      disabled={disabled}
-                      isToday={isTodayFlag}
+                      key={wd.key} year={wd.year} month={wd.month} day={wd.day}
+                      configs={configs} disabled={disabled} isToday={isTodayFlag}
                       onClick={() => handleDayClick(wd.year, wd.month, wd.day)}
                     />
                   );
@@ -424,9 +456,7 @@ export function CalendarioFinancieroPage() {
                         const isTodayFlag = isToday(currentYear, m, cell.day);
                         return (
                           <button
-                            key={idx}
-                            type="button"
-                            disabled={disabled}
+                            key={idx} type="button" disabled={disabled}
                             onClick={() => handleDayClick(currentYear, m, cell.day)}
                             className={`text-[9px] text-center rounded-sm py-0.5 leading-tight border border-transparent transition-all ${
                               cell.other
@@ -477,9 +507,9 @@ export function CalendarioFinancieroPage() {
         <div className="flex flex-col gap-4">
           <Select
             label="Clasificación del Día"
-            options={CLASIFICACION_OPTIONS}
+            options={clasificacionOptions}
             value={formClasificacion}
-            onChange={(v) => setFormClasificacion(v as ClasificacionDia)}
+            onChange={handleClasificacionChange}
           />
 
           {formClasificacion === "Fin de Semana" && (
@@ -537,18 +567,104 @@ export function CalendarioFinancieroPage() {
           </div>
 
           {formAlcance === "unidades" && (
-            <div className="border border-[var(--color-neutro-200)] rounded-corner-m p-3">
-              <Text variant="small" className="text-[var(--color-neutro-500)] italic">
-                Selector de unidades próximamente — podrás seleccionar Agencias, CDAs, ATMs, etc.
-              </Text>
+            <div className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
+              <div className="relative border-b border-[var(--color-neutro-200)]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-neutro-400)]" />
+                <input
+                  value={unidadSearch}
+                  onChange={(e) => setUnidadSearch(e.target.value)}
+                  placeholder="Buscar unidades (Agencias, ATMs, Cajas...)"
+                  className="w-full text-[13px] pl-8 pr-3 py-2 outline-none bg-transparent text-[var(--color-neutro-800)]"
+                />
+                {unidadSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setUnidadSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-neutro-400)] hover:text-[var(--color-neutro-600)]"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="max-h-[200px] overflow-y-auto">
+                {filteredUnidades.length === 0 ? (
+                  <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
+                ) : (
+                  filteredUnidades.map((u) => (
+                    <label
+                      key={u.id}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
+                        formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formUnidadesIds.includes(u.id)}
+                        onChange={() => toggleUnidad(u.id)}
+                        className="accent-[var(--color-verde-100)] shrink-0"
+                      />
+                      <span className="flex-1 min-w-0 truncate">{u.label}</span>
+                      <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {formUnidadesIds.length > 0 && (
+                <div className="border-t border-[var(--color-neutro-200)] px-3 py-1.5 text-[12px] text-[var(--color-neutro-500)]">
+                  {formUnidadesIds.length} seleccionada{formUnidadesIds.length !== 1 ? "s" : ""}
+                </div>
+              )}
             </div>
           )}
 
           {formAlcance === "grupos" && (
-            <div className="border border-[var(--color-neutro-200)] rounded-corner-m p-3">
-              <Text variant="small" className="text-[var(--color-neutro-500)] italic">
-                Selector de grupos geográficos próximamente — podrás seleccionar Estados, Municipios, etc.
-              </Text>
+            <div className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
+              <div className="relative border-b border-[var(--color-neutro-200)]">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-neutro-400)]" />
+                <input
+                  value={grupoSearch}
+                  onChange={(e) => setGrupoSearch(e.target.value)}
+                  placeholder="Buscar grupos geográficos..."
+                  className="w-full text-[13px] pl-8 pr-3 py-2 outline-none bg-transparent text-[var(--color-neutro-800)]"
+                />
+                {grupoSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setGrupoSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--color-neutro-400)] hover:text-[var(--color-neutro-600)]"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="max-h-[200px] overflow-y-auto">
+                {filteredGrupos.length === 0 ? (
+                  <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
+                ) : (
+                  filteredGrupos.map((g) => (
+                    <label
+                      key={g.id}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
+                        formGruposIds.includes(g.id) ? "bg-[var(--color-verde-100)]/5" : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formGruposIds.includes(g.id)}
+                        onChange={() => toggleGrupo(g.id)}
+                        className="accent-[var(--color-verde-100)] shrink-0"
+                      />
+                      <span className="flex-1 min-w-0 truncate">{g.label}</span>
+                      <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{g.subtipo}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {formGruposIds.length > 0 && (
+                <div className="border-t border-[var(--color-neutro-200)] px-3 py-1.5 text-[12px] text-[var(--color-neutro-500)]">
+                  {formGruposIds.length} seleccionado{formGruposIds.length !== 1 ? "s" : ""}
+                </div>
+              )}
             </div>
           )}
         </div>
