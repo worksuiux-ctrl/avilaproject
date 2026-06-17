@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { Button } from "@coe/design-system";
 import { AlertTriangle } from "lucide-react";
 
@@ -14,7 +15,7 @@ export function DeleteDialog({
   open, onOpenChange, title, description, itemName, onConfirm,
 }: DeleteDialogProps) {
   if (!open) return null;
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40" onClick={() => onOpenChange(false)}>
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
@@ -38,6 +39,7 @@ export function DeleteDialog({
           <Button onClick={() => { onConfirm(); onOpenChange(false); }}>Eliminar</Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
