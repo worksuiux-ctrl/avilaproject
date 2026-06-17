@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Heading, Text, Button, Select, Input } from "@coe/design-system";
 import { Modal } from "../../../components/ui/Modal";
 import { useCalendarioStore, type CalendarioConfig, type ClasificacionDia, type AlcanceConfig } from "../../../stores/calendarioFinancieroStore";
 import { useEntitiesStore } from "../../../stores/entitiesStore";
 import { useGruposStore } from "../../../stores/gruposStore";
+import { useNavStore } from "../../../stores/navStore";
 import { DeleteDialog } from "../../../components/shared/DeleteDialog";
 import { ChevronLeft, ChevronRight, CalendarDays, Search, X } from "lucide-react";
 
@@ -105,7 +106,7 @@ function DayCell({ day, configs, disabled, isToday, onClick, onBadgeClick }: Day
       </span>
       <div className="flex flex-col gap-0.5 w-full min-w-0">
         {configs.slice(0, 3).map((cfg) => (
-          <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer">
+          <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer hover:brightness-110 hover:saturate-150 transition-all">
             <ClasificacionBadge clasificacion={cfg.clasificacion} alcance={cfg.alcance} />
           </div>
         ))}
@@ -144,7 +145,7 @@ function WeekColumn({ year, month, day, configs, disabled, isToday, onClick, onB
       </div>
       <div className="flex flex-col gap-1 w-full min-w-0">
         {configs.slice(0, 4).map((cfg) => (
-          <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer">
+          <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer hover:brightness-110 hover:saturate-150 transition-all">
             <ClasificacionBadge clasificacion={cfg.clasificacion} alcance={cfg.alcance} label={cfg.descripcion} />
           </div>
         ))}
@@ -208,6 +209,9 @@ export function CalendarioFinancieroPage() {
   const store = useCalendarioStore();
   const entities = useEntitiesStore((s) => s.entities);
   const grupos = useGruposStore((s) => s.grupos);
+  const nav = useNavStore((s) => s.navigate);
+
+  useEffect(() => { nav("config/calendario-financiero"); }, [nav]);
 
   const configsMap = useMemo(() => {
     const map = new Map<string, CalendarioConfig[]>();

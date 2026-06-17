@@ -15,7 +15,7 @@ export function DeleteDialog({
 }: DeleteDialogProps) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => onOpenChange(false)}>
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40" onClick={() => onOpenChange(false)}>
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-2">{title}</h3>
