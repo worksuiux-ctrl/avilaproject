@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Heading, Text, Button, Select, Input, Badge } from "@coe/design-system";
+import { Heading, Text, Button, Select, Input } from "@coe/design-system";
 import { Modal } from "../../../components/ui/Modal";
 import { useCalendarioStore, type CalendarioConfig, type ClasificacionDia, type AlcanceConfig } from "../../../stores/calendarioFinancieroStore";
 import { useEntitiesStore } from "../../../stores/entitiesStore";
@@ -72,19 +72,21 @@ function ClasificacionBadge({ clasificacion, label }: { clasificacion: Clasifica
 }
 
 interface DayCellProps {
-  year: number; month: number; day: number;
-  configs: CalendarioConfig[]; disabled: boolean; isToday: boolean;
+  day: number;
+  configs: CalendarioConfig[];
+  disabled: boolean;
+  isToday: boolean;
   onClick: () => void;
+  onBadgeClick: (cfg: CalendarioConfig) => void;
 }
 
-function DayCell({ day, configs, disabled, isToday, onClick }: DayCellProps) {
+function DayCell({ day, configs, disabled, isToday, onClick, onBadgeClick }: DayCellProps) {
   return (
-    <button
-      type="button"
+    <div
       onClick={disabled ? undefined : onClick}
       className={`flex flex-col items-start gap-0.5 p-1 rounded-corner-m border text-left transition-all min-h-[72px] ${
         disabled
-          ? "bg-[var(--color-neutro-50)] text-[var(--color-neutro-300)] cursor-not-allowed border-transparent"
+          ? "bg-[var(--color-neutro-50)] text-[var(--color-neutro-300)] border-transparent"
           : "bg-white text-[var(--color-neutro-800)] hover:border-[var(--color-verde-100)] hover:shadow-sm cursor-pointer border-[var(--color-neutro-200)]"
       } ${isToday ? "ring-2 ring-[var(--color-verde-100)] ring-offset-1" : ""}`}
     >
@@ -93,7 +95,9 @@ function DayCell({ day, configs, disabled, isToday, onClick }: DayCellProps) {
       </span>
       <div className="flex flex-col gap-0.5 w-full min-w-0">
         {configs.slice(0, 3).map((cfg) => (
-          <ClasificacionBadge key={cfg.id} clasificacion={cfg.clasificacion} />
+          <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer">
+            <ClasificacionBadge clasificacion={cfg.clasificacion} />
+          </div>
         ))}
         {configs.length > 3 && (
           <span className="text-[9px] text-[var(--color-neutro-400)] font-medium px-0.5">
@@ -101,20 +105,26 @@ function DayCell({ day, configs, disabled, isToday, onClick }: DayCellProps) {
           </span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
-function WeekColumn({ year, month, day, configs, disabled, isToday, onClick }: DayCellProps) {
+interface WeekColumnProps {
+  year: number; month: number; day: number;
+  configs: CalendarioConfig[]; disabled: boolean; isToday: boolean;
+  onClick: () => void;
+  onBadgeClick: (cfg: CalendarioConfig) => void;
+}
+
+function WeekColumn({ year, month, day, configs, disabled, isToday, onClick, onBadgeClick }: WeekColumnProps) {
   const date = new Date(year, month, day);
   const dayName = DIAS_SEMANA_LARGO[date.getDay()];
   return (
-    <button
-      type="button"
+    <div
       onClick={disabled ? undefined : onClick}
       className={`flex flex-col items-center gap-2 p-3 rounded-corner-m border text-left transition-all min-h-[140px] ${
         disabled
-          ? "bg-[var(--color-neutro-50)] text-[var(--color-neutro-300)] cursor-not-allowed border-transparent"
+          ? "bg-[var(--color-neutro-50)] text-[var(--color-neutro-300)] border-transparent"
           : "bg-white text-[var(--color-neutro-800)] hover:border-[var(--color-verde-100)] hover:shadow-sm cursor-pointer border-[var(--color-neutro-200)]"
       } ${isToday ? "ring-2 ring-[var(--color-verde-100)] ring-offset-1" : ""}`}
     >
@@ -124,7 +134,9 @@ function WeekColumn({ year, month, day, configs, disabled, isToday, onClick }: D
       </div>
       <div className="flex flex-col gap-1 w-full min-w-0">
         {configs.slice(0, 4).map((cfg) => (
-          <ClasificacionBadge key={cfg.id} clasificacion={cfg.clasificacion} label={cfg.descripcion} />
+          <div key={cfg.id} onClick={(e) => { e.stopPropagation(); onBadgeClick(cfg); }} className="cursor-pointer">
+            <ClasificacionBadge clasificacion={cfg.clasificacion} label={cfg.descripcion} />
+          </div>
         ))}
         {configs.length > 4 && (
           <span className="text-[10px] text-[var(--color-neutro-400)] font-medium text-center">
@@ -132,7 +144,7 @@ function WeekColumn({ year, month, day, configs, disabled, isToday, onClick }: D
           </span>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -150,6 +162,15 @@ function getWeekDays(year: number, month: number, day: number): Date[] {
   return days;
 }
 
+const EMPTY_FORM = {
+  clasificacion: "Hábil" as ClasificacionDia,
+  descripcion: "",
+  alcance: "todas" as AlcanceConfig,
+  finSemana: null as "sábado" | "domingo" | "ambos" | null,
+  unidadesIds: [] as string[],
+  gruposIds: [] as string[],
+};
+
 export function CalendarioFinancieroPage() {
   const today = useMemo(() => new Date(), []);
   const [vista, setVista] = useState<VistaCalendario>("mes");
@@ -161,6 +182,7 @@ export function CalendarioFinancieroPage() {
     return d;
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [formClasificacion, setFormClasificacion] = useState<ClasificacionDia>("Hábil");
   const [formDescripcion, setFormDescripcion] = useState("");
@@ -170,6 +192,7 @@ export function CalendarioFinancieroPage() {
   const [formGruposIds, setFormGruposIds] = useState<string[]>([]);
   const [unidadSearch, setUnidadSearch] = useState("");
   const [grupoSearch, setGrupoSearch] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const store = useCalendarioStore();
   const entities = useEntitiesStore((s) => s.entities);
@@ -247,32 +270,61 @@ export function CalendarioFinancieroPage() {
     return `${currentYear}`;
   }, [vista, currentYear, currentMonth, currentWeekStart]);
 
+  const resetForm = useCallback(() => {
+    setFormClasificacion(EMPTY_FORM.clasificacion);
+    setFormDescripcion(EMPTY_FORM.descripcion);
+    setFormAlcance(EMPTY_FORM.alcance);
+    setFormFinSemana(EMPTY_FORM.finSemana);
+    setFormUnidadesIds(EMPTY_FORM.unidadesIds);
+    setFormGruposIds(EMPTY_FORM.gruposIds);
+    setErrorMsg(null);
+  }, []);
+
+  const fillFormWithConfig = useCallback((cfg: CalendarioConfig) => {
+    setFormClasificacion(cfg.clasificacion);
+    setFormDescripcion(cfg.descripcion);
+    setFormAlcance(cfg.alcance);
+    setFormFinSemana(cfg.finSemanaAplica);
+    setFormUnidadesIds(cfg.unidadesIds);
+    setFormGruposIds(cfg.gruposIds);
+    setErrorMsg(null);
+  }, []);
+
   const handleDayClick = useCallback((year: number, month: number, day: number) => {
     const key = fechaKey(year, month, day);
     setSelectedDate(key);
-    const configs = configsMap.get(key) ?? [];
-    if (configs.length > 0) {
-      const last = configs[configs.length - 1];
-      setFormClasificacion(last.clasificacion);
-      setFormDescripcion(last.descripcion);
-      setFormAlcance(last.alcance);
-      setFormFinSemana(last.finSemanaAplica);
-      setFormUnidadesIds(last.unidadesIds);
-      setFormGruposIds(last.gruposIds);
-    } else {
-      setFormClasificacion("Hábil");
-      setFormDescripcion("");
-      setFormAlcance("todas");
-      setFormFinSemana(null);
-      setFormUnidadesIds([]);
-      setFormGruposIds([]);
-    }
+    setEditingConfigId(null);
+    resetForm();
     setModalOpen(true);
-  }, [configsMap]);
+  }, [resetForm]);
+
+  const handleBadgeClick = useCallback((year: number, month: number, day: number, cfg: CalendarioConfig) => {
+    const key = fechaKey(year, month, day);
+    setSelectedDate(key);
+    setEditingConfigId(cfg.id);
+    fillFormWithConfig(cfg);
+    setModalOpen(true);
+  }, [fillFormWithConfig]);
+
+  const validateAlcance = useCallback((newAlcance: AlcanceConfig): string | null => {
+    if (!selectedDate) return null;
+    const existing = configsMap.get(selectedDate) ?? [];
+    const others = editingConfigId ? existing.filter((c) => c.id !== editingConfigId) : existing;
+    const hasTodas = others.some((c) => c.alcance === "todas");
+    const hasEspecificas = others.some((c) => c.alcance === "unidades" || c.alcance === "grupos");
+    if (newAlcance !== "todas" && hasTodas) {
+      return "No puedes agregar configuraciones específicas en un día que ya tiene una regla para 'Todas las Unidades del Sistema'.";
+    }
+    if (newAlcance === "todas" && hasEspecificas) {
+      return "No puedes asignar 'Todas las Unidades' en un día que ya tiene configuraciones específicas por unidad o grupo.";
+    }
+    return null;
+  }, [selectedDate, configsMap, editingConfigId]);
 
   const handleSave = useCallback(() => {
     if (!selectedDate) return;
-    const existing = configsMap.get(selectedDate) ?? [];
+    const err = validateAlcance(formAlcance);
+    if (err) { setErrorMsg(err); return; }
     const data = {
       fecha: selectedDate,
       clasificacion: formClasificacion,
@@ -282,25 +334,29 @@ export function CalendarioFinancieroPage() {
       gruposIds: formAlcance === "grupos" ? formGruposIds : [],
       finSemanaAplica: formClasificacion === "Fin de Semana" ? formFinSemana : null,
     };
-    if (existing.length === 0) {
-      store.addConfig(data);
+    if (editingConfigId) {
+      store.updateConfig(editingConfigId, data);
     } else {
-      store.updateConfig(existing[existing.length - 1].id, data);
+      store.addConfig(data);
     }
     setModalOpen(false);
-  }, [selectedDate, formClasificacion, formDescripcion, formAlcance, formFinSemana, formUnidadesIds, formGruposIds, configsMap, store]);
+  }, [selectedDate, editingConfigId, formClasificacion, formDescripcion, formAlcance, formFinSemana, formUnidadesIds, formGruposIds, validateAlcance, store]);
 
   const handleDelete = useCallback(() => {
-    if (!selectedDate) return;
-    const existing = configsMap.get(selectedDate) ?? [];
-    for (const cfg of existing) store.removeConfig(cfg.id);
+    if (!selectedDate || !editingConfigId) return;
+    store.removeConfig(editingConfigId);
     setModalOpen(false);
-  }, [selectedDate, configsMap, store]);
+  }, [selectedDate, editingConfigId, store]);
 
   const handleClasificacionChange = useCallback((v: string) => {
     const val = v as ClasificacionDia;
     setFormClasificacion(val);
     if (val !== "Fin de Semana") setFormFinSemana(null);
+  }, []);
+
+  const handleAlcanceChange = useCallback((val: AlcanceConfig) => {
+    setFormAlcance(val);
+    setErrorMsg(null);
   }, []);
 
   const monthDays = useMemo(() => getMonthDays(currentYear, currentMonth), [currentYear, currentMonth]);
@@ -346,6 +402,8 @@ export function CalendarioFinancieroPage() {
   const toggleGrupo = useCallback((id: string) => {
     setFormGruposIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }, []);
+
+  const isEditing = editingConfigId !== null;
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -409,9 +467,10 @@ export function CalendarioFinancieroPage() {
                   const isTodayFlag = isToday(offsetYear, normMonth, cell.day);
                   return (
                     <DayCell
-                      key={idx} year={offsetYear} month={normMonth} day={cell.day}
+                      key={idx} day={cell.day}
                       configs={configs} disabled={disabled} isToday={isTodayFlag}
                       onClick={() => handleDayClick(offsetYear, normMonth, cell.day)}
+                      onBadgeClick={(cfg) => handleBadgeClick(offsetYear, normMonth, cell.day, cfg)}
                     />
                   );
                 })}
@@ -431,6 +490,7 @@ export function CalendarioFinancieroPage() {
                       key={wd.key} year={wd.year} month={wd.month} day={wd.day}
                       configs={configs} disabled={disabled} isToday={isTodayFlag}
                       onClick={() => handleDayClick(wd.year, wd.month, wd.day)}
+                      onBadgeClick={(cfg) => handleBadgeClick(wd.year, wd.month, wd.day, cfg)}
                     />
                   );
                 })}
@@ -486,25 +546,35 @@ export function CalendarioFinancieroPage() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={selectedDate ? `Configurar Día — ${formatDateLabel(selectedDate)}` : ""}
+        title={selectedDate
+          ? `${isEditing ? "Editar" : "Nueva"} Configuración — ${formatDateLabel(selectedDate)}`
+          : ""}
         size="lg"
         actions={
           <div className="flex items-center justify-between w-full">
-            <Button variant="danger" size="sm" onClick={handleDelete}>
-              Eliminar configuración
-            </Button>
+            {isEditing ? (
+              <Button variant="danger" size="sm" onClick={handleDelete}>
+                Eliminar esta configuración
+              </Button>
+            ) : <div />}
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setModalOpen(false)}>
                 Cancelar
               </Button>
               <Button variant="primary" size="sm" onClick={handleSave}>
-                Guardar
+                {isEditing ? "Actualizar" : "Crear"}
               </Button>
             </div>
           </div>
         }
       >
         <div className="flex flex-col gap-4">
+          {errorMsg && (
+            <div className="px-3 py-2 rounded-corner-m text-[13px] text-white font-medium" style={{ backgroundColor: "#ef4444" }}>
+              {errorMsg}
+            </div>
+          )}
+
           <Select
             label="Clasificación del Día"
             options={clasificacionOptions}
@@ -555,7 +625,7 @@ export function CalendarioFinancieroPage() {
                     name="alcance"
                     value={opt.value}
                     checked={formAlcance === opt.value}
-                    onChange={() => setFormAlcance(opt.value)}
+                    onChange={() => handleAlcanceChange(opt.value)}
                     className="accent-[var(--color-verde-100)]"
                   />
                   <Text variant="small" className={formAlcance === opt.value ? "font-semibold" : ""}>
