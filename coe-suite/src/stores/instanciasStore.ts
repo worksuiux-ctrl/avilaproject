@@ -1,5 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useTransaccionesStore } from "./transaccionesStore";
+
+export interface ServicioEjecutado {
+  stepId: string;
+  categoria: string;
+  fecha: string;
+  estado: "pendiente" | "ejecutado" | "fallo";
+}
 
 export interface InstanciaHistorial {
   stepId: string;
@@ -24,6 +32,7 @@ export interface TransaccionInstancia {
   codigoEnvio: string;
   dataPorEstado: Record<string, Record<string, string>>;
   historial: InstanciaHistorial[];
+  serviciosEjecutados: ServicioEjecutado[];
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +49,7 @@ interface InstanciasState {
   activarExcepcion: (instanciaId: string, stepId: string, stepName: string, exceptionName: string, data: Record<string, string>, esTerminal: boolean) => void;
   selectInstancia: (id: string | null) => void;
   setCreatingTemplate: (templateId: string | null) => void;
+  reversarEstado: (instanciaId: string, stepId: string, stepName: string) => void;
 }
 
 let instIdCounter = 1000;
@@ -77,6 +87,7 @@ export const useInstanciasStore = create<InstanciasState>()(
         accion: "creada",
         datos: data,
       }],
+      serviciosEjecutados: [],
       createdAt: now,
       updatedAt: now,
     };
@@ -90,6 +101,15 @@ export const useInstanciasStore = create<InstanciasState>()(
       if (idx === -1) return s;
       const inst = s.instancias[idx];
       const now = new Date().toLocaleString("es-VE");
+      const template = useTransaccionesStore.getState().procesosFinalizados.find((p) => p.id === inst.templateId);
+      const step = template?.steps.find((st) => st.id === nextStepId);
+      const categorias = step?.serviciosCategorias ?? [];
+      const serviciosEjecutados: ServicioEjecutado[] = categorias.map((cat) => ({
+        stepId: nextStepId,
+        categoria: cat,
+        fecha: now,
+        estado: "ejecutado" as const,
+      }));
       const newList = [...s.instancias];
       newList[idx] = {
         ...inst,
@@ -99,6 +119,7 @@ export const useInstanciasStore = create<InstanciasState>()(
           ...inst.historial,
           { stepId: nextStepId, stepName: nextStepName, fecha: now, perfil, accion: esTerminal ? "completada" : "avanzada", datos: data },
         ],
+        serviciosEjecutados: [...(inst.serviciosEjecutados ?? []), ...serviciosEjecutados],
         updatedAt: now,
       };
       return { instancias: newList };
@@ -162,6 +183,25 @@ export const useInstanciasStore = create<InstanciasState>()(
   selectInstancia: (id) => set({ selectedId: id }),
 
   setCreatingTemplate: (templateId) => set({ creatingTemplateId: templateId }),
+
+  reversarEstado: (instanciaId, stepId, stepName) =>
+    set((s) => {
+      const idx = s.instancias.findIndex((i) => i.id === instanciaId);
+      if (idx === -1) return s;
+      const inst = s.instancias[idx];
+      const now = new Date().toLocaleString("es-VE");
+      const newList = [...s.instancias];
+      newList[idx] = {
+        ...inst,
+        estadoActual: stepId,
+        historial: [
+          ...inst.historial,
+          { stepId, stepName: `${stepName} (reversado)`, fecha: now, perfil: "agencia", accion: "avanzada", datos: {} },
+        ],
+        updatedAt: now,
+      };
+      return { instancias: newList };
+    }),
 }),
   { name: "instancias-store" }
 )

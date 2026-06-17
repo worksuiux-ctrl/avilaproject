@@ -1,14 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import type React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight, ChevronDown, ChevronRight, FileText, Plus, Package, FolderOpen, LayoutGrid, List, Calendar } from "lucide-react";
+import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight, ChevronDown, ChevronRight, FileText, Plus, Package, FolderOpen, LayoutGrid, List, Calendar, CheckCheck } from "lucide-react";
 import { Button, Badge, Select, Input } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import { SearchableSelect } from "@components/ui/SearchableSelect";
-import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, EVENTOS_CONTABLES, TIPOS_APROBACION, TIPOS_UNIDAD, TRANSPORTISTAS, type ProcesoTransaccional, type TransaccionStep } from "@stores/transaccionesStore";
+import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, EVENTOS_CONTABLES, TIPOS_APROBACION, TIPOS_UNIDAD, type ProcesoTransaccional, type TransaccionStep } from "@stores/transaccionesStore";
 import { useInstanciasStore, type TransaccionInstancia } from "@stores/instanciasStore";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { useDivisasStore } from "@stores/divisasStore";
+import { useProveedoresStore } from "@stores/proveedoresStore";
 import { DenominationInput } from "./DenominationInput";
 import { EnvasesInput, type ClasificacionBatch } from "./EnvasesInput";
 
@@ -235,6 +236,18 @@ export function OperacionesPage() {
             templateName={templateName}
             onSelect={(inst) => setDetailInst(inst)}
           />
+        ) : activeTab !== "all" && activeTab !== "finalizadas" ? (
+          <KanbanBoard
+            template={procesosFinalizados.find((p) => p.id === activeTab)!}
+            instances={filtered}
+            onSelect={(inst) => setDetailInst(inst)}
+            onAdvanceNoData={(instId, stepId, stepName) => {
+              inst.avanzarEstado(instId, stepId, stepName, "agencia", {}, false);
+              setSuccessOverlay(`Avanzada → ${stepName}`);
+              setTimeout(() => setSuccessOverlay(""), 2000);
+            }}
+            inst={inst}
+          />
         ) : (
           Object.entries(groups).map(([estadoId, lista]) => {
             const step = lista[0] && procesosFinalizados
@@ -302,6 +315,146 @@ export function OperacionesPage() {
         )}
       </Modal>
     </div>
+  );
+}
+
+/* ── Kanban Board ── */
+function KanbanBoard({ template, instances, onSelect, onAdvanceNoData, inst }: {
+  template: ProcesoTransaccional;
+  instances: TransaccionInstancia[];
+  onSelect: (inst: TransaccionInstancia) => void;
+  onAdvanceNoData: (instId: string, stepId: string, stepName: string) => void;
+  inst: ReturnType<typeof useInstanciasStore>;
+}) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [confirmReverse, setConfirmReverse] = useState<{ inst: TransaccionInstancia; step: TransaccionStep } | null>(null);
+  const stepsSorted = [...template.steps].sort((a, b) => a.orden - b.orden);
+
+  const instsByStep = useMemo(() => {
+    const map: Record<string, TransaccionInstancia[]> = {};
+    for (const s of template.steps) map[s.id] = [];
+    for (const i of instances) {
+      if (map[i.estadoActual]) map[i.estadoActual].push(i);
+    }
+    return map;
+  }, [instances, template.id]);
+
+  function needsData(step: TransaccionStep): boolean {
+    return step.requiereVariables || (step.camposSeleccionados?.length ?? 0) > 0;
+  }
+
+  function handleDrop(targetStepId: string) {
+    if (!dragId) return;
+    const draggedInst = instances.find((i) => i.id === dragId);
+    if (!draggedInst) return;
+    const targetStep = template.steps.find((s) => s.id === targetStepId);
+    if (!targetStep) return;
+    if (draggedInst.estadoActual === targetStepId) return;
+    const currentIdx = stepsSorted.findIndex((s) => s.id === draggedInst.estadoActual);
+    const targetIdx = stepsSorted.findIndex((s) => s.id === targetStepId);
+    if (targetIdx === currentIdx + 1) {
+      if (needsData(targetStep)) {
+        onSelect(draggedInst);
+      } else {
+        onAdvanceNoData(draggedInst.id, targetStepId, targetStep.nombre);
+      }
+    } else if (targetIdx === currentIdx - 1) {
+      handleReverse(draggedInst);
+    }
+    setDragId(null);
+  }
+
+  function handleReverse(instancia: TransaccionInstancia) {
+    const idx = stepsSorted.findIndex((s) => s.id === instancia.estadoActual);
+    if (idx <= 0) return;
+    const prevStep = stepsSorted[idx - 1];
+    setConfirmReverse({ inst: instancia, step: prevStep });
+  }
+
+  const isLastActionExcepcion = (instancia: TransaccionInstancia) => {
+    const last = instancia.historial[instancia.historial.length - 1];
+    return last?.accion === "excepcion";
+  };
+
+  return (
+    <>
+      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[300px]" style={{ scrollbarWidth: "thin" }}>
+        {stepsSorted.map((step) => {
+          const list = instsByStep[step.id] ?? [];
+          const draggedInst = dragId ? instances.find((i) => i.id === dragId) : null;
+          const srcIdx = draggedInst ? stepsSorted.findIndex((s) => s.id === draggedInst.estadoActual) : -1;
+          const tgtIdx = stepsSorted.findIndex((s) => s.id === step.id);
+          const canDropNext = srcIdx >= 0 && tgtIdx === srcIdx + 1;
+          const canDropPrev = srcIdx >= 0 && tgtIdx === srcIdx - 1;
+          const isDroppable = dragId && (canDropNext || canDropPrev);
+          return (
+            <div key={step.id}
+              className={`flex flex-col rounded-lg min-w-[260px] w-[280px] flex-shrink-0 border transition-colors ${!dragId ? "bg-[var(--color-neutro-50)] border-[var(--color-neutro-200)]" : isDroppable ? canDropNext ? "bg-green-50 border-green-300" : "bg-amber-50 border-amber-300" : "bg-[var(--color-neutro-50)/50] border-[var(--color-neutro-200)] opacity-50"}`}
+              onDragOver={(e) => { if (isDroppable) e.preventDefault(); }}
+              onDrop={(e) => { e.preventDefault(); if (isDroppable) handleDrop(step.id); }}
+            >
+              <div className="px-3 py-2.5 border-b border-[var(--color-neutro-200)] bg-white rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <p className="text-[12px] font-bold text-[var(--color-neutro-700)]">{step.nombre}</p>
+                  <span className="text-[11px] font-semibold text-[var(--color-neutro-400)] bg-[var(--color-neutro-100)] px-2 py-0.5 rounded-full">{list.length}</span>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[80px]" style={{ maxHeight: "calc(100vh - 320px)" }}>
+                {list.map((instancia) => {
+                  const last = instancia.historial[instancia.historial.length - 1];
+                  const isComplete = last?.accion === "completada";
+                  const isException = last?.accion === "excepcion";
+                  return (
+                    <div key={instancia.id}
+                      draggable={!isComplete && !isException}
+                      onDragStart={() => setDragId(instancia.id)}
+                      onDragEnd={() => setDragId(null)}
+                      className={`bg-white border border-[var(--color-neutro-200)] rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${isComplete ? "opacity-60" : ""} ${dragId === instancia.id ? "opacity-40 ring-2 ring-[var(--color-verde-100)]" : ""}`}
+                      onClick={() => { if (!isComplete && !isException) onSelect(instancia); }}
+                    >
+                      <div className="flex items-start justify-between gap-1 mb-1.5">
+                        <p className="text-[12px] font-bold text-[var(--color-neutro-900)] leading-tight">{template.nombre}</p>
+                        {isException && <OctagonX className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                        {isComplete && <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />}
+                      </div>
+                      {instancia.codigoRemesa && <p className="text-[10px] font-mono text-[var(--color-verde-100)] mb-1">{instancia.codigoRemesa}</p>}
+                      <p className="text-[11px] text-[var(--color-neutro-500)]">{instancia.createdAt}</p>
+                      {!isComplete && !isException && (
+                        <div className="flex items-center gap-1 mt-2 pt-1.5 border-t border-[var(--color-neutro-100)]">
+                          <button className="text-[10px] text-red-500 hover:text-red-700 hover:underline cursor-pointer" onClick={(e) => { e.stopPropagation(); handleReverse(instancia); }}>
+                            Reversar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {list.length === 0 && (
+                  <div className="flex items-center justify-center h-16 text-[11px] text-[var(--color-neutro-400)] italic">Arrastre una tarjeta aquí</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Reverse confirmation */}
+      <Modal open={!!confirmReverse} onClose={() => setConfirmReverse(null)} size="sm">
+        <div className="space-y-3">
+          <p className="text-[13px] text-[var(--color-neutro-700)]">
+            ¿Está seguro de reversar <strong>{confirmReverse?.inst.nombre}</strong> al estado <strong>{confirmReverse?.step.nombre}</strong>?
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirmReverse(null)}>Cancelar</Button>
+            <Button onClick={() => {
+              if (!confirmReverse) return;
+              inst.reversarEstado(confirmReverse.inst.id, confirmReverse.step.id, confirmReverse.step.nombre);
+              setConfirmReverse(null);
+            }}>Confirmar Reversión</Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
 
@@ -627,6 +780,13 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
   const [costoEnvio, setCostoEnvio] = useState(Number(editInst?.dataPorEstado?.[firstStep?.id ?? ""]?.["_costoEnvio"] ?? 0));
   const [costoManual, setCostoManual] = useState(Number(editInst?.dataPorEstado?.[firstStep?.id ?? ""]?.["_costoManual"] ?? 0));
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [batchExpanded, setBatchExpanded] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    if (divisaId && getDenominacionesByDivisa(divisaId).length > 0 && batches.length === 0) {
+      setBatches([{ clasificacionId: clasificacionesActivas[0]?.id ?? "", fajos: {}, individual: {} }]);
+    }
+  }, [divisaId]);
 
   const destinoConstrainParent = useMemo(() => {
     if (template.ambito !== "interna" || !origenId) return null;
@@ -675,7 +835,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
       if (template.ambito === "entre-agencias" && mismaRaiz) return false;
       return true;
     }
-    if (currentWizardStep === 1) return !!divisaId && batches.some((b) => Object.values(b.fajos).some((q) => q > 0) || Object.values(b.individual).some((q) => q > 0));
+    if (currentWizardStep === 1) return !!divisaId && batches.length > 0 && batches.every((b) => Object.values(b.fajos).some((q) => q > 0) || Object.values(b.individual).some((q) => q > 0));
     if (template.usaTransportista) return !!transportistaId;
     return true;
   }
@@ -738,7 +898,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
             </div>
             {/* Batches */}
             {divisaId && denomList.length > 0 && (
-              <div className="space-y-4">
+              <div className="space-y-4 px-1">
                 <div className="flex items-center justify-between">
                   <p className="text-[12px] font-medium text-[var(--color-neutro-700)]">Denominaciones por clasificación</p>
                   <button
@@ -748,9 +908,6 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                     <Plus className="w-3.5 h-3.5" /> Agregar lote
                   </button>
                 </div>
-                {batches.length === 0 && (
-                  <p className="text-[12px] text-[var(--color-neutro-400)]">Agregue un lote para comenzar</p>
-                )}
                   {batches.map((batch, bIdx) => {
                     const activeFajos = fajos.filter((f) => f.activo);
                     const fajosConDen = denomList.map((den) => ({
@@ -769,13 +926,18 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                       return s + qty * (den?.valor ?? 0);
                     }, 0);
                   const claSelected = clasificacionesActivas.find((c) => c.id === batch.clasificacionId);
-                  return (
-                    <div key={bIdx} className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--color-neutro-50)] border-b border-[var(--color-neutro-200)]">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[13px] font-bold text-[var(--color-neutro-700)]">Lote #{bIdx + 1}</span>
-                          <div className="flex items-center gap-1.5">
-                            {clasificacionesActivas.map((c) => (
+                    return (
+                      <div key={bIdx} className="rounded-corner-m shadow-md">
+                        <div className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--color-neutro-50)] border-b border-[var(--color-neutro-200)]">
+                          <div className="flex items-center gap-3">
+                            <button onClick={() => setBatchExpanded((prev) => ({ ...prev, [bIdx]: !(prev[bIdx] ?? true) }))} className="p-0.5 hover:bg-[var(--color-neutro-200)] rounded cursor-pointer">
+                              {(batchExpanded[bIdx] ?? true) ? <ChevronDown className="w-4 h-4 text-[var(--color-neutro-400)]" /> : <ChevronRight className="w-4 h-4 text-[var(--color-neutro-400)]" />}
+                            </button>
+                            <span className="text-[13px] font-bold text-[var(--color-neutro-700)]">Lote #{bIdx + 1}</span>
+                            {!(batchExpanded[bIdx] ?? true) && claSelected && <span className="text-[12px] font-semibold text-[var(--color-verde-100)]">${batchMonto.toLocaleString()}</span>}
+                            <div className="flex items-center gap-1.5">
+                              {clasificacionesActivas.map((c) => (
                               <button key={c.id}
                                 className={`flex items-center gap-1.5 px-3 py-1 rounded-corner-m text-[12px] font-medium border transition-all cursor-pointer ${batch.clasificacionId === c.id ? "text-white shadow-sm" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-[var(--color-verde-100)]"}`}
                                 style={batch.clasificacionId === c.id ? { backgroundColor: c.color, borderColor: c.color } : {}}
@@ -791,89 +953,179 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                             ))}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {claSelected && <span className="text-[12px] font-semibold text-[var(--color-verde-100)]">${batchMonto.toLocaleString()}</span>}
-                          <button
-                            className="text-[12px] text-red-500 hover:underline cursor-pointer"
-                            onClick={() => setBatches((prev) => prev.filter((_, i) => i !== bIdx))}
-                          >
-                            Quitar
-                          </button>
+                          <div className="flex items-center gap-3">
+                            {(batchExpanded[bIdx] ?? true) && claSelected && <span className="text-[12px] font-semibold text-[var(--color-verde-100)]">${batchMonto.toLocaleString()}</span>}
+                            <button
+                              className="text-[12px] text-red-500 hover:underline cursor-pointer"
+                              onClick={() => setBatches((prev) => prev.filter((_, i) => i !== bIdx))}
+                            >
+                              Quitar
+                            </button>
+                          </div>
+                        </div>
+
+                        {(batchExpanded[bIdx] ?? true) && (
+                          <>
+                            {(() => {
+                              function denomHasAny(denId: string): boolean {
+                                if (template.modoIngreso === "piezas") return denId in batch.individual;
+                                return activeFajos.some((f) => f.denominacionId === denId && f.id in batch.fajos) || denId in batch.individual;
+                              }
+                              const addedDenIds = template.modoIngreso === "piezas"
+                                ? Object.keys(batch.individual)
+                                : [...new Set([...activeFajos.filter((f) => f.id in batch.fajos).map((f) => f.denominacionId), ...Object.keys(batch.individual)])];
+                              const availableDenIds = denomList.filter((d) => !denomHasAny(d.id));
+
+                              return (
+                                <>
+                                  {/* Denominaciones agregadas — solo si hay clasificación */}
+                                  {claSelected && (
+                                    <>
+                                      {addedDenIds.length === 0 && (
+                                        <div className="px-4 py-3 text-center">
+                                          <p className="text-[12px] text-[var(--color-neutro-400)] mb-2">Seleccione una denominación para agregar a este lote</p>
+                                        </div>
+                                      )}
+
+                                      {template.modoIngreso === "piezas" && addedDenIds.length > 0 && (
+                                        <div className="divide-y divide-[var(--color-neutro-100)]">
+                                          {addedDenIds.map((denId) => {
+                                            const den = denomList.find((d) => d.id === denId);
+                                            if (!den) return null;
+                                            return (
+                                              <div key={den.id} className="flex items-center gap-3 px-4 py-2.5">
+                                                <span className="text-[13px] text-[var(--color-neutro-700)] flex-1">{den.nombre}</span>
+                                                <span className="text-[12px] text-[var(--color-neutro-400)] w-16 text-right">${den.valor.toLocaleString()}</span>
+                                                <input type="number" min={0} value={batch.individual[den.id] ?? ""}
+                                                  onChange={(e) => {
+                                                    const qty = Math.max(0, parseInt(e.target.value) || 0);
+                                                    const newBatches = [...batches];
+                                                    newBatches[bIdx] = { ...newBatches[bIdx], individual: { ...newBatches[bIdx].individual, [den.id]: qty } };
+                                                    setBatches(newBatches);
+                                                  }}
+                                                  placeholder="0" className="w-24 text-[15px] font-bold text-right px-3 py-1.5 rounded-md border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white" />
+                                                <p className="text-[13px] font-semibold text-[var(--color-neutro-900)] w-28 text-right">${((batch.individual[den.id] || 0) * den.valor).toLocaleString()}</p>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+
+                                      {template.modoIngreso === "fajos" && addedDenIds.length > 0 && (
+                                        <div className="divide-y divide-[var(--color-neutro-100)]">
+                                          {addedDenIds.map((denId) => {
+                                            const den = denomList.find((d) => d.id === denId);
+                                            if (!den) return null;
+                                            const fajosDeDen = activeFajos.filter((f) => f.denominacionId === den.id);
+                                            return (
+                                              <div key={den.id} className="px-4 py-2.5">
+                                                <p className="text-[13px] font-semibold text-[var(--color-neutro-800)] mb-2">{den.nombre} · <span className="text-[var(--color-verde-100)]">${den.valor.toLocaleString()}</span> c/u</p>
+                                                {fajosDeDen.map((fajo) => (
+                                                  <div key={fajo.id} className="flex items-center gap-3 py-1.5">
+                                                    <span className="text-[12px] text-[var(--color-neutro-600)] flex-1">{fajo.nombre}</span>
+                                                    <input type="number" min={0} value={batch.fajos[fajo.id] ?? ""}
+                                                      onChange={(e) => {
+                                                        const qty = Math.max(0, parseInt(e.target.value) || 0);
+                                                        const newBatches = [...batches];
+                                                        newBatches[bIdx] = { ...newBatches[bIdx], fajos: { ...newBatches[bIdx].fajos, [fajo.id]: qty } };
+                                                        setBatches(newBatches);
+                                                      }}
+                                                      placeholder="0" className="w-24 text-[15px] font-bold text-right px-3 py-1.5 rounded-md border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white" />
+                                                    <p className="text-[13px] font-semibold text-[var(--color-neutro-900)] w-28 text-right">${((batch.fajos[fajo.id] || 0) * fajo.cantidadUnidades * den.valor).toLocaleString()}</p>
+                                                  </div>
+                                                ))}
+                                                {denSinFajos.some((d) => d.id === den.id) && (
+                                                  <div className="flex items-center gap-3 py-1.5 ml-0">
+                                                    <span className="text-[12px] text-[var(--color-neutro-500)] flex-1">Unidades sueltas</span>
+                                                    <input type="number" min={0} value={batch.individual[den.id] ?? ""}
+                                                      onChange={(e) => {
+                                                        const qty = Math.max(0, parseInt(e.target.value) || 0);
+                                                        const newBatches = [...batches];
+                                                        newBatches[bIdx] = { ...newBatches[bIdx], individual: { ...newBatches[bIdx].individual, [den.id]: qty } };
+                                                        setBatches(newBatches);
+                                                      }}
+                                                      placeholder="0" className="w-24 text-[15px] font-bold text-right px-3 py-1.5 rounded-md border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white" />
+                                                    <p className="text-[13px] font-semibold text-[var(--color-neutro-900)] w-28 text-right">${((batch.individual[den.id] || 0) * den.valor).toLocaleString()}</p>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {!claSelected && (
+                                    <div className="px-4 py-3 text-center">
+                                      <p className="text-[12px] text-[var(--color-neutro-400)] mb-2">Seleccione una clasificación para este lote</p>
+                                    </div>
+                                  )}
+
+                                  {/* Agregar denominación — siempre visible */}
+                                  <div className="border-t border-[var(--color-neutro-100)] border-l-2 px-4 py-2.5 space-y-2" style={claSelected ? { borderLeftColor: claSelected.color } : {}}>
+                                    {(["Billete", "Moneda"] as const).map((tipo) => {
+                                      const dns = denomList.filter((d) => d.tipo === tipo);
+                                      if (dns.length === 0) return null;
+                                      return (
+                                        <div key={tipo}>
+                                          <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide mb-1">{tipo}s</p>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {dns.map((den) => {
+                                              const added = template.modoIngreso === "piezas"
+                                                ? den.id in batch.individual
+                                                : activeFajos.some((f) => f.denominacionId === den.id && f.id in batch.fajos) || den.id in batch.individual;
+                                              return (
+                                                <button key={den.id} type="button"
+                                                  className={`flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-corner-m border transition-all cursor-pointer ${added ? "bg-[var(--color-verde-100)] text-white border-[var(--color-verde-100)] shadow-sm" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-[var(--color-verde-100)] hover:text-[var(--color-verde-100)] hover:bg-green-50"}`}
+                                                  onClick={() => {
+                                                    const newBatches = [...batches];
+                                                    if (added) {
+                                                      if (template.modoIngreso === "piezas") {
+                                                        const { [den.id]: _, ...rest } = newBatches[bIdx].individual;
+                                                        newBatches[bIdx] = { ...newBatches[bIdx], individual: rest };
+                                                      } else {
+                                                        const fajosDeDen = activeFajos.filter((f) => f.denominacionId === den.id);
+                                                        const newFajos = { ...newBatches[bIdx].fajos };
+                                                        fajosDeDen.forEach((f) => delete newFajos[f.id]);
+                                                        const newIndiv = { ...newBatches[bIdx].individual };
+                                                        delete newIndiv[den.id];
+                                                        newBatches[bIdx] = { ...newBatches[bIdx], fajos: newFajos, individual: newIndiv };
+                                                      }
+                                                    } else {
+                                                      if (template.modoIngreso === "piezas") {
+                                                        newBatches[bIdx] = { ...newBatches[bIdx], individual: { ...newBatches[bIdx].individual, [den.id]: 0 } };
+                                                      } else {
+                                                        const fajosDeDen = activeFajos.filter((f) => f.denominacionId === den.id);
+                                                        const newFajos = { ...newBatches[bIdx].fajos };
+                                                        fajosDeDen.forEach((f) => { if (!(f.id in newFajos)) newFajos[f.id] = 0; });
+                                                        const newIndiv = { ...newBatches[bIdx].individual };
+                                                        if (denSinFajos.some((d) => d.id === den.id)) newIndiv[den.id] = 0;
+                                                        newBatches[bIdx] = { ...newBatches[bIdx], fajos: newFajos, individual: newIndiv };
+                                                      }
+                                                    }
+                                                    setBatches(newBatches);
+                                                  }}
+                                                >
+                                                  {added ? <CheckCheck className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                                                  {den.nombre}
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </>
+                        )}
                         </div>
                       </div>
-                      {claSelected && template.modoIngreso === "piezas" && (
-                        <div className="space-y-1 p-3">
-                          {denomList.map((den) => (
-                            <div key={den.id} className="flex items-center gap-3 px-2 py-1 hover:bg-[var(--color-neutro-50)] rounded-corner-m">
-                              <span className="text-[13px] text-[var(--color-neutro-700)] flex-1">{den.nombre} · ${den.valor.toLocaleString()} c/u</span>
-                              <input type="number" min={0} value={batch.individual[den.id] ?? ""}
-                                onChange={(e) => {
-                                  const qty = Math.max(0, parseInt(e.target.value) || 0);
-                                  const newBatches = [...batches];
-                                  newBatches[bIdx] = { ...newBatches[bIdx], individual: { ...newBatches[bIdx].individual, [den.id]: qty } };
-                                  setBatches(newBatches);
-                                }}
-                                placeholder="0" className="w-24 text-[14px] font-medium px-3 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white text-right" />
-                              <p className="text-[12px] font-semibold text-[var(--color-neutro-700)] w-24 text-right">${((batch.individual[den.id] || 0) * den.valor).toLocaleString()}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {claSelected && template.modoIngreso === "fajos" && (
-                        <div className="space-y-2 p-3">
-                          {fajosConDen.map((g) => (
-                            <div key={g.den.id}>
-                              <p className="text-[13px] font-semibold text-[var(--color-neutro-900)] mb-1">{g.den.nombre} · ${g.den.valor.toLocaleString()} c/u</p>
-                              <div className="space-y-1 pl-2">
-                                {g.fajos.map((fajo) => (
-                                  <div key={fajo.id} className="flex items-center gap-3 px-2 py-1 hover:bg-[var(--color-neutro-50)] rounded-corner-m">
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[12px] font-medium text-[var(--color-neutro-700)]">{fajo.nombre}</p>
-                                      <p className="text-[10px] text-[var(--color-neutro-400)]">{fajo.cantidadUnidades} {g.den.tipo === "Moneda" ? "monedas" : "billetes"} · ${(fajo.cantidadUnidades * g.den.valor).toLocaleString()} c/u</p>
-                                    </div>
-                                    <input type="number" min={0} value={batch.fajos[fajo.id] ?? ""}
-                                      onChange={(e) => {
-                                        const qty = Math.max(0, parseInt(e.target.value) || 0);
-                                        const newBatches = [...batches];
-                                        newBatches[bIdx] = { ...newBatches[bIdx], fajos: { ...newBatches[bIdx].fajos, [fajo.id]: qty } };
-                                        setBatches(newBatches);
-                                      }}
-                                      placeholder="0" className="w-24 text-[14px] font-medium px-3 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white text-right" />
-                                    <p className="text-[12px] font-semibold text-[var(--color-neutro-700)] w-24 text-right">${((batch.fajos[fajo.id] || 0) * fajo.cantidadUnidades * g.den.valor).toLocaleString()}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                          {denSinFajos.length > 0 && (
-                            <div className="border-t border-[var(--color-neutro-100)] pt-2 mt-2">
-                              <p className="text-[12px] text-[var(--color-neutro-500)] font-medium mb-1">Unidades sueltas</p>
-                              {denSinFajos.map((den) => (
-                                <div key={den.id} className="flex items-center gap-3 px-2 py-1 hover:bg-[var(--color-neutro-50)] rounded-corner-m">
-                                  <span className="text-[13px] text-[var(--color-neutro-700)] flex-1">{den.nombre} · ${den.valor.toLocaleString()} c/u</span>
-                                  <input type="number" min={0} value={batch.individual[den.id] ?? ""}
-                                    onChange={(e) => {
-                                      const qty = Math.max(0, parseInt(e.target.value) || 0);
-                                      const newBatches = [...batches];
-                                      newBatches[bIdx] = { ...newBatches[bIdx], individual: { ...newBatches[bIdx].individual, [den.id]: qty } };
-                                      setBatches(newBatches);
-                                    }}
-                                    placeholder="0" className="w-24 text-[14px] font-medium px-3 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)] bg-white text-right" />
-                                  <p className="text-[12px] font-semibold text-[var(--color-neutro-700)] w-24 text-right">${((batch.individual[den.id] || 0) * den.valor).toLocaleString()}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {!batch.clasificacionId && (
-                        <div className="px-4 py-4 text-center">
-                          <p className="text-[12px] text-[var(--color-neutro-400)]">Seleccione una clasificación para este lote</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  })}
                 {batches.length > 0 && (
                   <div className="flex items-center justify-end gap-2 pt-2 text-[14px] font-bold text-[var(--color-verde-100)] border-t border-[var(--color-neutro-100)]">
                     <span>Total general:</span>
@@ -899,7 +1151,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
               <ResumenRow label="Divisa" value={divisas.find((d) => d.id === divisaId)?.codigoISO ?? divisaId} />
               <ResumenRow label="Monto total" value={`$${monto.toLocaleString()}`} />
               {transportistaId && template.usaTransportista && (
-                <ResumenRow label="Transportista" value={`${TRANSPORTISTAS.find((t) => t.id === transportistaId)?.nombre ?? transportistaId} — Costo: $${costoEnvio.toLocaleString()}`} />
+                <ResumenRow label="Transportista" value={`${useProveedoresStore.getState().proveedores.find((p) => p.id === transportistaId && p.tipo === "Transportista de Valores")?.nombre ?? transportistaId} — Costo: $${costoEnvio.toLocaleString()}`} />
               )}
               {Object.entries(formData).map(([fieldId, val]) => {
                 if (!val) return null;
@@ -914,11 +1166,27 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                 <p className="text-[12px] font-semibold text-[var(--color-neutro-700)]">Transportista de valores <span className="text-red-500">*</span></p>
                 <div className="flex flex-wrap gap-2">
                   {(() => {
-                    const transportistasDisponibles = TRANSPORTISTAS.filter((t) => template.transportistasPermitidos.includes(t.id));
-                    const mejorPrecioGlobal = Math.min(...transportistasDisponibles.map((t) => t.acuerdoComercial != null ? t.costo * (1 - t.acuerdoComercial / 100) : t.costo));
+                    const proveedores = useProveedoresStore.getState().proveedores;
+                    const servicios = useProveedoresStore.getState().servicios;
+                    const categoriasTemplate = new Set<string>();
+                    for (const st of template.steps) {
+                      for (const cat of (st.serviciosCategorias ?? [])) {
+                        categoriasTemplate.add(cat);
+                      }
+                    }
+                    const transportistasDisponibles = proveedores.filter((p) => p.tipo === "Transportista de Valores" && template.transportistasPermitidos.includes(p.id));
+                    const calcCosto = (provId: string) => {
+                      let total = 0;
+                      for (const cat of categoriasTemplate) {
+                        const sv = servicios.find((s) => s.proveedorId === provId && s.categoria === cat);
+                        total += sv?.precio ?? 0;
+                      }
+                      return total;
+                    };
+                    const mejorPrecioGlobal = Math.min(...transportistasDisponibles.map((t) => calcCosto(t.id)));
                     return transportistasDisponibles.map((t) => {
-                      const precioAcuerdo = t.acuerdoComercial != null ? t.costo * (1 - t.acuerdoComercial / 100) : t.costo;
-                      const esMejorGlobal = Math.min(t.costo, precioAcuerdo) === mejorPrecioGlobal;
+                      const costo = calcCosto(t.id);
+                      const esMejorGlobal = costo === mejorPrecioGlobal;
                       const selected = transportistaId === t.id;
                       return (
                         <button key={t.id}
@@ -926,12 +1194,12 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                           onClick={() => {
                             setTransportistaId(t.id);
                             setUsaAcuerdo(false);
-                            setCostoEnvio(t.costo);
+                            setCostoEnvio(costo);
                             setCostoManual(0);
                           }}>
                           <p className="font-medium">{t.nombre}</p>
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[11px] ${selected ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>${t.costo}</span>
+                            <span className={`text-[11px] ${selected ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>${costo.toLocaleString()}</span>
                             {esMejorGlobal && !selected && (
                               <span className="text-[10px] bg-green-500 text-white px-1 rounded-corner-m">Mejor precio</span>
                             )}
@@ -942,25 +1210,23 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                   })()}
                 </div>
                 {transportistaId && (() => {
-                  const t = TRANSPORTISTAS.find((tr) => tr.id === transportistaId);
+                  const t = useProveedoresStore.getState().proveedores.find((p) => p.id === transportistaId && p.tipo === "Transportista de Valores");
                   if (!t) return null;
-                  const precioAcuerdo = t.acuerdoComercial != null ? t.costo * (1 - t.acuerdoComercial / 100) : t.costo;
+                  const categorias = new Set<string>();
+                  for (const st of template.steps) {
+                    for (const cat of (st.serviciosCategorias ?? [])) {
+                      categorias.add(cat);
+                    }
+                  }
+                  const catsUnicos = Array.from(categorias);
+                  const servicios = useProveedoresStore.getState().servicios;
+                  const items = catsUnicos.map((cat) => {
+                    const sv = servicios.find((s) => s.proveedorId === t.id && s.categoria === cat);
+                    return { categoria: cat, precio: sv?.precio ?? 0, nombre: sv?.nombre ?? cat };
+                  });
+                  const totalServicios = items.reduce((s, i) => s + i.precio, 0);
                   return (
                     <div className="space-y-2 pt-2 border-t border-[var(--color-neutro-100)]">
-                      <div className="flex items-center gap-4">
-                        {t.acuerdoComercial != null && (
-                          <label className="flex items-center gap-2 cursor-pointer text-[12px]">
-                            <input type="checkbox" checked={usaAcuerdo}
-                              onChange={() => {
-                                const nuevo = !usaAcuerdo;
-                                setUsaAcuerdo(nuevo);
-                                setCostoManual(0);
-                                setCostoEnvio(nuevo ? precioAcuerdo : t.costo);
-                              }} />
-                            Acuerdo comercial (-{t.acuerdoComercial}% = ${precioAcuerdo})
-                          </label>
-                        )}
-                      </div>
                       <div className="flex items-center gap-2">
                         <label className="text-[12px] text-[var(--color-neutro-600)]">Acuerdo manual %:</label>
                         <input type="number" min={0} max={100} step={0.1} value={costoManual || ""}
@@ -968,13 +1234,27 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                             const pct = parseFloat(e.target.value) || 0;
                             setCostoManual(pct);
                             setUsaAcuerdo(false);
-                            setCostoEnvio(pct > 0 ? Math.round(t.costo * (1 - pct / 100)) : t.costo);
+                            setCostoEnvio(pct > 0 ? Math.round(totalServicios * (1 - pct / 100)) : totalServicios);
                           }}
                           className="w-20 text-[13px] px-3 py-1 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white" />
                       </div>
+                      {items.length > 0 && (
+                        <div className="border-t border-[var(--color-neutro-100)] pt-2 space-y-1">
+                          <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase tracking-wide">Costo total discriminado</p>
+                          {items.map((item) => (
+                            <div key={item.categoria} className="flex items-center justify-between text-[12px]">
+                              <span className="text-[var(--color-neutro-700)]">{item.categoria}</span>
+                              <span className="font-medium text-[var(--color-neutro-900)]">${item.precio.toLocaleString()}</span>
+                            </div>
+                          ))}
+                          <div className="border-t border-[var(--color-neutro-200)] pt-1 flex items-center justify-between text-[13px]">
+                            <span className="font-bold text-[var(--color-neutro-800)]">Total</span>
+                            <span className="font-bold text-[var(--color-verde-100)]">${costoEnvio.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      )}
                       <p className="text-[12px] font-semibold text-[var(--color-verde-100)]">
-                        Costo final: ${costoEnvio.toLocaleString()}
-                        {usaAcuerdo && t.acuerdoComercial != null && <span className="text-[11px] text-[var(--color-neutro-400)] font-normal ml-1">(-{t.acuerdoComercial}% acuerdo comercial)</span>}
+                        Costo transportista: ${costoEnvio.toLocaleString()}
                         {costoManual > 0 && <span className="text-[11px] text-[var(--color-neutro-400)] font-normal ml-1">(-{costoManual}% acuerdo manual)</span>}
                       </p>
                     </div>
@@ -1335,7 +1615,7 @@ function WizardField({ campo, value, onChange, envaseBatchData, envaseClasificac
   value: string;
   onChange: (v: string) => void;
   envaseBatchData?: ClasificacionBatch[];
-  envaseClasificaciones?: { id: string; nombre: string }[];
+  envaseClasificaciones?: { id: string; nombre: string; color: string }[];
 }) {
   const labelClass = "text-[12px] font-medium text-[var(--color-neutro-700)] mb-1";
   const inputClass = "w-full text-[13px] px-3 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white";
@@ -1646,7 +1926,7 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
           {nextStepFields.length > 0 && (
             <div className="space-y-3">
               {nextStepFields.map((campo) => (
-                <WizardField key={campo.id} campo={campo} value={advanceData[campo.id] ?? ""} onChange={(v) => { setAdvanceError(""); setAdvanceData((prev) => ({ ...prev, [campo.id]: v })); }} envaseBatchData={campo.tipo === "envases" ? envaseBatchData : undefined} envaseClasificaciones={campo.tipo === "envases" ? clasificaciones.map((c) => ({ id: c.id, nombre: c.nombre })) : undefined} />
+                <WizardField key={campo.id} campo={campo} value={advanceData[campo.id] ?? ""} onChange={(v) => { setAdvanceError(""); setAdvanceData((prev) => ({ ...prev, [campo.id]: v })); }} envaseBatchData={campo.tipo === "envases" ? envaseBatchData : undefined} envaseClasificaciones={campo.tipo === "envases" ? clasificaciones.map((c) => ({ id: c.id, nombre: c.nombre, color: c.color })) : undefined} />
               ))}
             </div>
           )}
@@ -1816,11 +2096,9 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
       {Object.entries(instancia.dataPorEstado).map(([stepId, data]) => {
         const rawId = data["_transportistaId"];
         if (!rawId) return null;
-        const t = TRANSPORTISTAS.find((tr) => tr.id === rawId);
+        const t = useProveedoresStore.getState().proveedores.find((p) => p.id === rawId && p.tipo === "Transportista de Valores");
         if (!t) return null;
-        const usaAcuerdo = data["_usaAcuerdo"] === "true";
-        const costoManualPct = Number(data["_costoManual"] ?? 0);
-        const costoEnvio = Number(data["_costoEnvio"] ?? t.costo);
+        const costoEnvio = Number(data["_costoEnvio"] ?? 0);
         const st = template?.steps.find((s) => s.id === stepId);
         return (
           <div key={`transp-${stepId}`} className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
@@ -1829,18 +2107,27 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
             </p>
             <div className="space-y-1 text-[12px]">
               <p><span className="text-[var(--color-neutro-500)]">Empresa:</span> <span className="font-medium">{t.nombre}</span></p>
-              <p><span className="text-[var(--color-neutro-500)]">Tarifa regular:</span> <span className="font-medium">${t.costo.toLocaleString()}</span></p>
-              {usaAcuerdo && t.acuerdoComercial != null && (
-                <p><span className="text-[var(--color-neutro-500)]">Acuerdo comercial:</span> <span className="font-medium">-{t.acuerdoComercial}%</span></p>
-              )}
-              {costoManualPct > 0 && (
-                <p><span className="text-[var(--color-neutro-500)]">Acuerdo manual:</span> <span className="font-medium">-{costoManualPct}%</span></p>
-              )}
-              <p className="text-[var(--color-verde-100)] font-bold">Costo final: ${costoEnvio.toLocaleString()}</p>
+              <p className="text-[var(--color-verde-100)] font-bold">Costo: ${costoEnvio.toLocaleString()}</p>
             </div>
           </div>
         );
       })}
+
+      {/* Servicios ejecutados */}
+      {instancia.serviciosEjecutados?.length > 0 && (
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
+          <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Servicios Ejecutados</p>
+          <div className="space-y-1">
+            {instancia.serviciosEjecutados.map((se, i) => (
+              <div key={i} className="flex items-center gap-2 text-[12px] px-2 py-1.5 rounded-corner-m bg-[var(--color-neutro-50)]">
+                <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                <span className="font-medium text-[var(--color-neutro-800)]">{se.categoria}</span>
+                <span className="ml-auto text-[10px] text-[var(--color-neutro-400)]">{se.fecha}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* History */}
       <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m">

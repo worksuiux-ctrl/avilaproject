@@ -7,7 +7,6 @@ import {
   type TransaccionStep,
   type Excepcion,
   CAMPOS_PREDEFINIDOS,
-  TRANSPORTISTAS,
   TIPOS_CARGA,
   TIPOS_UNIDAD,
   AMBITOS,
@@ -17,6 +16,8 @@ import {
   TIPOS_APROBACION,
 } from "@stores/transaccionesStore";
 import { useDivisasStore } from "@stores/divisasStore";
+import { useProveedoresStore } from "@stores/proveedoresStore";
+import { CATEGORIAS_SERVICIO } from "@stores/proveedoresStore";
 
 const UNIDADES_POR_AMBITO: Record<string, { value: string; label: string }[]> = {
   interna: [
@@ -311,7 +312,7 @@ function OperacionesTab({
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-[12px] text-[var(--color-neutro-500)]">Transportista:</span>
                     {displayProceso.transportistasPermitidos.map((tId) => {
-                      const t = TRANSPORTISTAS.find((tr) => tr.id === tId);
+                      const t = useProveedoresStore.getState().proveedores.find((p) => p.id === tId && p.tipo === "Transportista de Valores");
                       return t ? <span key={t.id} className="px-2.5 py-0.5 rounded-corner-m text-[12px] bg-blue-500 text-white font-medium">{t.nombre}</span> : null;
                     })}
                   </div>
@@ -357,7 +358,7 @@ function OperacionesTab({
                 </div>
                 {proceso.usaTransportista && (
                   <div className="flex flex-wrap gap-2">
-                    {TRANSPORTISTAS.map((t) => {
+                    {useProveedoresStore.getState().proveedores.filter((p) => p.tipo === "Transportista de Valores").map((t) => {
                       const selected = proceso.transportistasPermitidos.includes(t.id);
                       return (
                         <button key={t.id} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors cursor-pointer ${selected ? "bg-blue-500 text-white border-blue-500" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-blue-300"}`} onClick={() => store.toggleTransportistaPermitido(t.id)}>
@@ -555,7 +556,7 @@ function EstadosTab({
         {activeException ? (
           <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} />
         ) : activeStep ? (
-          <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} />
+          <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} usaTransportista={displayProceso.usaTransportista} />
         ) : (
           <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
             <p className="text-[13px] text-[var(--color-neutro-400)]">
@@ -744,7 +745,7 @@ function FusionadoTab({
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Transportistas permitidos</p>
                     <div className="flex flex-wrap gap-1.5">
                       {displayProceso.transportistasPermitidos.map((tId) => {
-                        const t = TRANSPORTISTAS.find((x) => x.id === tId);
+                        const t = useProveedoresStore.getState().proveedores.find((p) => p.id === tId && p.tipo === "Transportista de Valores");
                         return t ? (
                           <span key={tId} className="px-2 py-0.5 text-[12px] font-medium bg-blue-50 text-blue-700 rounded-corner-m">{t.nombre}</span>
                         ) : null;
@@ -859,7 +860,7 @@ function FusionadoTab({
                   </label>
                   {proceso.usaTransportista && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {TRANSPORTISTAS.map((t) => {
+                      {useProveedoresStore.getState().proveedores.filter((p) => p.tipo === "Transportista de Valores").map((t) => {
                         const selected = proceso.transportistasPermitidos.includes(t.id);
                         return (
                           <button key={t.id} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors cursor-pointer ${selected ? "bg-blue-500 text-white border-blue-500" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-blue-300"}`} onClick={() => store.toggleTransportistaPermitido(t.id)}>
@@ -909,7 +910,7 @@ function FusionadoTab({
           {activeException ? (
             <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} />
           ) : activeStep ? (
-            <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} />
+            <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} usaTransportista={displayProceso.usaTransportista} />
           ) : (
             <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
               <p className="text-[13px] text-[var(--color-neutro-400)]">Seleccione un estado para editar sus propiedades</p>
@@ -1155,8 +1156,10 @@ function EstadoCard({
 }
 
 /* ── Property Inspector ── */
-function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false }: { step: TransaccionStep; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean }) {
-  const { updateStepProperty } = useTransaccionesStore();
+const CATEGORIAS_OPERACIONES = ["Traslado", "Conteo", "Manipulación", "Custodia"];
+
+function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, usaTransportista = false }: { step: TransaccionStep; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean; usaTransportista?: boolean }) {
+  const { updateStepProperty, toggleServicioCategoriaEnStep } = useTransaccionesStore();
   const sid = step.id;
 
   const labelClass = "text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1";
@@ -1294,6 +1297,36 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false }: 
         </div>
 
         <CamposFormularioSection stepId={step.id} camposSeleccionados={step.camposSeleccionados} origenTipo={origenTipo} destinoTipo={destinoTipo} readOnly={readOnly} />
+      </div>
+
+      {/* ── Servicios ── */}
+      <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Servicios al Avanzar</p>
+        {(() => {
+          const cats = CATEGORIAS_OPERACIONES.filter((cat) => {
+            if (cat === "Traslado" && !usaTransportista) return false;
+            if (cat === "Manipulación" && !step.transferenciaCarga) return false;
+            return true;
+          });
+          if (cats.length === 0) return <p className="text-[12px] text-[var(--color-neutro-400)]">No hay categorías de servicio disponibles</p>;
+          return (
+            <div className="space-y-1 max-h-48 overflow-y-auto">
+              {cats.map((cat) => {
+                const sel = (step.serviciosCategorias ?? []).includes(cat);
+                return (
+                  <div key={cat} className={`px-2 py-1 rounded-corner-m transition-colors ${sel ? "bg-[var(--color-verde-100)]/10" : ""}`}>
+                    <Checkbox
+                      label={cat}
+                      checked={sel}
+                      disabled={readOnly}
+                      onChange={() => toggleServicioCategoriaEnStep(step.id, cat)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
     </div>
@@ -1535,14 +1568,14 @@ function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, dest
         <div className="mb-2">
           <p className="text-[10px] font-semibold text-[var(--color-verde-100)] uppercase tracking-wide mb-0.5">Seleccionados</p>
           {seleccionados.map((campo) => (
-            <label key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-green-50 cursor-pointer"}`}>
-              <input type="checkbox" checked disabled={readOnly} onChange={() => toggleCampoSeleccionado(stepId, campo.id)} className="accent-[var(--color-verde-100)]" />
+            <div key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-green-50 cursor-pointer"}`}>
+              <Checkbox label="" checked disabled={readOnly} onChange={() => toggleCampoSeleccionado(stepId, campo.id)} />
               <div className="flex-1 min-w-0">
                 <span className="text-[12px] text-[var(--color-neutro-900)]">{campo.etiqueta}</span>
                 <span className="text-[10px] text-[var(--color-neutro-400)] ml-1">({campo.tipo})</span>
               </div>
               {campo.requerido && <span className="text-[10px] font-semibold text-red-500 shrink-0">Requerido</span>}
-            </label>
+            </div>
           ))}
         </div>
       )}
@@ -1550,14 +1583,14 @@ function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, dest
         <div>
           {seleccionados.length > 0 && <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase tracking-wide mb-0.5">Disponibles</p>}
           {noSeleccionados.map((campo) => (
-            <label key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-[var(--color-neutro-50)] cursor-pointer"}`}>
-              <input type="checkbox" checked={false} disabled={readOnly} onChange={() => toggleCampoSeleccionado(stepId, campo.id)} className="accent-[var(--color-verde-100)]" />
+            <div key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-[var(--color-neutro-50)] cursor-pointer"}`}>
+              <Checkbox label="" checked={false} disabled={readOnly} onChange={() => toggleCampoSeleccionado(stepId, campo.id)} />
               <div className="flex-1 min-w-0">
                 <span className="text-[12px] text-[var(--color-neutro-700)]">{campo.etiqueta}</span>
                 <span className="text-[10px] text-[var(--color-neutro-400)] ml-1">({campo.tipo})</span>
               </div>
               {campo.requerido && <span className="text-[10px] font-semibold text-red-500 shrink-0">Requerido</span>}
-            </label>
+            </div>
           ))}
         </div>
       )}
