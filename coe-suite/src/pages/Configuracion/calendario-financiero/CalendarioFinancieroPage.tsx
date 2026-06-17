@@ -6,6 +6,7 @@ import { useEntitiesStore } from "../../../stores/entitiesStore";
 import { useGruposStore } from "../../../stores/gruposStore";
 import { useNavStore } from "../../../stores/navStore";
 import { DeleteDialog } from "../../../components/shared/DeleteDialog";
+import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, CalendarDays, Search, X } from "lucide-react";
 
 type VistaCalendario = "mes" | "semana" | "año";
@@ -351,8 +352,10 @@ export function CalendarioFinancieroPage() {
     };
     if (editingConfigId) {
       store.updateConfig(editingConfigId, data);
+      toast.success("Configuración actualizada", { description: formatDateLabel(selectedDate) });
     } else {
       store.addConfig(data);
+      toast.success("Configuración creada", { description: formatDateLabel(selectedDate) });
     }
     setModalOpen(false);
   }, [selectedDate, editingConfigId, formClasificacion, formDescripcion, formAlcance, formFinSemana, formUnidadesIds, formGruposIds, validateAlcance, store]);
@@ -361,6 +364,7 @@ export function CalendarioFinancieroPage() {
     if (!selectedDate || !editingConfigId) return;
     store.removeConfig(editingConfigId);
     setModalOpen(false);
+    toast.success("Configuración eliminada", { description: formatDateLabel(selectedDate) });
     setDeleteDialogOpen(false);
   }, [selectedDate, editingConfigId, store]);
 
