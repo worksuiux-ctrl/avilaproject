@@ -393,12 +393,30 @@ export function CalendarioFinancieroPage() {
     }));
   }, [currentWeekStart]);
 
+  const NIVEL_ORDER = ["Central Administrativa", "Oficinas", "Depósitos", "Anaqueles", "Dispositivos"];
+
   const unidadesDisponibles = useMemo(() => {
     return entities
-      .filter((e) => (e.nivel === "Oficinas" || e.nivel === "Dispositivos") && e.activo)
+      .filter((e) => e.activo)
       .map((e) => ({ id: e.id, label: `${e.codigo} — ${e.nombre}`, nivel: e.nivel, subtipo: e.subtipo }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [entities]);
+
+  const unidadesPorNivel = useMemo(() => {
+    const groups = new Map<string, typeof unidadesDisponibles>();
+    for (const nivel of NIVEL_ORDER) groups.set(nivel, []);
+    for (const u of unidadesDisponibles) {
+      const arr = groups.get(u.nivel);
+      if (arr) arr.push(u);
+    }
+    return groups;
+  }, [unidadesDisponibles]);
+
+  const filteredUnidades = useMemo(() => {
+    if (!unidadSearch.trim()) return null;
+    const q = unidadSearch.toLowerCase();
+    return unidadesDisponibles.filter((u) => u.label.toLowerCase().includes(q) || u.nivel.toLowerCase().includes(q) || u.subtipo.toLowerCase().includes(q));
+  }, [unidadesDisponibles, unidadSearch]);
 
   const gruposDisponibles = useMemo(() => {
     return grupos
@@ -406,12 +424,6 @@ export function CalendarioFinancieroPage() {
       .map((g) => ({ id: g.id, label: `${g.codigo} — ${g.nombre}`, subtipo: g.subtipo }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [grupos]);
-
-  const filteredUnidades = useMemo(() => {
-    if (!unidadSearch.trim()) return unidadesDisponibles;
-    const q = unidadSearch.toLowerCase();
-    return unidadesDisponibles.filter((u) => u.label.toLowerCase().includes(q) || u.nivel.toLowerCase().includes(q) || u.subtipo.toLowerCase().includes(q));
-  }, [unidadesDisponibles, unidadSearch]);
 
   const filteredGrupos = useMemo(() => {
     if (!grupoSearch.trim()) return gruposDisponibles;
@@ -422,6 +434,15 @@ export function CalendarioFinancieroPage() {
   const toggleUnidad = useCallback((id: string) => {
     setFormUnidadesIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   }, []);
+
+  const toggleUnidadNivel = useCallback((nivel: string, ids: string[]) => {
+    const allSelected = ids.every((id) => formUnidadesIds.includes(id));
+    if (allSelected) {
+      setFormUnidadesIds((prev) => prev.filter((id) => !ids.includes(id)));
+    } else {
+      setFormUnidadesIds((prev) => [...new Set([...prev, ...ids])]);
+    }
+  }, [formUnidadesIds]);
 
   const toggleGrupo = useCallback((id: string) => {
     setFormGruposIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -659,7 +680,7 @@ export function CalendarioFinancieroPage() {
                 <input
                   value={unidadSearch}
                   onChange={(e) => setUnidadSearch(e.target.value)}
-                  placeholder="Buscar unidades (Agencias, ATMs, Cajas...)"
+                  placeholder="Buscar unidades..."
                   className="w-full text-[13px] pl-8 pr-3 py-2 outline-none bg-transparent text-[var(--color-neutro-800)]"
                 />
                 {unidadSearch && (
@@ -672,25 +693,60 @@ export function CalendarioFinancieroPage() {
                   </button>
                 )}
               </div>
-              <div className="max-h-[200px] overflow-y-auto">
-                {filteredUnidades.length === 0 ? (
-                  <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
+              <div className="max-h-[260px] overflow-y-auto">
+                {filteredUnidades !== null ? (
+                  filteredUnidades.length === 0 ? (
+                    <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
+                  ) : (
+                    filteredUnidades.map((u) => (
+                      <label
+                        key={u.id}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
+                          formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
+                        }`}
+                      >
+                        <Checkbox
+                          checked={formUnidadesIds.includes(u.id)}
+                          onChange={() => toggleUnidad(u.id)}
+                        />
+                        <span className="flex-1 min-w-0 truncate">{u.label}</span>
+                        <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
+                      </label>
+                    ))
+                  )
                 ) : (
-                  filteredUnidades.map((u) => (
-                    <label
-                      key={u.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
-                        formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
-                      }`}
-                    >
-                      <Checkbox
-                        checked={formUnidadesIds.includes(u.id)}
-                        onChange={() => toggleUnidad(u.id)}
-                      />
-                      <span className="flex-1 min-w-0 truncate">{u.label}</span>
-                      <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
-                    </label>
-                  ))
+                  NIVEL_ORDER.map((nivel) => {
+                    const items = unidadesPorNivel.get(nivel) ?? [];
+                    if (items.length === 0) return null;
+                    const allSelected = items.every((u) => formUnidadesIds.includes(u.id));
+                    return (
+                      <div key={nivel}>
+                        <div
+                          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-neutro-50)] border-b border-[var(--color-neutro-100)] cursor-pointer select-none"
+                          onClick={() => toggleUnidadNivel(nivel, items.map((u) => u.id))}
+                        >
+                          <Checkbox checked={allSelected} onChange={() => toggleUnidadNivel(nivel, items.map((u) => u.id))} />
+                          <span className="text-[12px] font-semibold text-[var(--color-neutro-700)] flex-1">{nivel}</span>
+                          <span className="text-[11px] text-[var(--color-neutro-400)]">{items.length} unidad{items.length !== 1 ? "es" : ""}</span>
+                        </div>
+                        {items.map((u) => (
+                          <label
+                            key={u.id}
+                            className={`flex items-center gap-2 px-3 py-1 pl-9 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
+                              formUnidadesIds.includes(u.id) ? "bg-[var(--color-verde-100)]/5" : ""
+                            }`}
+                          >
+                            <Checkbox
+                              checked={formUnidadesIds.includes(u.id)}
+                              onChange={() => toggleUnidad(u.id)}
+                            />
+                            <span className="flex-1 min-w-0 truncate">{u.label}</span>
+                            <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{u.subtipo}</span>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  })
                 )}
               </div>
               {formUnidadesIds.length > 0 && (
