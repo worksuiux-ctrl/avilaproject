@@ -1,12 +1,12 @@
 import { Card, Badge, Button } from "@coe/design-system";
 import {
-  Landmark, Map, Bell, FileInput, ShieldCheck,
-  Activity, Plug, FileText,
+  Landmark, Map, Bell, FileInput, ShieldCheck, CalendarDays,
+  Activity, Plug, FileText, Download,
 } from "lucide-react";
 import type { IntegrationItem, EstadoIntegracion } from "../data/integracionesTypes";
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  Landmark, Map, Bell, FileInput, ShieldCheck,
+  Landmark, Map, Bell, FileInput, ShieldCheck, CalendarDays,
 };
 
 const ESTADO_BADGE: Record<EstadoIntegracion, "success" | "error"> = {
@@ -24,9 +24,10 @@ interface IntegrationCardProps {
   onTest: () => void;
   onMetrics: () => void;
   onLogs: () => void;
+  onImport?: () => void;
 }
 
-export function IntegrationCard({ item, onTest, onMetrics, onLogs }: IntegrationCardProps) {
+export function IntegrationCard({ item, onTest, onMetrics, onLogs, onImport }: IntegrationCardProps) {
   const Icon = ICON_MAP[item.icon] || Plug;
   const badgeVariant = ESTADO_BADGE[item.estado];
 
@@ -66,6 +67,11 @@ export function IntegrationCard({ item, onTest, onMetrics, onLogs }: Integration
         <Button variant="secondary" size="sm" className="!text-[11px] flex-1" onClick={onLogs}>
           <FileText className="w-3 h-3" /> LOG
         </Button>
+        {onImport && (
+          <Button variant="primary" size="sm" className="!text-[11px] flex-1" onClick={onImport}>
+            <Download className="w-3 h-3" /> Importar
+          </Button>
+        )}
       </div>
     </Card>
   );

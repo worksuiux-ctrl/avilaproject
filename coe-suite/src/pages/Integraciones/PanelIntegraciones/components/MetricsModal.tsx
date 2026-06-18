@@ -11,6 +11,7 @@ interface MetricsModalProps {
 
 const BAR_COUNT = 30;
 const MAX_HEIGHT = 120;
+const CHART_WIDTH = 400;
 
 function randomAround(base: number, variance: number) {
   return Math.max(0, Math.round(base + (Math.random() - 0.5) * variance));
@@ -53,7 +54,7 @@ export function MetricsModal({ open, onClose, item }: MetricsModalProps) {
   const chartLines = ({ data, max }: { data: number[]; max: number }) =>
     data
       .map((v, i) => {
-        const x = (i / (BAR_COUNT - 1)) * 100;
+        const x = (i / (BAR_COUNT - 1)) * CHART_WIDTH;
         const y = MAX_HEIGHT - (v / max) * MAX_HEIGHT;
         return `${i === 0 ? "M" : "L"} ${x} ${y}`;
       })
@@ -119,13 +120,13 @@ export function MetricsModal({ open, onClose, item }: MetricsModalProps) {
               </span>
               {isLive && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
             </div>
-            <svg viewBox={`0 0 100 ${MAX_HEIGHT + 10}`} className="w-full h-28">
+            <svg viewBox={`0 0 ${CHART_WIDTH} ${MAX_HEIGHT + 10}`} className="w-full h-28">
               {/* Grid lines */}
               {[0, 0.25, 0.5, 0.75, 1].map((frac) => (
                 <line
                   key={frac}
                   x1="0" y1={MAX_HEIGHT - frac * MAX_HEIGHT}
-                  x2="100" y2={MAX_HEIGHT - frac * MAX_HEIGHT}
+                  x2={CHART_WIDTH} y2={MAX_HEIGHT - frac * MAX_HEIGHT}
                   stroke="var(--color-neutro-200)"
                   strokeWidth="0.3"
                 />
@@ -155,12 +156,12 @@ export function MetricsModal({ open, onClose, item }: MetricsModalProps) {
               </span>
               {isLive && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />}
             </div>
-            <svg viewBox={`0 0 100 ${MAX_HEIGHT + 10}`} className="w-full h-28">
+            <svg viewBox={`0 0 ${CHART_WIDTH} ${MAX_HEIGHT + 10}`} className="w-full h-28">
               {[0, 0.25, 0.5, 0.75, 1].map((frac) => (
                 <line
                   key={frac}
                   x1="0" y1={MAX_HEIGHT - frac * MAX_HEIGHT}
-                  x2="100" y2={MAX_HEIGHT - frac * MAX_HEIGHT}
+                  x2={CHART_WIDTH} y2={MAX_HEIGHT - frac * MAX_HEIGHT}
                   stroke="var(--color-neutro-200)"
                   strokeWidth="0.3"
                 />

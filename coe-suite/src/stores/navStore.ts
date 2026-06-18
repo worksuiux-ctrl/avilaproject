@@ -34,7 +34,7 @@ const VIEW_META: Record<string, { t: string; d: string }> = {
 // Auto-generate meta from navigation data for any missing entries
 MODULES.forEach((mod) => {
   mod.items.forEach((item) => {
-    const key = item.route.replace("/", "");
+    const key = item.route.replaceAll("/", "");
     if (!VIEW_META[key]) {
       VIEW_META[key] = {
         t: item.label,
@@ -49,7 +49,7 @@ export const useNavStore = create<NavState>((set) => ({
   title: VIEW_META.dashboard.t,
   description: VIEW_META.dashboard.d,
   navigate: (view: string) => {
-    const key = view.replace("/", "") || "dashboard";
+    const key = view.replaceAll("/", "") || "dashboard";
     const meta = VIEW_META[key] || { t: view, d: "" };
     set({ activeView: key, title: meta.t, description: meta.d });
   },

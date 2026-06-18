@@ -76,6 +76,7 @@ export const MODULES: Module[] = [
       { id: "config-clientes", label: "Clientes", icon: "Users", route: "/config/clientes" },
       { id: "config-grupos", label: "Grupos", icon: "FolderTree", route: "/config/grupos" },
       { id: "config-motor-transacciones", label: "Motor Transacciones", icon: "Settings", route: "/config/motor-transacciones" },
+      { id: "config-calendario-financiero", label: "Calendario Financiero", icon: "CalendarDays", route: "/config/calendario-financiero" },
     ],
   },
   {

@@ -1,10 +1,14 @@
-import { useState, useMemo, useCallback } from "react";
-import { SearchBar, Heading, Text, Dialog, Button, Table } from "@coe/design-system";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { SearchBar, Heading, Text, Dialog, Button, Table, Badge } from "@coe/design-system";
 import type { TableColumn } from "@coe/design-system";
 import { toast } from "sonner";
+import { CalendarDays, CheckCircle2, XCircle, Download } from "lucide-react";
 import { IntegrationCard } from "./components/IntegrationCard";
 import { MetricsModal } from "./components/MetricsModal";
 import { INTEGRACIONES_MOCK } from "./data/integracionesMocks";
+import { SUDEBAN_2026, type SudebanEntry } from "./data/sudeban2026";
+import { importSudeban2026 } from "../../../services/sudebanCalendar";
+import { useCalendarioStore } from "../../../stores/calendarioFinancieroStore";
 import type { IntegrationItem } from "./data/integracionesTypes";
 
 interface LogEntry {
@@ -24,6 +28,10 @@ function buildBaseLogs(item: IntegrationItem): LogEntry[] {
   const pad = (n: number) => String(n).padStart(2, "0");
   const ts = (h: number, m: number) =>
     `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(h)}:${pad(m)}:00`;
+
+  if (item.id === "int-sudeban") {
+    return [];
+  }
 
   const base: LogEntry[] = [
     { ts: ts(6, 15), evento: "Conexión establecida", detalle: `Handshake completado con ${item.nombre}` },
@@ -49,6 +57,9 @@ export function PanelIntegraciones() {
   const [search, setSearch] = useState("");
   const [logsTarget, setLogsTarget] = useState<IntegrationItem | null>(null);
   const [metricsTarget, setMetricsTarget] = useState<IntegrationItem | null>(null);
+  const [importConfirm, setImportConfirm] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const calendarioStore = useCalendarioStore();
   const [logsState, setLogsState] = useState<Record<string, LogEntry[]>>(() => {
     const map: Record<string, LogEntry[]> = {};
     for (const item of INTEGRACIONES_MOCK) {
@@ -96,6 +107,106 @@ export function PanelIntegraciones() {
     setLogsTarget(item);
   }, []);
 
+  interface ImportResult {
+    toAdd: SudebanEntry[];
+    skipped: string[];
+  }
+
+  const handleImport = useCallback(() => {
+    const configs = calendarioStore.configs.map((c) => ({ fecha: c.fecha, clasificacion: c.clasificacion, alcance: c.alcance }));
+    const { toAdd, skipped } = importSudeban2026(configs);
+    const item = INTEGRACIONES_MOCK.find((i) => i.id === "int-sudeban")!;
+
+    for (const entry of toAdd) {
+      calendarioStore.addConfig({
+        fecha: entry.fecha,
+        clasificacion: entry.clasificacion,
+        descripcion: entry.descripcion,
+        alcance: "todas",
+        unidadesIds: [],
+        gruposIds: [],
+        finSemanaAplica: null,
+        finSemanaRecurrencia: null,
+        grupoId: null,
+      });
+    }
+
+    const result: ImportResult = { toAdd, skipped };
+    setImportResult(result);
+
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    const importLog: LogEntry = {
+      ts,
+      evento: "Importación SUDEBAN completada",
+      detalle: `${toAdd.length} días importados, ${skipped.length} omitidos (ya existían)`,
+    };
+
+    setLogsState((prev) => ({
+      ...prev,
+      [item.id]: [importLog, ...(prev[item.id] || [])],
+    }));
+
+    if (toAdd.length > 0) {
+      toast.success(`Calendario SUDEBAN 2026 importado`, {
+        description: `${toAdd.length} día(s) configurado(s) · ${skipped.length} omitido(s)`,
+      });
+    } else {
+      toast.info("Calendario SUDEBAN 2026 ya estaba importado", {
+        description: "No se agregaron nuevos días. Todos los feriados ya estaban configurados.",
+      });
+    }
+
+    setImportConfirm(false);
+  }, [calendarioStore]);
+
+  useEffect(() => {
+    const sudebanItem = INTEGRACIONES_MOCK.find((i) => i.id === "int-sudeban");
+    if (!sudebanItem || sudebanItem.estado !== "Activo") return;
+
+    const doImport = () => {
+      const state = useCalendarioStore.getState();
+      const configs = state.configs.map((c) => ({ fecha: c.fecha, clasificacion: c.clasificacion, alcance: c.alcance }));
+      const { toAdd } = importSudeban2026(configs);
+      if (toAdd.length === 0) return;
+
+      for (const entry of toAdd) {
+        state.addConfig({
+          fecha: entry.fecha,
+          clasificacion: entry.clasificacion,
+          descripcion: entry.descripcion,
+          alcance: "todas",
+          unidadesIds: [],
+          gruposIds: [],
+          finSemanaAplica: null,
+          finSemanaRecurrencia: null,
+          grupoId: null,
+        });
+      }
+
+      const now = new Date();
+      const pad2 = (n: number) => String(n).padStart(2, "0");
+      const ts = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+
+      setLogsState((prev) => ({
+        ...prev,
+        [sudebanItem.id]: [{
+          ts,
+          evento: "Importación automática SUDEBAN",
+          detalle: `${toAdd.length} días cargados desde la integración conectada`,
+        }, ...(prev[sudebanItem.id] || [])],
+      }));
+    };
+
+    const unsub = useCalendarioStore.persist.onFinishHydration(doImport);
+    if (useCalendarioStore.persist.hasHydrated()) {
+      doImport();
+    }
+    return () => unsub();
+  }, []);
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-4 shrink-0">
@@ -130,6 +241,7 @@ export function PanelIntegraciones() {
                 onTest={() => handleTest(item)}
                 onMetrics={() => setMetricsTarget(item)}
                 onLogs={() => setLogsTarget(item)}
+                onImport={item.id === "int-sudeban" ? () => setImportConfirm(true) : undefined}
               />
             ))}
           </div>
@@ -162,6 +274,96 @@ export function PanelIntegraciones() {
           onClose={() => setMetricsTarget(null)}
           item={metricsTarget}
         />
+      )}
+
+      {importConfirm && (
+        <Dialog
+          open
+          onClose={() => setImportConfirm(false)}
+          title="Importar Calendario SUDEBAN 2026"
+          size="md"
+        >
+          <div className="space-y-3">
+            <p className="text-[13px] text-[var(--color-neutro-600)]">
+              Se importarán los <strong>{SUDEBAN_2026.length} días</strong> del calendario bancario oficial SUDEBAN 2026.
+              Los días se configurarán como <strong>"Todas las Unidades"</strong> en el Calendario Financiero.
+            </p>
+            <p className="text-[13px] text-[var(--color-neutro-600)]">
+              Los días que ya estén configurados no se duplicarán.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button variant="secondary" size="sm" onClick={() => setImportConfirm(false)}>
+                Cancelar
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleImport}>
+                <Download className="w-3.5 h-3.5" /> Importar
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      )}
+
+      {importResult && (
+        <Dialog
+          open
+          onClose={() => setImportResult(null)}
+          title="Resultado de Importación"
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 border border-[var(--color-neutro-200)]">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-neutro-400)] mb-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                  Importados
+                </div>
+                <span className="text-lg font-bold text-green-600">{importResult.toAdd.length}</span>
+              </div>
+              <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 border border-[var(--color-neutro-200)]">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--color-neutro-400)] mb-1">
+                  <XCircle className="w-3.5 h-3.5 text-amber-500" />
+                  Omitidos
+                </div>
+                <span className="text-lg font-bold text-amber-600">{importResult.skipped.length}</span>
+              </div>
+            </div>
+
+            {importResult.toAdd.length > 0 && (
+              <div>
+                <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1">Días importados:</p>
+                <div className="max-h-[180px] overflow-y-auto space-y-0.5">
+                  {importResult.toAdd.map((e) => (
+                    <div key={e.fecha} className="flex items-center gap-2 px-2 py-1 rounded-corner-m text-[12px] bg-green-50 text-green-700">
+                      <CalendarDays className="w-3 h-3 shrink-0" />
+                      <span className="font-mono">{e.fecha}</span>
+                      <span className="truncate">{e.descripcion}</span>
+                      <Badge variant="success" size="sm" className="ml-auto shrink-0">{e.clasificacion}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {importResult.skipped.length > 0 && (
+              <div>
+                <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1">Omitidos (ya existían):</p>
+                <div className="max-h-[120px] overflow-y-auto space-y-0.5">
+                  {importResult.skipped.map((s) => (
+                    <div key={s} className="px-2 py-1 text-[12px] text-[var(--color-neutro-500)]">
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--color-neutro-200)]">
+              <Button variant="secondary" size="sm" onClick={() => setImportResult(null)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </Dialog>
       )}
     </div>
   );

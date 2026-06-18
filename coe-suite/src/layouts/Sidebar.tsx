@@ -29,6 +29,7 @@ import {
   HiOutlineChevronDown,
   HiOutlineClipboardDocumentCheck,
   HiOutlineServerStack,
+  HiOutlineCalendarDays,
 } from "react-icons/hi2";
 import type { IconType } from "react-icons";
 
@@ -72,6 +73,7 @@ const itemIcons: Record<string, IconType> = {
   Ticket: HiOutlineClipboardDocumentCheck,
   QuestionMarkCircle: HiOutlineQuestionMarkCircle,
   ServerStack: HiOutlineServerStack,
+  CalendarDays: HiOutlineCalendarDays,
 };
 
 function ModuleGroup({ module, activeRoute, onNavigate, collapsed, onModuleClick }: {
@@ -181,7 +183,7 @@ export function Sidebar() {
   };
 
   const handleNavigate = (route: string) => {
-    navStore(route.replace("/", "") || "dashboard");
+    navStore(route.replaceAll("/", "") || "dashboard");
     navigate(route);
   };
 

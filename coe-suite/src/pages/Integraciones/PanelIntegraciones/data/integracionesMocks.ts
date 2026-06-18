@@ -39,11 +39,11 @@ export const INTEGRACIONES_MOCK: IntegrationItem[] = [
   },
   {
     id: "int-sudeban",
-    nombre: "Reportes Regulatorios SUDEBAN",
-    descripcion: "Conexión cifrada para la disposición y envío de las estructuras de datos y balances obligatorios exigidos por el ente regulador.",
-    tipo: "API / Intercambio seguro",
-    estado: "Inactivo",
-    icon: "ShieldCheck",
+    nombre: "Calendario SUDEBAN",
+    descripcion: "Importación automatizada del calendario bancario oficial SUDEBAN 2026. Los días feriados nacionales y bancarios se configuran automáticamente en el Calendario Financiero para todas las unidades.",
+    tipo: "API",
+    estado: "Activo",
+    icon: "CalendarDays",
     color: "#c0392b",
   },
 ];
