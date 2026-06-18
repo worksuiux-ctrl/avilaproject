@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type ClasificacionDia = "Hábil" | "No Hábil" | "Feriado Nacional" | "Feriado Bancario" | "Fin de Semana";
 export type AlcanceConfig = "todas" | "unidades" | "grupos";
@@ -12,6 +13,8 @@ export interface CalendarioConfig {
   unidadesIds: string[];
   gruposIds: string[];
   finSemanaAplica: "sábado" | "domingo" | "ambos" | null;
+  finSemanaRecurrencia: "mes" | "año" | "siempre" | null;
+  grupoId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -28,97 +31,95 @@ function makeId(): string {
   return Math.random().toString(36).slice(2, 9);
 }
 
-const DEMO_CONFIGS: CalendarioConfig[] = [
-  {
-    id: "demo-1",
-    fecha: getFutureDate(10),
-    clasificacion: "Feriado Bancario",
-    descripcion: "Día del Banquero - Suspensión de operaciones interbancarias",
-    alcance: "todas",
-    unidadesIds: [],
-    gruposIds: [],
-    finSemanaAplica: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-2",
-    fecha: getFutureDate(15),
-    clasificacion: "No Hábil",
-    descripcion: "Mantenimiento Preventivo de Bóveda - Agencia La Candelaria",
-    alcance: "unidades",
-    unidadesIds: ["u-agencia-candelaria"],
-    gruposIds: [],
-    finSemanaAplica: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-3",
-    fecha: getFutureDate(15),
-    clasificacion: "No Hábil",
-    descripcion: "Falla eléctrica programada - Grupo Geográfico Estado Zulia",
-    alcance: "grupos",
-    unidadesIds: [],
-    gruposIds: ["g-zulia"],
-    finSemanaAplica: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-4",
-    fecha: getFutureDate(22),
-    clasificacion: "Feriado Nacional",
-    descripcion: "Día de la Independencia",
-    alcance: "todas",
-    unidadesIds: [],
-    gruposIds: [],
-    finSemanaAplica: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "demo-5",
-    fecha: getFutureDate(28),
-    clasificacion: "Hábil",
-    descripcion: "Cierre fiscal de mes - Horario extendido",
-    alcance: "todas",
-    unidadesIds: [],
-    gruposIds: [],
-    finSemanaAplica: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-function getFutureDate(daysAhead: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + daysAhead);
-  return d.toISOString().slice(0, 10);
+function getWeekendDatesInMonth(year: number, month: number, aplica: "sábado" | "domingo" | "ambos"): string[] {
+  const dates: string[] = [];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(year, month, d).getDay();
+    if ((aplica === "sábado" || aplica === "ambos") && dow === 6) dates.push(fechaKeyRaw(year, month, d));
+    if ((aplica === "domingo" || aplica === "ambos") && dow === 0) dates.push(fechaKeyRaw(year, month, d));
+  }
+  return dates;
 }
 
-export const useCalendarioStore = create<CalendarioState>((set, get) => ({
-  configs: DEMO_CONFIGS,
+function getWeekendDatesInYear(year: number, aplica: "sábado" | "domingo" | "ambos"): string[] {
+  const dates: string[] = [];
+  for (let m = 0; m < 12; m++) dates.push(...getWeekendDatesInMonth(year, m, aplica));
+  return dates;
+}
 
-  addConfig: (data) => {
-    const now = new Date().toISOString();
-    const item: CalendarioConfig = { ...data, id: makeId(), createdAt: now, updatedAt: now };
-    set((s) => ({ configs: [...s.configs, item] }));
-  },
+function getWeekendDatesForever(aplica: "sábado" | "domingo" | "ambos"): string[] {
+  const dates: string[] = [];
+  const startYear = new Date().getFullYear();
+  for (let y = startYear; y <= startYear + 10; y++) dates.push(...getWeekendDatesInYear(y, aplica));
+  return dates;
+}
 
-  updateConfig: (id, data) => {
-    set((s) => ({
-      configs: s.configs.map((c) =>
-        c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c
-      ),
-    }));
-  },
+function fechaKeyRaw(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
 
-  removeConfig: (id) => {
-    set((s) => ({ configs: s.configs.filter((c) => c.id !== id) }));
-  },
+function parseFecha(fecha: string): { year: number; month: number; day: number } {
+  const parts = fecha.split("-");
+  return { year: parseInt(parts[0], 10), month: parseInt(parts[1], 10) - 1, day: parseInt(parts[2], 10) };
+}
 
-  getConfigsForDate: (fecha) => {
-    return get().configs.filter((c) => c.fecha === fecha);
-  },
-}));
+
+
+export const useCalendarioStore = create<CalendarioState>()(
+  persist(
+    (set, get) => ({
+      configs: [],
+
+      addConfig: (data) => {
+        const now = new Date().toISOString();
+        const grupoId = data.clasificacion === "Fin de Semana" && data.finSemanaRecurrencia ? makeId() : null;
+
+        if (!grupoId) {
+          const item: CalendarioConfig = { ...data, id: makeId(), grupoId: null, createdAt: now, updatedAt: now };
+          set((s) => ({ configs: [...s.configs, item] }));
+          return;
+        }
+
+        const { year, month } = parseFecha(data.fecha);
+        const aplica = data.finSemanaAplica!;
+        let fechas: string[];
+        if (data.finSemanaRecurrencia === "mes") fechas = getWeekendDatesInMonth(year, month, aplica);
+        else if (data.finSemanaRecurrencia === "año") fechas = getWeekendDatesInYear(year, aplica);
+        else fechas = getWeekendDatesForever(aplica);
+
+        const items: CalendarioConfig[] = fechas.map((f) => ({
+          ...data,
+          id: makeId(),
+          fecha: f,
+          grupoId,
+          createdAt: now,
+          updatedAt: now,
+        }));
+        set((s) => ({ configs: [...s.configs, ...items] }));
+      },
+
+      updateConfig: (id, data) => {
+        set((s) => ({
+          configs: s.configs.map((c) =>
+            c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c
+          ),
+        }));
+      },
+
+      removeConfig: (id) => {
+        const cfg = get().configs.find((c) => c.id === id);
+        if (cfg?.grupoId) {
+          set((s) => ({ configs: s.configs.filter((c) => c.grupoId !== cfg.grupoId) }));
+        } else {
+          set((s) => ({ configs: s.configs.filter((c) => c.id !== id) }));
+        }
+      },
+
+      getConfigsForDate: (fecha) => {
+        return get().configs.filter((c) => c.fecha === fecha);
+      },
+    }),
+    { name: "coe-cal-fin-v2" }
+  )
+);
