@@ -7,7 +7,7 @@ import { useGruposStore } from "../../../stores/gruposStore";
 import { useNavStore } from "../../../stores/navStore";
 import { DeleteDialog } from "../../../components/shared/DeleteDialog";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, CalendarDays, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Search, X, Globe } from "lucide-react";
 import { getEntityType } from "../../../data/entityCatalog";
 import { EntityIcon } from "../../../components/entities/entityIcons";
 
@@ -18,7 +18,6 @@ const DIAS_SEMANA_LARGO = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves",
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 const CLASIFICACION_BASE = [
-  { value: "Hábil", label: "Día Hábil" },
   { value: "No Hábil", label: "Día No Hábil" },
   { value: "Feriado Nacional", label: "Feriado Nacional" },
   { value: "Feriado Bancario", label: "Feriado Bancario" },
@@ -176,50 +175,37 @@ function getWeekDays(year: number, month: number, day: number): Date[] {
   return days;
 }
 
-const EMPTY_FORM = {
-  clasificacion: "Hábil" as ClasificacionDia,
-  descripcion: "",
-  alcance: "todas" as AlcanceConfig,
-  finSemana: null as "sábado" | "domingo" | "ambos" | null,
-  unidadesIds: [] as string[],
-  gruposIds: [] as string[],
-};
+  const EMPTY_FORM = {
+    clasificacion: "" as ClasificacionDia,
+    descripcion: "",
+    alcance: "todas" as AlcanceConfig,
+    finSemana: null as "sábado" | "domingo" | "ambos" | null,
+    finSemanaRecurrencia: null as "mes" | "año" | "siempre" | null,
+    unidadesIds: [] as string[],
+    gruposIds: [] as string[],
+  };
 
 interface ArbolUnidadNodeProps {
   entityId: string;
   depth: number;
   selectedIds: Set<string>;
   expandedIds: Set<string>;
+  visibleSet: Set<string> | null;
   onToggle: (id: string) => void;
   onToggleExpand: (id: string) => void;
-  search: string;
 }
 
-function ArbolUnidadNode({ entityId, depth, selectedIds, expandedIds, onToggle, onToggleExpand, search }: ArbolUnidadNodeProps) {
-  const entity = useEntitiesStore((s) => s.entities.find((e) => e.id === entityId));
-  const children = useEntitiesStore((s) => s.entities.filter((e) => e.padreId === entityId));
+function ArbolUnidadNode({ entityId, depth, selectedIds, expandedIds, visibleSet, onToggle, onToggleExpand }: ArbolUnidadNodeProps) {
+  const entities = useEntitiesStore((s) => s.entities);
+  const entity = entities.find((e) => e.id === entityId);
+  const allChildren = entities.filter((e) => e.padreId === entityId);
   if (!entity) return null;
 
+  const children = visibleSet ? allChildren.filter((c) => visibleSet.has(c.id)) : allChildren;
   const tipo = getEntityType(entity.nivel);
   const hasChildren = children.length > 0;
   const isExpanded = expandedIds.has(entityId);
   const isSelected = selectedIds.has(entityId);
-
-  const filteredChildren = useMemo(() => {
-    if (!search.trim()) return children;
-    const q = search.toLowerCase();
-    const matchFn = (e: { id: string; nombre: string; codigo: string; nivel: string; subtipo: string }): boolean =>
-      e.nombre.toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q) || e.nivel.toLowerCase().includes(q) || e.subtipo.toLowerCase().includes(q);
-    const matches = new Set<string>();
-    const walk = (eId: string) => {
-      const e = useEntitiesStore.getState().entities.find((en) => en.id === eId);
-      if (!e) return;
-      if (matchFn(e)) matches.add(eId);
-      useEntitiesStore.getState().entities.filter((ch) => ch.padreId === eId).forEach((ch) => walk(ch.id));
-    };
-    children.forEach((ch) => walk(ch.id));
-    return children.filter((c) => matches.has(c.id));
-  }, [children, search]);
 
   return (
     <div>
@@ -245,16 +231,80 @@ function ArbolUnidadNode({ entityId, depth, selectedIds, expandedIds, onToggle, 
       </div>
       {hasChildren && isExpanded && (
         <div>
-          {filteredChildren.map((child) => (
+          {children.map((child) => (
             <ArbolUnidadNode
               key={child.id}
               entityId={child.id}
               depth={depth + 1}
               selectedIds={selectedIds}
               expandedIds={expandedIds}
+              visibleSet={visibleSet}
               onToggle={onToggle}
               onToggleExpand={onToggleExpand}
-              search={search}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ArbolGrupoNodeProps {
+  grupoId: string;
+  depth: number;
+  selectedIds: string[];
+  expandedIds: Set<string>;
+  visibleSet: Set<string> | null;
+  onToggle: (id: string) => void;
+  onToggleExpand: (id: string) => void;
+}
+
+function ArbolGrupoNode({ grupoId, depth, selectedIds, expandedIds, visibleSet, onToggle, onToggleExpand }: ArbolGrupoNodeProps) {
+  const allGrupos = useGruposStore((s) => s.grupos);
+  const grupos = allGrupos.filter((g) => g.tipo === "Geográfico" && g.activo);
+  const grupo = grupos.find((g) => g.id === grupoId);
+  const allChildren = grupos.filter((g) => g.padreId === grupoId);
+  if (!grupo) return null;
+
+  const children = visibleSet ? allChildren.filter((c) => visibleSet.has(c.id)) : allChildren;
+  const hasChildren = children.length > 0;
+  const isExpanded = expandedIds.has(grupoId);
+  const isSelected = selectedIds.includes(grupoId);
+
+  return (
+    <div>
+      <div
+        className={`flex items-center gap-1.5 px-2 py-1 rounded-corner-m text-[13px] transition-colors ${
+          isSelected ? "bg-[var(--color-verde-100)]/10" : "hover:bg-[var(--color-neutro-50)]"
+        }`}
+        style={{ paddingLeft: `${8 + depth * 20}px` }}
+      >
+        <span
+          className={`shrink-0 w-4 h-4 flex items-center justify-center transition-transform ${isExpanded ? "rotate-90" : ""} cursor-pointer`}
+          onClick={(e) => { e.stopPropagation(); if (hasChildren) onToggleExpand(grupoId); }}
+        >
+          {hasChildren ? <ChevronRight className="w-3.5 h-3.5 text-[var(--color-neutro-400)]" /> : <span className="w-3.5" />}
+        </span>
+        <Checkbox
+          checked={isSelected}
+          onChange={() => onToggle(grupoId)}
+        />
+        <Globe className="w-4 h-4 shrink-0 text-[var(--color-verde-100)]" />
+        <span className="flex-1 min-w-0 truncate">{grupo.nombre}</span>
+        <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{grupo.codigo}</span>
+      </div>
+      {hasChildren && isExpanded && (
+        <div>
+          {children.map((child) => (
+            <ArbolGrupoNode
+              key={child.id}
+              grupoId={child.id}
+              depth={depth + 1}
+              selectedIds={selectedIds}
+              expandedIds={expandedIds}
+              visibleSet={visibleSet}
+              onToggle={onToggle}
+              onToggleExpand={onToggleExpand}
             />
           ))}
         </div>
@@ -280,6 +330,7 @@ export function CalendarioFinancieroPage() {
   const [formDescripcion, setFormDescripcion] = useState("");
   const [formAlcance, setFormAlcance] = useState<AlcanceConfig>("todas");
   const [formFinSemana, setFormFinSemana] = useState<"sábado" | "domingo" | "ambos" | null>(null);
+  const [formFinSemanaRecurrencia, setFormFinSemanaRecurrencia] = useState<"mes" | "año" | "siempre" | null>(null);
   const [formUnidadesIds, setFormUnidadesIds] = useState<string[]>([]);
   const [formGruposIds, setFormGruposIds] = useState<string[]>([]);
   const [unidadSearch, setUnidadSearch] = useState("");
@@ -287,6 +338,7 @@ export function CalendarioFinancieroPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [unidadExpandedIds, setUnidadExpandedIds] = useState<Set<string>>(new Set());
+  const [grupoExpandedIds, setGrupoExpandedIds] = useState<Set<string>>(new Set());
 
   const store = useCalendarioStore();
   const entities = useEntitiesStore((s) => s.entities);
@@ -372,6 +424,7 @@ export function CalendarioFinancieroPage() {
     setFormDescripcion(EMPTY_FORM.descripcion);
     setFormAlcance(EMPTY_FORM.alcance);
     setFormFinSemana(EMPTY_FORM.finSemana);
+    setFormFinSemanaRecurrencia(EMPTY_FORM.finSemanaRecurrencia);
     setFormUnidadesIds(EMPTY_FORM.unidadesIds);
     setFormGruposIds(EMPTY_FORM.gruposIds);
     setErrorMsg(null);
@@ -382,6 +435,7 @@ export function CalendarioFinancieroPage() {
     setFormDescripcion(cfg.descripcion);
     setFormAlcance(cfg.alcance);
     setFormFinSemana(cfg.finSemanaAplica);
+    setFormFinSemanaRecurrencia(cfg.finSemanaRecurrencia);
     setFormUnidadesIds(cfg.unidadesIds);
     setFormGruposIds(cfg.gruposIds);
     setErrorMsg(null);
@@ -392,6 +446,9 @@ export function CalendarioFinancieroPage() {
     setSelectedDate(key);
     setEditingConfigId(null);
     resetForm();
+    setFormClasificacion(CLASIFICACION_BASE[0].value as ClasificacionDia);
+    setFormFinSemana("ambos");
+    setFormFinSemanaRecurrencia("mes");
     setModalOpen(true);
   }, [resetForm]);
 
@@ -415,13 +472,70 @@ export function CalendarioFinancieroPage() {
     if (newAlcance === "todas" && hasEspecificas) {
       return "No puedes asignar 'Todas las Unidades' en un día que ya tiene configuraciones específicas por unidad o grupo.";
     }
+    if (newAlcance === "todas" && hasTodas) {
+      return "Ya existe una configuración para 'Todas las Unidades' en este día. Solo se permite una.";
+    }
     return null;
   }, [selectedDate, configsMap, editingConfigId]);
 
+  const validateCoverageConflict = useCallback((): string | null => {
+    if (!selectedDate) return null;
+    if (formAlcance === "todas") return null;
+    const existing = configsMap.get(selectedDate) ?? [];
+    const others = editingConfigId ? existing.filter((c) => c.id !== editingConfigId) : existing;
+    if (others.length === 0) return null;
+
+    const allEntities = useEntitiesStore.getState().entities;
+    const allGrupos = useGruposStore.getState().grupos;
+
+    const coveredByExisting = new Map<string, string>();
+    for (const cfg of others) {
+      if (cfg.alcance === "todas") {
+        for (const e of allEntities) coveredByExisting.set(e.id, cfg.clasificacion);
+      } else if (cfg.alcance === "unidades") {
+        for (const uId of cfg.unidadesIds) { if (!coveredByExisting.has(uId)) coveredByExisting.set(uId, cfg.clasificacion); }
+      } else if (cfg.alcance === "grupos") {
+        for (const gId of cfg.gruposIds) {
+          const grupo = allGrupos.find((g) => g.id === gId);
+          if (grupo) for (const m of grupo.miembros) { if (!coveredByExisting.has(m.entityId)) coveredByExisting.set(m.entityId, cfg.clasificacion); }
+        }
+      }
+    }
+
+    const newEntityIds = new Set<string>();
+    if (formAlcance === "unidades") {
+      for (const uId of formUnidadesIds) newEntityIds.add(uId);
+    } else if (formAlcance === "grupos") {
+      for (const gId of formGruposIds) {
+        const grupo = allGrupos.find((g) => g.id === gId);
+        if (grupo) for (const m of grupo.miembros) newEntityIds.add(m.entityId);
+      }
+    }
+
+    const conflicting = new Map<string, string>();
+    for (const eId of newEntityIds) {
+      const existingClasif = coveredByExisting.get(eId);
+      if (existingClasif && existingClasif !== formClasificacion) {
+        const entity = allEntities.find((en) => en.id === eId);
+        if (entity) conflicting.set(entity.nombre, existingClasif);
+      }
+    }
+
+    if (conflicting.size > 0) {
+      const names = Array.from(conflicting.keys()).slice(0, 3);
+      return `Conflicto de cobertura: ${names.join(", ")}${conflicting.size > 3 ? ` y ${conflicting.size - 3} más` : ""} ya tiene${conflicting.size > 1 ? "n" : ""} otra configuración en este día.`;
+    }
+    return null;
+  }, [selectedDate, configsMap, editingConfigId, formAlcance, formUnidadesIds, formGruposIds, formClasificacion]);
+
   const handleSave = useCallback(() => {
     if (!selectedDate) return;
+    if (!formClasificacion) { setErrorMsg("Debes seleccionar una clasificación para el día."); return; }
     const err = validateAlcance(formAlcance);
     if (err) { setErrorMsg(err); return; }
+    const conflictErr = validateCoverageConflict();
+    if (conflictErr) { setErrorMsg(conflictErr); return; }
+    const esFinSemana = formClasificacion === "Fin de Semana";
     const data = {
       fecha: selectedDate,
       clasificacion: formClasificacion,
@@ -429,17 +543,19 @@ export function CalendarioFinancieroPage() {
       alcance: formAlcance,
       unidadesIds: formAlcance === "unidades" ? formUnidadesIds : [],
       gruposIds: formAlcance === "grupos" ? formGruposIds : [],
-      finSemanaAplica: formClasificacion === "Fin de Semana" ? formFinSemana : null,
+      finSemanaAplica: esFinSemana ? formFinSemana : null,
+      finSemanaRecurrencia: esFinSemana ? formFinSemanaRecurrencia : null,
     };
     if (editingConfigId) {
       store.updateConfig(editingConfigId, data);
       toast.success("Configuración actualizada", { description: formatDateLabel(selectedDate) });
     } else {
       store.addConfig(data);
-      toast.success("Configuración creada", { description: formatDateLabel(selectedDate) });
+      const count = esFinSemana && formFinSemanaRecurrencia ? " (múltiples días)" : "";
+      toast.success("Configuración creada" + count, { description: formatDateLabel(selectedDate) });
     }
     setModalOpen(false);
-  }, [selectedDate, editingConfigId, formClasificacion, formDescripcion, formAlcance, formFinSemana, formUnidadesIds, formGruposIds, validateAlcance, store]);
+  }, [selectedDate, editingConfigId, formClasificacion, formDescripcion, formAlcance, formFinSemana, formFinSemanaRecurrencia, formUnidadesIds, formGruposIds, validateAlcance, validateCoverageConflict, store]);
 
   const handleDelete = useCallback(() => {
     if (!selectedDate || !editingConfigId) return;
@@ -456,7 +572,7 @@ export function CalendarioFinancieroPage() {
   const handleClasificacionChange = useCallback((v: string) => {
     const val = v as ClasificacionDia;
     setFormClasificacion(val);
-    if (val !== "Fin de Semana") setFormFinSemana(null);
+    if (val !== "Fin de Semana") { setFormFinSemana(null); setFormFinSemanaRecurrencia(null); }
   }, []);
 
   const handleAlcanceChange = useCallback((val: AlcanceConfig) => {
@@ -474,25 +590,34 @@ export function CalendarioFinancieroPage() {
     }));
   }, [currentWeekStart]);
 
-  const gruposDisponibles = useMemo(() => {
-    return grupos
-      .filter((g) => g.tipo === "Geográfico" && g.activo)
-      .map((g) => ({ id: g.id, label: `${g.codigo} — ${g.nombre}`, subtipo: g.subtipo }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [grupos]);
-
-  const filteredGrupos = useMemo(() => {
-    if (!grupoSearch.trim()) return gruposDisponibles;
-    const q = grupoSearch.toLowerCase();
-    return gruposDisponibles.filter((g) => g.label.toLowerCase().includes(q) || g.subtipo.toLowerCase().includes(q));
-  }, [gruposDisponibles, grupoSearch]);
-
   const toggleUnidad = useCallback((id: string) => {
-    setFormUnidadesIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    const allEntities = useEntitiesStore.getState().entities;
+    const getDescendants = (parentId: string): string[] => {
+      const direct = allEntities.filter((e) => e.padreId === parentId);
+      return [...direct.map((e) => e.id), ...direct.flatMap((c) => getDescendants(c.id))];
+    };
+    const affected = new Set([id, ...getDescendants(id)]);
+    setFormUnidadesIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => !affected.has(x));
+      const next = new Set(prev);
+      for (const aId of affected) next.add(aId);
+      return Array.from(next);
+    });
   }, []);
 
   const toggleGrupo = useCallback((id: string) => {
-    setFormGruposIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+    const allGrupos = useGruposStore.getState().grupos.filter((g) => g.tipo === "Geográfico" && g.activo);
+    const getDescendants = (parentId: string): string[] => {
+      const direct = allGrupos.filter((g) => g.padreId === parentId);
+      return [...direct.map((g) => g.id), ...direct.flatMap((c) => getDescendants(c.id))];
+    };
+    const affected = new Set([id, ...getDescendants(id)]);
+    setFormGruposIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => !affected.has(x));
+      const next = new Set(prev);
+      for (const aId of affected) next.add(aId);
+      return Array.from(next);
+    });
   }, []);
 
   const toggleUnidadExpand = useCallback((id: string) => {
@@ -504,29 +629,122 @@ export function CalendarioFinancieroPage() {
     });
   }, []);
 
-  const getRootEntities = useCallback(() => {
-    return entities.filter((e) => e.padreId === null);
-  }, [entities]);
+  const toggleGrupoExpand = useCallback((id: string) => {
+    setGrupoExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const selectedIdsSet = useMemo(() => new Set(formUnidadesIds), [formUnidadesIds]);
 
-  const rootIds = useMemo(() => {
-    if (!unidadSearch.trim()) {
-      return entities.filter((e) => e.padreId === null).map((e) => e.id);
-    }
+  const visibleSet = useMemo(() => {
+    if (!unidadSearch.trim()) return null;
     const q = unidadSearch.toLowerCase();
-    const matched = new Set<string>();
-    const walk = (eId: string) => {
-      const e = entities.find((en) => en.id === eId);
-      if (!e) return;
+    const matchedIds = new Set<string>();
+    for (const e of entities) {
       if (e.nombre.toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q) || e.nivel.toLowerCase().includes(q) || e.subtipo.toLowerCase().includes(q))
-        matched.add(eId);
-      entities.filter((ch) => ch.padreId === eId).forEach((ch) => walk(ch.id));
+        matchedIds.add(e.id);
+    }
+    const visible = new Set(matchedIds);
+    const addDescendants = (eId: string) => {
+      for (const ch of entities.filter((e) => e.padreId === eId)) {
+        visible.add(ch.id);
+        addDescendants(ch.id);
+      }
     };
-    entities.filter((e) => e.padreId === null).forEach((e) => walk(e.id));
-    const hasMatch = (eId: string): boolean => matched.has(eId) || entities.filter((ch) => ch.padreId === eId).some((ch) => hasMatch(ch.id));
-    return entities.filter((e) => e.padreId === null && hasMatch(e.id)).map((e) => e.id);
+    for (const mId of matchedIds) addDescendants(mId);
+    const addAncestors = (eId: string) => {
+      const ent = entities.find((e) => e.id === eId);
+      if (ent?.padreId) { visible.add(ent.padreId); addAncestors(ent.padreId); }
+    };
+    for (const mId of matchedIds) addAncestors(mId);
+    return visible;
   }, [entities, unidadSearch]);
+
+  const effectiveExpandedIds = useMemo(() => {
+    if (!visibleSet) return unidadExpandedIds;
+    const merged = new Set(unidadExpandedIds);
+    for (const eId of visibleSet) {
+      const ch = entities.filter((e) => e.padreId === eId);
+      if (ch.some((c) => visibleSet.has(c.id))) merged.add(eId);
+    }
+    return merged;
+  }, [visibleSet, unidadExpandedIds, entities]);
+
+  const rootIds = useMemo(() => {
+    if (!unidadSearch.trim()) return entities.filter((e) => e.padreId === null).map((e) => e.id);
+    const q = unidadSearch.toLowerCase();
+    const matchCache = new Map<string, boolean>();
+    const entityMatch = (eId: string): boolean => {
+      const cached = matchCache.get(eId);
+      if (cached !== undefined) return cached;
+      const e = entities.find((en) => en.id === eId);
+      if (!e) { matchCache.set(eId, false); return false; }
+      const selfMatch = e.nombre.toLowerCase().includes(q) || e.codigo.toLowerCase().includes(q) || e.nivel.toLowerCase().includes(q) || e.subtipo.toLowerCase().includes(q);
+      if (selfMatch) { matchCache.set(eId, true); return true; }
+      const childMatch = entities.filter((ch) => ch.padreId === eId).some((ch) => entityMatch(ch.id));
+      matchCache.set(eId, childMatch);
+      return childMatch;
+    };
+    return entities.filter((e) => e.padreId === null && entityMatch(e.id)).map((e) => e.id);
+  }, [entities, unidadSearch]);
+
+  const gruposGeograficos = useMemo(() => grupos.filter((g) => g.tipo === "Geográfico" && g.activo), [grupos]);
+
+  const visibleGrupoSet = useMemo(() => {
+    if (!grupoSearch.trim()) return null;
+    const q = grupoSearch.toLowerCase();
+    const matchedIds = new Set<string>();
+    for (const g of gruposGeograficos) {
+      if (g.nombre.toLowerCase().includes(q) || g.codigo.toLowerCase().includes(q) || g.subtipo.toLowerCase().includes(q))
+        matchedIds.add(g.id);
+    }
+    const visible = new Set(matchedIds);
+    const addDescendants = (eId: string) => {
+      for (const ch of gruposGeograficos.filter((g) => g.padreId === eId)) {
+        visible.add(ch.id);
+        addDescendants(ch.id);
+      }
+    };
+    for (const mId of matchedIds) addDescendants(mId);
+    const addAncestors = (eId: string) => {
+      const g = gruposGeograficos.find((gg) => gg.id === eId);
+      if (g?.padreId) { visible.add(g.padreId); addAncestors(g.padreId); }
+    };
+    for (const mId of matchedIds) addAncestors(mId);
+    return visible;
+  }, [gruposGeograficos, grupoSearch]);
+
+  const effectiveGrupoExpandedIds = useMemo(() => {
+    if (!visibleGrupoSet) return grupoExpandedIds;
+    const merged = new Set(grupoExpandedIds);
+    for (const gId of visibleGrupoSet) {
+      const ch = gruposGeograficos.filter((g) => g.padreId === gId);
+      if (ch.some((c) => visibleGrupoSet.has(c.id))) merged.add(gId);
+    }
+    return merged;
+  }, [visibleGrupoSet, grupoExpandedIds, gruposGeograficos]);
+
+  const grupoRootIds = useMemo(() => {
+    if (!grupoSearch.trim()) return gruposGeograficos.filter((g) => g.padreId === null).map((g) => g.id);
+    const q = grupoSearch.toLowerCase();
+    const matchCache = new Map<string, boolean>();
+    const grupoMatch = (gId: string): boolean => {
+      const cached = matchCache.get(gId);
+      if (cached !== undefined) return cached;
+      const g = gruposGeograficos.find((gg) => gg.id === gId);
+      if (!g) { matchCache.set(gId, false); return false; }
+      const selfMatch = g.nombre.toLowerCase().includes(q) || g.codigo.toLowerCase().includes(q) || g.subtipo.toLowerCase().includes(q);
+      if (selfMatch) { matchCache.set(gId, true); return true; }
+      const childMatch = gruposGeograficos.filter((ch) => ch.padreId === gId).some((ch) => grupoMatch(ch.id));
+      matchCache.set(gId, childMatch);
+      return childMatch;
+    };
+    return gruposGeograficos.filter((g) => g.padreId === null && grupoMatch(g.id)).map((g) => g.id);
+  }, [gruposGeograficos, grupoSearch]);
 
   const isEditing = editingConfigId !== null;
 
@@ -678,7 +896,7 @@ export function CalendarioFinancieroPage() {
         actions={
           <div className="flex items-center justify-between w-full">
             {isEditing ? (
-              <Button variant="danger" size="sm" onClick={confirmDelete}>
+              <Button variant="danger" size="sm" onClick={confirmDelete} className="bg-red-500 text-white px-3 py-1.5 rounded-corner-m font-medium hover:bg-red-600 transition-colors">
                 Eliminar esta configuración
               </Button>
             ) : <div />}
@@ -708,16 +926,43 @@ export function CalendarioFinancieroPage() {
           />
 
           {formClasificacion === "Fin de Semana" && (
-            <Select
-              label="Aplica para"
-              options={[
-                { value: "sábado", label: "Sábado" },
-                { value: "domingo", label: "Domingo" },
-                { value: "ambos", label: "Ambos" },
-              ]}
-              value={formFinSemana ?? "ambos"}
-              onChange={(v) => setFormFinSemana(v as "sábado" | "domingo" | "ambos")}
-            />
+            <>
+              <Select
+                label="Aplica para"
+                options={[
+                  { value: "sábado", label: "Sábado" },
+                  { value: "domingo", label: "Domingo" },
+                  { value: "ambos", label: "Ambos" },
+                ]}
+                value={formFinSemana ?? "ambos"}
+                onChange={(v) => setFormFinSemana(v as "sábado" | "domingo" | "ambos")}
+              />
+              <div>
+                <Text variant="small" className="text-[var(--color-neutro-600)] font-semibold mb-2 block">
+                  Repetir configuración
+                </Text>
+                <div className="flex gap-1 bg-[var(--color-neutro-50)] rounded-corner-m p-0.5">
+                  {[
+                    { value: "mes" as const, label: "Este mes" },
+                    { value: "año" as const, label: "Este año" },
+                    { value: "siempre" as const, label: "Siempre" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormFinSemanaRecurrencia(opt.value)}
+                      className={`flex-1 px-3 py-1.5 text-[12px] font-medium rounded-corner-m border-none cursor-pointer transition-all text-center ${
+                        formFinSemanaRecurrencia === opt.value
+                          ? "bg-white text-[var(--color-verde-100)] shadow-sm border border-[var(--color-neutro-200)] font-semibold"
+                          : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           <Input
@@ -783,10 +1028,10 @@ export function CalendarioFinancieroPage() {
                       entityId={id}
                       depth={0}
                       selectedIds={selectedIdsSet}
-                      expandedIds={unidadExpandedIds}
+                      expandedIds={effectiveExpandedIds}
+                      visibleSet={visibleSet}
                       onToggle={toggleUnidad}
                       onToggleExpand={toggleUnidadExpand}
-                      search={unidadSearch}
                     />
                   ))
                 )}
@@ -819,24 +1064,21 @@ export function CalendarioFinancieroPage() {
                   </button>
                 )}
               </div>
-              <div className="max-h-[200px] overflow-y-auto">
-                {filteredGrupos.length === 0 ? (
+              <div className="max-h-[260px] overflow-y-auto p-1 space-y-0.5">
+                {grupoRootIds.length === 0 ? (
                   <p className="px-3 py-4 text-[13px] text-[var(--color-neutro-400)] text-center">Sin resultados</p>
                 ) : (
-                  filteredGrupos.map((g) => (
-                    <label
-                      key={g.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-[13px] cursor-pointer transition-colors hover:bg-[var(--color-neutro-50)] ${
-                        formGruposIds.includes(g.id) ? "bg-[var(--color-verde-100)]/5" : ""
-                      }`}
-                    >
-                      <Checkbox
-                        checked={formGruposIds.includes(g.id)}
-                        onChange={() => toggleGrupo(g.id)}
-                      />
-                      <span className="flex-1 min-w-0 truncate">{g.label}</span>
-                      <span className="text-[11px] text-[var(--color-neutro-400)] shrink-0">{g.subtipo}</span>
-                    </label>
+                  grupoRootIds.map((id) => (
+                    <ArbolGrupoNode
+                      key={id}
+                      grupoId={id}
+                      depth={0}
+                      selectedIds={formGruposIds}
+                      expandedIds={effectiveGrupoExpandedIds}
+                      visibleSet={visibleGrupoSet}
+                      onToggle={toggleGrupo}
+                      onToggleExpand={toggleGrupoExpand}
+                    />
                   ))
                 )}
               </div>
