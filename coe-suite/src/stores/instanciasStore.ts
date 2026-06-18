@@ -14,7 +14,7 @@ export interface InstanciaHistorial {
   stepName: string;
   fecha: string;
   perfil: string;
-  accion: "creada" | "avanzada" | "excepcion" | "completada";
+  accion: "creada" | "avanzada" | "excepcion" | "completada" | "desbloqueo";
   datos: Record<string, string>;
   exceptionName?: string;
 }
@@ -45,7 +45,7 @@ interface InstanciasState {
   clearInstancias: () => void;
   crearInstancia: (templateId: string, nombre: string, firstStepId: string, data: Record<string, string>, perfil: string, origenId: string, destinoId: string, divisaId: string, monto: number, codigoRemesa?: string, codigoEnvio?: string) => TransaccionInstancia;
   updateInstancia: (instanciaId: string, updates: { origenId?: string; destinoId?: string; divisaId?: string; monto?: number; firstStepData?: Record<string, string> }) => void;
-  avanzarEstado: (instanciaId: string, nextStepId: string, nextStepName: string, perfil: string, data: Record<string, string>, esTerminal: boolean) => void;
+  avanzarEstado: (instanciaId: string, currentStepId: string, nextStepId: string, nextStepName: string, perfil: string, data: Record<string, string>, esTerminal: boolean) => void;
   activarExcepcion: (instanciaId: string, stepId: string, stepName: string, exceptionName: string, data: Record<string, string>, esTerminal: boolean) => void;
   selectInstancia: (id: string | null) => void;
   setCreatingTemplate: (templateId: string | null) => void;
@@ -95,7 +95,7 @@ export const useInstanciasStore = create<InstanciasState>()(
     return instancia;
   },
 
-  avanzarEstado: (instanciaId, nextStepId, nextStepName, perfil, data, esTerminal) =>
+  avanzarEstado: (instanciaId, currentStepId, nextStepId, nextStepName, perfil, data, esTerminal) =>
     set((s) => {
       const idx = s.instancias.findIndex((i) => i.id === instanciaId);
       if (idx === -1) return s;
@@ -114,7 +114,7 @@ export const useInstanciasStore = create<InstanciasState>()(
       newList[idx] = {
         ...inst,
         estadoActual: nextStepId,
-        dataPorEstado: { ...inst.dataPorEstado, [nextStepId]: data },
+        dataPorEstado: { ...inst.dataPorEstado, [currentStepId]: { ...inst.dataPorEstado[currentStepId], ...data } },
         historial: [
           ...inst.historial,
           { stepId: nextStepId, stepName: nextStepName, fecha: now, perfil, accion: esTerminal ? "completada" : "avanzada", datos: data },
@@ -131,9 +131,20 @@ export const useInstanciasStore = create<InstanciasState>()(
       if (idx === -1) return s;
       const inst = s.instancias[idx];
       const now = new Date().toLocaleString("es-VE");
+      const template = useTransaccionesStore.getState().procesosFinalizados.find((p) => p.id === inst.templateId);
+      const currentStep = template?.steps.find((st) => st.id === stepId);
+      const requiereDesbloqueo = currentStep?.bloqueoSaldo && retrocedeA != null;
       const excKey = `${stepId}:exc`;
       const nuevoEstado = retrocedeA ? retrocedeA : (esTerminal ? `${excKey}:terminal` : excKey);
       const accion = esTerminal ? "excepcion" : (retrocedeA ? "avanzada" : "avanzada");
+      const unlockEvent = requiereDesbloqueo ? [{
+        stepId: `${excKey}:desbloqueo`,
+        stepName: `${stepName} → Desbloqueo de saldo`,
+        fecha: now,
+        perfil: "agencia" as const,
+        accion: "desbloqueo" as const,
+        datos: data,
+      }] : [];
       const newList = [...s.instancias];
       newList[idx] = {
         ...inst,
@@ -142,6 +153,7 @@ export const useInstanciasStore = create<InstanciasState>()(
         historial: [
           ...inst.historial,
           { stepId: excKey, stepName: `${stepName} → ${exceptionName}${retrocedeA ? " (retrocede)" : ""}`, fecha: now, perfil: "agencia", accion: esTerminal ? "excepcion" : "avanzada", datos: data, exceptionName },
+          ...unlockEvent,
         ],
         updatedAt: now,
       };

@@ -22,13 +22,12 @@ import {
 import { Button, Badge } from "@coe/design-system";
 import { useConteoStore, type ConteoRemesa, type ConteoBolsa, type ResultadoConteo } from "@stores/conteoStore";
 import { useInstanciasStore } from "@stores/instanciasStore";
-import { useTransaccionesStore } from "@stores/transaccionesStore";
 import { useDivisasStore } from "@stores/divisasStore";
 
 const RESULTADO_LABEL: Record<string, string> = {
   pendiente: "Pendiente",
   confirmado: "Confirmado",
-  incompleto: "Incompleto",
+  incompleto: "Faltante",
   faltante: "Faltante",
   sobrante: "Sobrante",
   inconsistente: "Inconsistente",
@@ -59,7 +58,6 @@ export function MesaConteoPage() {
   const navigate = useNavigate();
   const { remesas, initializeConteo, actualizarBolsa, confirmarBolsa, cerrarRemesa } = useConteoStore();
   const { instancias, avanzarEstado } = useInstanciasStore();
-  const { procesosFinalizados } = useTransaccionesStore();
   const divisasStore = useDivisasStore();
   const clasificaciones = divisasStore.clasificaciones;
 
@@ -86,18 +84,14 @@ export function MesaConteoPage() {
     const idsEnConteo = new Set(
       instancias.filter((i) => i.estadoActual === "demo-s-5b").map((i) => i.id)
     );
-    const template = procesosFinalizados.find((p) => p.id === "demo-remesa-agencia");
-    const confirmadoStep = template?.steps.find((s) => s.id === "demo-s-6");
     return remesas
       .filter((r) => idsEnConteo.has(r.instanciaId) || r.resultadoFinal !== "confirmado")
       .map((r) => ({
         ...r,
         bolsasContadas: r.bolsas.filter((b) => b.resultado !== "pendiente").length,
         totalBolsas: r.bolsas.length,
-        confirmadoStepId: confirmadoStep?.id ?? "demo-s-6",
-        confirmadoStepName: confirmadoStep?.nombre ?? "Confirmado",
       }));
-  }, [remesas, instancias, procesosFinalizados]);
+  }, [remesas, instancias]);
 
   const remesaSeleccionada = useMemo(() => {
     if (!selectedRemesaId) return null;
@@ -180,21 +174,33 @@ export function MesaConteoPage() {
     [realValues, actualizarBolsa, confirmarBolsa]
   );
 
+  const RESULT_TO_STEP: Record<string, { id: string; name: string; terminal: boolean }> = {
+    confirmado: { id: "demo-s-6", name: "Confirmado", terminal: true },
+    incompleto: { id: "demo-s-7d", name: "Faltante", terminal: false },
+    sobrante: { id: "demo-s-7e", name: "Sobrante", terminal: false },
+    inconsistente: { id: "demo-s-7g", name: "Inconsistente", terminal: false },
+  };
+
   const handleCerrarRemesa = useCallback(() => {
     if (!remesaSeleccionada) return;
     cerrarRemesa(remesaSeleccionada.instanciaId);
-    // Advance the instance to "Confirmado"
+    // Read updated result from store after cerrarRemesa
+    const updated = useConteoStore.getState().remesas.find(
+      (r) => r.instanciaId === remesaSeleccionada.instanciaId
+    );
+    const resultadoFinal = updated?.resultadoFinal ?? "incompleto";
+    const stepInfo = RESULT_TO_STEP[resultadoFinal] ?? RESULT_TO_STEP.incompleto;
     avanzarEstado(
       remesaSeleccionada.instanciaId,
-      remesaSeleccionada.confirmadoStepId,
-      remesaSeleccionada.confirmadoStepName,
+      stepInfo.id,
+      stepInfo.name,
       "agencia",
       {},
-      true
+      stepInfo.terminal
     );
     setConfirmCerrar(null);
     setSelectedRemesaId(null);
-    setSuccessMsg(`Remesa ${remesaSeleccionada.codigoRemesa} cerrada`);
+    setSuccessMsg(`Remesa ${remesaSeleccionada.codigoRemesa} cerrada como "${stepInfo.name}"`);
     setTimeout(() => setSuccessMsg(""), 3000);
   }, [remesaSeleccionada, cerrarRemesa, avanzarEstado]);
 
@@ -403,7 +409,12 @@ export function MesaConteoPage() {
                             <ChevronDown className="w-4 h-4 text-[var(--color-neutro-400)]" />
                           </button>
                         ) : (
-                          <div className="w-4 h-4 shrink-0" />
+                          <button
+                            onClick={() => setExpandedBolsa((prev) => ({ ...prev, [bolsa.bolsaId]: true }))}
+                            className="p-0.5 hover:bg-[var(--color-neutro-200)] rounded cursor-pointer"
+                          >
+                            <ChevronRight className="w-4 h-4 text-[var(--color-neutro-400)]" />
+                          </button>
                         )}
                         <div className="flex items-center gap-2 shrink-0">
                           <Package className={`w-4 h-4 ${bolsaResult === "confirmado" ? "text-green-500" : "text-[var(--color-neutro-400)]"}`} />
@@ -411,6 +422,11 @@ export function MesaConteoPage() {
                             {bolsa.codigoBolsa || "Bolsa"}
                           </span>
                         </div>
+                        {bolsa.cartaPorte && (
+                          <span className="text-[10px] font-mono text-[var(--color-verde-100)] bg-green-50 px-1.5 py-0.5 rounded">
+                            CP: {bolsa.cartaPorte}
+                          </span>
+                        )}
                         {bolsa.clasificacionNombre && (
                           <span
                             className="text-[11px] font-medium px-2 py-0.5 rounded-full text-white"
@@ -438,14 +454,14 @@ export function MesaConteoPage() {
                         </div>
                       </div>
 
-                      {/* "Abrir Bolsa" call-to-action when collapsed and pending */}
-                      {!expanded && isPendiente && (
+                      {/* Expand CTA when collapsed */}
+                      {!expanded && (
                         <button
                           onClick={() => setExpandedBolsa((prev) => ({ ...prev, [bolsa.bolsaId]: true }))}
                           className="w-full flex items-center justify-center gap-2 px-4 py-5 text-[14px] font-semibold text-[var(--color-verde-100)] hover:bg-green-50 transition-colors cursor-pointer border-b border-[var(--color-neutro-100)]"
                         >
                           <Package className="w-5 h-5" />
-                          Abrir Bolsa
+                          {isPendiente ? "Abrir Bolsa" : "Ver detalle"}
                           <span className="text-[12px] font-normal text-[var(--color-neutro-400)] ml-1">
                             — {totalEsp} unidades esperadas
                           </span>
@@ -530,20 +546,19 @@ export function MesaConteoPage() {
 
                           {/* Action buttons */}
                           <div className="flex items-center gap-2">
-                            {isPendiente && (
+                            {bolsa.resultado !== "confirmado" && (
                               <>
                                 <Button
                                   variant="outline"
                                   iconLeft={<CheckCheck className="w-3.5 h-3.5" />}
                                   onClick={() => handleSaveBolsa(remesaSeleccionada.instanciaId, bolsa.bolsaId)}
-                                  disabled={!hasRealInput}
+                                  disabled={espEntries.length > 0 && !hasRealInput}
                                 >
-                                  Guardar Conteo
+                                  {isPendiente ? "Guardar Conteo" : "Actualizar Conteo"}
                                 </Button>
                                 <Button
                                   iconLeft={<CheckCircle className="w-3.5 h-3.5" />}
                                   onClick={() => handleConfirmBolsa(remesaSeleccionada.instanciaId, bolsa.bolsaId)}
-                                  disabled={!hasRealInput}
                                 >
                                   Confirmar Bolsa
                                 </Button>

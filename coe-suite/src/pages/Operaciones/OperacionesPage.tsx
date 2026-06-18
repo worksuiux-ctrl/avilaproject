@@ -12,6 +12,7 @@ import { useDivisasStore } from "@stores/divisasStore";
 import { useProveedoresStore } from "@stores/proveedoresStore";
 import { DenominationInput } from "./DenominationInput";
 import { EnvasesInput, type ClasificacionBatch } from "./EnvasesInput";
+import { CartaPorteEnvasesInput } from "./CartaPorteEnvasesInput";
 
 export function OperacionesPage() {
   const navigate = useNavigate();
@@ -1645,6 +1646,22 @@ function WizardField({ campo, value, onChange, envaseBatchData, envaseClasificac
       </div>
     );
   }
+  if (campo.tipo === "carta-porte-envases") {
+    return (
+      <div>
+        <p className={labelClass}>{campo.etiqueta}{campo.requerido && <span className="text-red-500 ml-0.5">*</span>}</p>
+        <CartaPorteEnvasesInput value={value} onChange={onChange} />
+      </div>
+    );
+  }
+  if (campo.tipo === "carta-porte-envases-detalle") {
+    return (
+      <div>
+        <p className={labelClass}>{campo.etiqueta}{campo.requerido && <span className="text-red-500 ml-0.5">*</span>}</p>
+        <CartaPorteEnvasesInput value={value} onChange={onChange} batchData={envaseBatchData ?? []} clasificaciones={envaseClasificaciones ?? []} />
+      </div>
+    );
+  }
   if (campo.tipo === "select" && campo.opciones.length > 0) {
     return (
       <div>
@@ -1755,12 +1772,12 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
   const currentStepIdx = template?.steps.findIndex((s) => s.id === instancia.estadoActual) ?? -1;
   const nextStep = (currentStepIdx >= 0 && template && currentStepIdx < template.steps.length - 1) ? template.steps[currentStepIdx + 1] : null;
 
-  const nextStepFields = useMemo(() => {
-    if (!nextStep || !template) return [];
+  const currentStepFields = useMemo(() => {
+    if (!currentStep || !template) return [];
     const tiposUnidad = [template.origenTipo, template.destinoTipo].filter((t): t is string => t != null);
     if (template.usaTransportista && !tiposUnidad.includes("Camión")) tiposUnidad.push("Camión");
-    return CAMPOS_PREDEFINIDOS.filter((c) => nextStep.camposSeleccionados.includes(c.id) && c.aplicableA.some((t) => tiposUnidad.includes(t)));
-  }, [nextStep, template]);
+    return CAMPOS_PREDEFINIDOS.filter((c) => currentStep.camposSeleccionados.includes(c.id) && c.aplicableA.some((t) => tiposUnidad.includes(t)));
+  }, [currentStep, template]);
 
   const envaseBatchData = useMemo(() => {
     const allData = instancia.dataPorEstado;
@@ -1803,15 +1820,15 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
     return [];
   }, [instancia.dataPorEstado]);
 
-  const isComplete = instancia.historial.some((h) => h.accion === "completada");
+  const isComplete = instancia.historial.some((h) => h.accion === "completada") || (currentStep?.esTerminal === true);
   const isTerminated = instancia.historial.some((h) => h.accion === "excepcion");
   const isFirstStep = template && currentStep && template.steps[0]?.id === currentStep.id && !isComplete && !isTerminated;
   const responsable = currentStep?.unidadResponsableId ? PERFILES_RESPONSABLE.find((e) => e.value === currentStep.unidadResponsableId) : null;
 
   function handleAdvance() {
-    if (!nextStep || !template) return;
+    if (!nextStep || !currentStep || !template) return;
     setAdvanceError("");
-    const missing = nextStepFields.filter((c) => {
+    const missing = currentStepFields.filter((c) => {
       if (!c.requerido) return false;
       const val = advanceData[c.id]?.trim();
       if (!val) return true;
@@ -1840,6 +1857,79 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
           return false;
         } catch { return true; }
       }
+      if (c.tipo === "carta-porte-envases") {
+        try {
+          const parsed = JSON.parse(val);
+          if (!Array.isArray(parsed) || parsed.length === 0) return true;
+          const cpNums: string[] = [];
+          const envNums: string[] = [];
+          const precNums: string[] = [];
+          for (const group of parsed) {
+            if (!group.cartaPorte?.trim()) return true;
+            cpNums.push(group.cartaPorte.trim());
+            if (!Array.isArray(group.envases) || group.envases.length === 0) return true;
+            for (const env of group.envases) {
+              if (!env.envase?.trim() || !env.precinto?.trim()) return true;
+              envNums.push(env.envase.trim());
+              precNums.push(env.precinto.trim());
+            }
+          }
+          if (new Set(cpNums).size !== cpNums.length) return true;
+          if (new Set(envNums).size !== envNums.length) return true;
+          if (new Set(precNums).size !== precNums.length) return true;
+          return false;
+        } catch { return true; }
+      }
+      if (c.tipo === "carta-porte-envases-detalle") {
+        try {
+          const parsed = JSON.parse(val);
+          if (!Array.isArray(parsed) || parsed.length === 0) return true;
+          const cpNums: string[] = [];
+          const envNums: string[] = [];
+          const precNums: string[] = [];
+          for (const group of parsed) {
+            if (!group.cartaPorte?.trim()) return true;
+            cpNums.push(group.cartaPorte.trim());
+            if (!Array.isArray(group.envases) || group.envases.length === 0) return true;
+            for (const env of group.envases) {
+              if (!env.envase?.trim() || !env.precinto?.trim()) return true;
+              envNums.push(env.envase.trim());
+              precNums.push(env.precinto.trim());
+            }
+          }
+          if (new Set(cpNums).size !== cpNums.length) return true;
+          if (new Set(envNums).size !== envNums.length) return true;
+          if (new Set(precNums).size !== precNums.length) return true;
+          const hasAnyDenom = parsed.some((g: any) =>
+            (g.envases ?? []).some((e: any) =>
+              Object.values(e.denominaciones ?? {}).some((q: any) => (q ?? 0) > 0),
+            ),
+          );
+          if (!hasAnyDenom) return true;
+          for (const group of parsed) {
+            for (const env of group.envases ?? []) {
+              const claId = env.clasificacionId ?? "";
+              if (!claId) return true;
+              const batch = envaseBatchData.find((b) => b.clasificacionId === claId);
+              if (!batch) return true;
+              const sums: Record<string, number> = {};
+              for (const g2 of parsed) {
+                for (const e2 of g2.envases ?? []) {
+                  if (e2.clasificacionId === claId) {
+                    for (const [label, qty] of Object.entries(e2.denominaciones ?? {})) {
+                      sums[label] = (sums[label] ?? 0) + (qty as number);
+                    }
+                  }
+                }
+              }
+              for (const item of batch.items) {
+                if ((sums[item.nombre] ?? 0) > item.cantidad) return true;
+              }
+            }
+          }
+          return false;
+        } catch { return true; }
+      }
       return false;
     });
     if (missing.length > 0) {
@@ -1851,7 +1941,7 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
       message: `¿Avanzar al estado "${nextStep.nombre}"?`,
       label: nextStep.nombre,
       onConfirm: () => {
-        avanzarEstado(instancia.id, nextStep.id, nextStep.nombre, nextStep.unidadResponsableId ?? "agencia", advanceData, currentStepIdx + 1 >= template.steps.length - 1);
+        avanzarEstado(instancia.id, currentStep.id, nextStep.id, nextStep.nombre, nextStep.unidadResponsableId ?? "agencia", advanceData, currentStepIdx + 1 >= template.steps.length - 1);
         setAdvanceData({});
         setAdvanceError("");
         setConfirmAction(null);
@@ -1949,17 +2039,17 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
       {nextStep && !isComplete && !isTerminated && template && (
         <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-4 space-y-3">
           <p className="text-[12px] font-semibold text-[var(--color-neutro-700)]">Avanzar a: {nextStep.nombre}</p>
-          {nextStepFields.length > 0 && (
+          {currentStepFields.length > 0 && (
             <div className="space-y-3">
-              {nextStepFields.map((campo) => (
-                <WizardField key={campo.id} campo={campo} value={advanceData[campo.id] ?? ""} onChange={(v) => { setAdvanceError(""); setAdvanceData((prev) => ({ ...prev, [campo.id]: v })); }} envaseBatchData={campo.tipo === "envases" ? envaseBatchData : undefined} envaseClasificaciones={campo.tipo === "envases" ? clasificaciones.map((c) => ({ id: c.id, nombre: c.nombre, color: c.color })) : undefined} />
+              {currentStepFields.map((campo) => (
+                <WizardField key={campo.id} campo={campo} value={advanceData[campo.id] ?? ""} onChange={(v) => { setAdvanceError(""); setAdvanceData((prev) => ({ ...prev, [campo.id]: v })); }} envaseBatchData={campo.tipo === "envases" || campo.tipo === "carta-porte-envases-detalle" ? envaseBatchData : undefined} envaseClasificaciones={campo.tipo === "envases" || campo.tipo === "carta-porte-envases-detalle" ? clasificaciones.map((c) => ({ id: c.id, nombre: c.nombre, color: c.color })) : undefined} />
               ))}
             </div>
           )}
           {advanceError && <p className="text-[11px] text-red-600">{advanceError}</p>}
           <div className="flex items-center gap-2 pt-2">
             <Button iconLeft={<ArrowRight className="w-4 h-4" />} onClick={handleAdvance}>
-              {currentStepIdx + 1 >= template.steps.length - 1 ? "Completar" : `Avanzar a ${nextStep.nombre}`}
+              {currentStepIdx + 1 >= template.steps.length - 1 ? "Completar" : currentStep?.id === "demo-s-2" ? "Despachar" : `Avanzar a ${nextStep.nombre}`}
             </Button>
             {currentStep && currentStep.excepciones.length > 0 && (
               <div className="relative">
@@ -1998,7 +2088,7 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
       {/* Data by state — skip internal fields */}
       {Object.entries(instancia.dataPorEstado).map(([stepId, data]) => {
         const st = template?.steps.find((s) => s.id === stepId);
-        const visible = Object.entries(data).filter(([k]) => !k.startsWith("_") && k !== "cam-envases");
+        const visible = Object.entries(data).filter(([k]) => !k.startsWith("_") && k !== "cam-envases" && k !== "cam-carta-porte-envases" && k !== "cam-carta-porte-envases-detalle");
         return visible.length > 0 ? (
           <div key={stepId} className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
             <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">{st?.nombre ?? stepId}</p>
@@ -2119,6 +2209,108 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
           </div>
         );
       })}
+
+      {/* Cartas porte y envases recibidos — extracted from cam-carta-porte-envases */}
+      {Object.entries(instancia.dataPorEstado).map(([stepId, data]) => {
+        const rawCp = data["cam-carta-porte-envases"];
+        if (!rawCp) return null;
+        let cps: unknown;
+        try { cps = JSON.parse(rawCp); } catch { return null; }
+        if (!Array.isArray(cps) || cps.length === 0) return null;
+        const st = template?.steps.find((s) => s.id === stepId);
+        type CpDisplay = { cartaPorte: string; envases: { envase: string; precinto: string }[] };
+        return (
+          <div key={`cp-${stepId}`} className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
+            <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">
+              {st?.nombre ?? stepId} — Cartas porte recibidas
+            </p>
+            <div className="space-y-2">
+              {(cps as CpDisplay[]).map((cp, ci) => (
+                <div key={ci} className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
+                  <div className="px-3 py-1.5 bg-[var(--color-neutro-50)] border-b border-[var(--color-neutro-200)]">
+                    <span className="text-[12px] font-semibold text-[var(--color-neutro-700)]">Carta porte: {cp.cartaPorte}</span>
+                  </div>
+                  <table className="w-full text-[12px]">
+                    <thead>
+                      <tr className="bg-[var(--color-neutro-50)]">
+                        <th className="text-left px-3 py-1 font-semibold text-[var(--color-neutro-600)]">Envase</th>
+                        <th className="text-left px-3 py-1 font-semibold text-[var(--color-neutro-600)]">Precinto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cp.envases.map((e, ei) => (
+                        <tr key={ei} className="border-t border-[var(--color-neutro-100)]">
+                          <td className="px-3 py-1 text-[var(--color-neutro-700)]">{e.envase}</td>
+                          <td className="px-3 py-1 text-[var(--color-neutro-700)] font-mono">{e.precinto}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Cartas porte con envases y denominaciones — extracted from cam-carta-porte-envases-detalle */}
+      {Object.entries(instancia.dataPorEstado).map(([stepId, data]) => {
+        const rawCp = data["cam-carta-porte-envases-detalle"];
+        if (!rawCp) return null;
+        let cps: unknown;
+        try { cps = JSON.parse(rawCp); } catch { return null; }
+        if (!Array.isArray(cps) || cps.length === 0) return null;
+        const st = template?.steps.find((s) => s.id === stepId);
+        type CpDetalleDisplay = { cartaPorte: string; envases: { envase: string; precinto: string; clasificacionId?: string; denominaciones?: Record<string, number> }[] };
+        return (
+          <div key={`cpd-${stepId}`} className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-3">
+            <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">
+              {st?.nombre ?? stepId} — Cartas porte con detalle
+            </p>
+            <div className="space-y-2">
+              {(cps as CpDetalleDisplay[]).map((cp, ci) => (
+                <div key={ci} className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
+                  <div className="px-3 py-1.5 bg-[var(--color-neutro-50)] border-b border-[var(--color-neutro-200)]">
+                    <span className="text-[12px] font-semibold text-[var(--color-neutro-700)]">Carta porte: {cp.cartaPorte}</span>
+                  </div>
+                  <table className="w-full text-[12px]">
+                    <thead>
+                      <tr className="bg-[var(--color-neutro-50)]">
+                        <th className="text-left px-3 py-1 font-semibold text-[var(--color-neutro-600)]">Envase</th>
+                        <th className="text-left px-3 py-1 font-semibold text-[var(--color-neutro-600)]">Precinto</th>
+                        <th className="text-left px-3 py-1 font-semibold text-[var(--color-neutro-600)]">Clasificación</th>
+                        <th className="text-left px-3 py-1 font-semibold text-[var(--color-neutro-600)]">Denominaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cp.envases.map((e, ei) => {
+                        const cla = clasificaciones.find((c) => c.id === e.clasificacionId);
+                        return (
+                          <tr key={ei} className="border-t border-[var(--color-neutro-100)]" style={cla ? { borderLeftColor: cla.color, borderLeftWidth: 4 } : { borderLeftWidth: 4, borderLeftColor: "transparent" }}>
+                            <td className="px-3 py-1 text-[var(--color-neutro-700)]">{e.envase}</td>
+                            <td className="px-3 py-1 text-[var(--color-neutro-700)] font-mono">{e.precinto}</td>
+                            <td className="px-3 py-1">
+                              <span className="text-[13px] font-medium" style={cla ? { color: cla.color } : undefined}>{cla?.nombre ?? <span className="text-[var(--color-neutro-400)] italic">Sin clasificación</span>}</span>
+                            </td>
+                            <td className="px-3 py-1">
+                              {e.denominaciones && Object.keys(e.denominaciones).length > 0
+                                ? Object.entries(e.denominaciones).filter(([, q]) => (q ?? 0) > 0).map(([label, qty]) => (
+                                  <span key={label} className="text-[11px] block">{qty.toLocaleString()} × {label}</span>
+                                ))
+                                : <span className="text-[11px] text-[var(--color-neutro-400)] italic">Sin distribución</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
       {Object.entries(instancia.dataPorEstado).map(([stepId, data]) => {
         const rawId = data["_transportistaId"];
         if (!rawId) return null;

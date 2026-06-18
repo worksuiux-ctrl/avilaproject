@@ -17,6 +17,7 @@ export interface ConteoBolsa {
   bolsaId: string;
   codigoBolsa: string;
   precinto: string;
+  cartaPorte: string;
   clasificacionId: string;
   clasificacionNombre: string | null;
   clasificacionColor: string;
@@ -135,16 +136,29 @@ export const useConteoStore = create<ConteoState>()(
         let envasesRows: any[] = [];
         for (const stepData of Object.values(inst.dataPorEstado)) {
           const raw = stepData["cam-envases"];
-          if (!raw) continue;
-          try {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              envasesRows = parsed;
-              break;
-            }
-          } catch {
-            continue;
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                envasesRows = parsed.map((env: any) => ({ ...env, cartaPorte: "" }));
+                break;
+              }
+            } catch { continue; }
           }
+          for (const cpField of ["cam-carta-porte-envases-detalle", "cam-carta-porte-envases"]) {
+            const rawCp = stepData[cpField];
+            if (!rawCp) continue;
+            try {
+              const parsed = JSON.parse(rawCp);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                envasesRows = parsed.flatMap((group: any) =>
+                  (group.envases ?? []).map((env: any) => ({ ...env, cartaPorte: group.cartaPorte ?? "" })),
+                );
+                if (envasesRows.length > 0) break;
+              }
+            } catch { continue; }
+          }
+          if (envasesRows.length > 0) break;
         }
 
         const now = new Date().toLocaleString("es-VE");
@@ -159,6 +173,7 @@ export const useConteoStore = create<ConteoState>()(
               bolsaId: makeBolsaId(),
               codigoBolsa: env.envase ?? "",
               precinto: env.precinto ?? "",
+              cartaPorte: env.cartaPorte ?? "",
               clasificacionId: env.clasificacionId ?? "",
               clasificacionNombre: cla?.nombre ?? null,
               clasificacionColor: cla?.color ?? "#8b5cf6",
@@ -216,7 +231,8 @@ export const useConteoStore = create<ConteoState>()(
             if (r.instanciaId !== instanciaId) return r;
             const bolsas = r.bolsas.map((b) => {
               if (b.bolsaId !== bolsaId) return b;
-              if (b.resultado === "pendiente") return b;
+              const hasDenoms = Object.keys(b.denominacionesEsperadas).length > 0;
+              if (b.resultado === "pendiente" && hasDenoms) return b;
               return { ...b, resultado: "confirmado" as ResultadoConteo };
             });
             return { ...r, bolsas, resultadoFinal: computeResultadoFinal(bolsas) };

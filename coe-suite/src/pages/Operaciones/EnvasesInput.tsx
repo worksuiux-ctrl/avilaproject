@@ -226,7 +226,7 @@ export function EnvasesInput({ value, onChange, batchData, clasificaciones }: En
                             <input
                               type="number"
                               min={0}
-                              value={qty || ""}
+                              value={qty}
                               onChange={(e) => updateDenom(r.id, item.nombre, parseInt(e.target.value) || 0)}
                               className={`w-24 text-[16px] font-bold text-right px-3 py-1.5 rounded-md border outline-none bg-white ${over ? "border-red-400 ring-1 ring-red-200 text-red-600" : "border-[var(--color-neutro-200)] focus:border-[var(--color-verde-100)] focus:ring-1 focus:ring-[var(--color-verde-100)]"}`}
                               placeholder="0"

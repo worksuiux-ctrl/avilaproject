@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2, Lock, CheckCircle, GripHorizontal } from "lucide-react";
 import { Button, Input, Select, Switch, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import {
@@ -178,16 +178,27 @@ function OperacionesTab({
           </Button>
         </div>
         <div className="p-2 space-y-1 flex-1 overflow-y-auto">
-          {store.procesosFinalizados.map((p) => (
+          {store.procesosFinalizados.map((p, idx) => (
             <div
               key={p.id}
+              draggable
+              onDragStart={() => setDragIndex(idx)}
+              onDragOver={(e) => { e.preventDefault(); setDragOverIndex(idx); }}
+              onDragEnd={() => {
+                if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
+                  store.reordenarProcesos(dragIndex, dragOverIndex);
+                }
+                setDragIndex(null);
+                setDragOverIndex(null);
+              }}
               className={`flex items-center gap-2 px-3 py-2 rounded-corner-m text-left text-[13px] transition-colors cursor-pointer ${
                 selectedSavedId === p.id
                   ? "bg-[var(--color-verde-100)] text-white"
                   : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
-              }`}
+              } ${dragOverIndex === idx ? "ring-2 ring-[var(--color-verde-100)]" : ""}`}
               onClick={() => onSelectSaved(p.id)}
             >
+              <GripHorizontal className="w-3.5 h-3.5 shrink-0 text-[var(--color-neutro-400)] cursor-grab active:cursor-grabbing" />
               <FolderOpen className="w-4 h-4 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
@@ -602,6 +613,11 @@ function FusionadoTab({
     : null;
 
   const [collapseDetalles, setCollapseDetalles] = useState(false);
+
+  // Auto-collapse detalles when a step/exception is selected
+  useEffect(() => {
+    if (activeStepId || activeExceptionId) setCollapseDetalles(true);
+  }, [activeStepId, activeExceptionId]);
 
   if (!hasActiveOperation) {
     return (
@@ -1269,6 +1285,49 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
             </p>
           )}
         </div>
+
+        <div>
+          <p className={labelClass}>Bloqueo de saldo y denominaciones</p>
+          {readOnly ? (
+            <p className={valueClass}>
+              {step.bloqueoSaldo ? (
+                <span className="flex items-center gap-1 text-amber-700">
+                  <Lock className="w-3.5 h-3.5" />
+                  Bloquea saldo al entrar — las excepciones que retrocedan deben desbloquear
+                </span>
+              ) : "Sin bloqueo de saldo"}
+            </p>
+          ) : (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch checked={step.bloqueoSaldo} onChange={(v: boolean) => updateStepProperty(sid, "bloqueoSaldo", v)} />
+              <span className="text-[13px] text-[var(--color-neutro-700)]">Bloquear saldo al entrar a este estado</span>
+            </label>
+          )}
+          {step.bloqueoSaldo && (
+            <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
+              Las excepciones que retrocedan desde este estado deberán desbloquear el saldo
+            </p>
+          )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Estado terminal</p>
+          {readOnly ? (
+            <p className={valueClass}>
+              {step.esTerminal ? (
+                <span className="flex items-center gap-1 text-green-700">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Estado terminal — al llegar aquí la transacción finaliza
+                </span>
+              ) : "No es terminal"}
+            </p>
+          ) : (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch checked={step.esTerminal ?? false} onChange={(v: boolean) => updateStepProperty(sid, "esTerminal", v)} />
+              <span className="text-[13px] text-[var(--color-neutro-700)]">Convertir en estado terminal</span>
+            </label>
+          )}
+        </div>
       </div>
 
       {/* ── Data Capture ── */}
@@ -1296,7 +1355,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
           )}
         </div>
 
-        <CamposFormularioSection stepId={step.id} camposSeleccionados={step.camposSeleccionados} origenTipo={origenTipo} destinoTipo={destinoTipo} readOnly={readOnly} />
+        <CamposFormularioSection stepId={step.id} camposSeleccionados={step.camposSeleccionados} origenTipo={origenTipo} destinoTipo={destinoTipo} readOnly={readOnly} usaTransportista={usaTransportista} />
       </div>
 
       {/* ── Servicios ── */}
@@ -1541,10 +1600,11 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
 }
 
 /* ── Campos del formulario section ── */
-function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, destinoTipo, readOnly = false }: { stepId: string; camposSeleccionados: string[]; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean }) {
+function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, destinoTipo, readOnly = false, usaTransportista = false }: { stepId: string; camposSeleccionados: string[]; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean; usaTransportista?: boolean }) {
   const { toggleCampoSeleccionado } = useTransaccionesStore();
 
   const tiposUnidad = [origenTipo, destinoTipo].filter((t): t is string => t !== null);
+  if (usaTransportista && !tiposUnidad.includes("Camión")) tiposUnidad.push("Camión");
   const camposDisponibles = CAMPOS_PREDEFINIDOS.filter((c) =>
     c.aplicableA.some((t) => tiposUnidad.includes(t))
   );
@@ -1568,8 +1628,8 @@ function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, dest
         <div className="mb-2">
           <p className="text-[10px] font-semibold text-[var(--color-verde-100)] uppercase tracking-wide mb-0.5">Seleccionados</p>
           {seleccionados.map((campo) => (
-            <div key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-green-50 cursor-pointer"}`}>
-              <Checkbox label="" checked disabled={readOnly} onChange={() => toggleCampoSeleccionado(stepId, campo.id)} />
+            <div key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-green-50 cursor-pointer"}`} onClick={() => { if (!readOnly) toggleCampoSeleccionado(stepId, campo.id); }}>
+              <Checkbox label="" checked disabled />
               <div className="flex-1 min-w-0">
                 <span className="text-[12px] text-[var(--color-neutro-900)]">{campo.etiqueta}</span>
                 <span className="text-[10px] text-[var(--color-neutro-400)] ml-1">({campo.tipo})</span>
@@ -1583,8 +1643,8 @@ function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, dest
         <div>
           {seleccionados.length > 0 && <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase tracking-wide mb-0.5">Disponibles</p>}
           {noSeleccionados.map((campo) => (
-            <div key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-[var(--color-neutro-50)] cursor-pointer"}`}>
-              <Checkbox label="" checked={false} disabled={readOnly} onChange={() => toggleCampoSeleccionado(stepId, campo.id)} />
+            <div key={campo.id} className={`flex items-center gap-2 py-1 px-1 rounded-corner-m ${readOnly ? "" : "hover:bg-[var(--color-neutro-50)] cursor-pointer"}`} onClick={() => { if (!readOnly) toggleCampoSeleccionado(stepId, campo.id); }}>
+              <Checkbox label="" checked={false} disabled />
               <div className="flex-1 min-w-0">
                 <span className="text-[12px] text-[var(--color-neutro-700)]">{campo.etiqueta}</span>
                 <span className="text-[10px] text-[var(--color-neutro-400)] ml-1">({campo.tipo})</span>
