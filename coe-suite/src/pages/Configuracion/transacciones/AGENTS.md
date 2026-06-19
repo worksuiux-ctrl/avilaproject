@@ -7,8 +7,8 @@
 
 ## Interfaces
 - `ProcesoTransaccional`: nombre, tipoCarga, origenTipo, destinoTipo, ambito, usaTransportista, transportistasPermitidos, steps
-- `TransaccionStep`: nombre, orden, eventoContable, unidadEvento, unidadResponsableId, transferenciaCarga, tipoAprobacion, timeoutMinutos, excepciones[], camposSeleccionados[]
-- `Excepcion`: nombre, esTerminal, eventoContable, unidadEvento, unidadResponsableId, ...
+- `TransaccionStep`: nombre, orden, inventario (debita|acredita|ninguno), unidadInventario, eventoContable (placeholder), unidadResponsableId, transferenciaCarga, tipoAprobacion, timeoutMinutos, excepciones[], camposSeleccionados[]
+- `Excepcion`: nombre, esTerminal, inventario (debita|acredita|ninguno), unidadInventario, eventoContable (placeholder), unidadResponsableId, ...
 - `CampoPredefinido`: nombre, etiqueta, tipo, requerido, opciones[], aplicableA[]
 - `TipoCampo`: "texto" | "numero" | "fecha" | "select" | "denominacion"
 
@@ -23,13 +23,13 @@
 - Modo edición con confirmación al clickear lápiz
 - Perfil Responsable (Central/Agencia/Transportista/Externo)
 - Ámbito (interna/entre-agencias/externa) — Transportista se desactiva en interna
-- Evento contable con unidad aplicable (Emisora/Receptora)
+- Descuento de inventario (Debita/Acredita) con unidad (Emisora/Receptora); Evento Contable placeholder para módulo de Contabilidad
 - Campos predefinidos por tipo de unidad (checkboxes en inspector)
 - Operación demo: "Envío de Remesa (Agencia a Agencia)" con 6 pasos y excepciones
 - CAMPOS_PREDEFINIDOS: ~40 campos para Cajero, Bóveda, Caja, Agencia, Taquilla, Punto de Venta, Camión, Almacén, Banco + generales
 
 ## Constantes exportadas
-- `TIPOS_UNIDAD`, `AMBITOS`, `PERFILES_RESPONSABLE`, `EVENTOS_CONTABLES`, `UNIDADES_EVENTO`, `TIPOS_APROBACION`, `CAMPOS_PREDEFINIDOS`, `TRANSPORTISTAS`, `TIPOS_CARGA`
+- `TIPOS_UNIDAD`, `AMBITOS`, `PERFILES_RESPONSABLE`, `TIPOS_INVENTARIO`, `UNIDADES_INVENTARIO`, `TIPOS_APROBACION`, `CAMPOS_PREDEFINIDOS`, `TRANSPORTISTAS`, `TIPOS_CARGA`
 
 ## Store actions
 - `setNombre`, `setTipoCarga`, `setOrigenTipo`, `setDestinoTipo`, `setAmbito`

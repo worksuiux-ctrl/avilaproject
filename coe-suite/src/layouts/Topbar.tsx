@@ -5,10 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { MODULES } from "../data/navigation";
 import { ProfileSelector } from "../components/ui/ProfileSelector";
 import { CentralSelector } from "../components/ui/CentralSelector";
-import { Modal } from "../components/ui/Modal";
 import { Breadcrumbs } from "@coe/design-system";
-import { useTransaccionesStore } from "../stores/transaccionesStore";
-import { FolderOpen } from "lucide-react";
 import {
   HiOutlineBell,
   HiOutlinePlus,
@@ -34,9 +31,7 @@ export function Topbar() {
   const user = useUserStore((s) => s.current);
   const location = useLocation();
   const navigate = useNavigate();
-  const { procesosFinalizados } = useTransaccionesStore();
-  const [showNewOp, setShowNewOp] = useState(false);
-  const [opSearch, setOpSearch] = useState("");
+
 
   const currentSection = MODULES.find((m) =>
     m.items.some((i) => i.route === location.pathname),
@@ -77,52 +72,17 @@ export function Topbar() {
           <Clock />
         </div>
 
+        <style>{`@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes glow{0%,100%{box-shadow:0 0 14px -2px var(--color-verde-100)}50%{box-shadow:0 0 22px -2px var(--color-verde-100),0 0 40px -8px var(--color-verde-100)}}`}</style>
         <button
-          className="bg-[var(--color-verde-100)] text-white px-3 py-1.5 rounded-corner-m text-[12px] font-bold border-none cursor-pointer flex items-center gap-1 transition-all hover:brightness-90 active:brightness-75"
-          onClick={() => { setShowNewOp(true); setOpSearch(""); }}
+          className="bg-[var(--color-verde-100)] text-white px-3 py-1.5 rounded-corner-m text-[12px] font-bold border-none cursor-pointer flex items-center gap-1 transition-all hover:brightness-95 hover:scale-[1.02] active:brightness-75 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:animate-[shimmer_2.5s_infinite]"
+          style={{ animation: "glow 3s ease-in-out infinite", boxShadow: "0 0 14px -2px var(--color-verde-100)" }}
+          onClick={() => { navigate("/operaciones", { state: { openCreateFlow: true } }); }}
         >
-          <HiOutlinePlus className="w-[14px] h-[14px]" />
-          Nueva Operación
+          <span className="relative z-10 flex items-center gap-1">
+            <HiOutlinePlus className="w-[14px] h-[14px]" />
+            Nueva Operación
+          </span>
         </button>
-
-        {/* Operation selector modal */}
-        <Modal open={showNewOp} onClose={() => setShowNewOp(false)} title="Seleccionar Operación" size="sm">
-          <div className="space-y-2">
-            <input
-              value={opSearch}
-              onChange={(e) => setOpSearch(e.target.value)}
-              placeholder="Buscar operación..."
-              className="w-full text-[13px] px-3 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
-            />
-            <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {procesosFinalizados
-                .filter((p) => p.nombre.toLowerCase().includes(opSearch.toLowerCase()))
-                .map((op) => (
-                  <button
-                    key={op.id}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-corner-m text-[13px] text-left text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)] transition-colors"
-                    onClick={() => {
-                      setShowNewOp(false);
-                      navigate("/operaciones", { state: { newOpId: op.id } });
-                    }}
-                  >
-                    <FolderOpen className="w-4 h-4 shrink-0 text-[var(--color-neutro-400)]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{op.nombre || "Sin nombre"}</p>
-                      <p className="text-[11px] text-[var(--color-neutro-400)] truncate">
-                        {op.tipoCarga} · {op.steps.length} pasos
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              {procesosFinalizados.length === 0 && (
-                <p className="text-[13px] text-[var(--color-neutro-400)] text-center py-4">
-                  No hay operaciones guardadas. Cree una en Motor de Transacciones.
-                </p>
-              )}
-            </div>
-          </div>
-        </Modal>
 
         {/* User avatar + info */}
         <div className="flex items-center gap-2 pl-3 border-l border-[var(--color-neutro-200)]">

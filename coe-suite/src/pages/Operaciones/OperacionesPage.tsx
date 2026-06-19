@@ -1,11 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type React from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight, ChevronDown, ChevronRight, FileText, Plus, Package, FolderOpen, LayoutGrid, List, Calendar, CheckCheck } from "lucide-react";
 import { Button, Badge, Select, Input } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import { SearchableSelect } from "@components/ui/SearchableSelect";
-import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, EVENTOS_CONTABLES, TIPOS_APROBACION, TIPOS_UNIDAD, type ProcesoTransaccional, type TransaccionStep } from "@stores/transaccionesStore";
+import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, TIPOS_INVENTARIO, TIPOS_APROBACION, TIPOS_UNIDAD, type ProcesoTransaccional, type TransaccionStep, type GrupoOperacion } from "@stores/transaccionesStore";
 import { useInstanciasStore, type TransaccionInstancia } from "@stores/instanciasStore";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { useDivisasStore } from "@stores/divisasStore";
@@ -17,7 +17,7 @@ import { CartaPorteEnvasesInput } from "./CartaPorteEnvasesInput";
 export function OperacionesPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { procesosFinalizados } = useTransaccionesStore();
+  const { procesosFinalizados, gruposOperaciones } = useTransaccionesStore();
   const inst = useInstanciasStore();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -33,8 +33,12 @@ export function OperacionesPage() {
   const [successOverlay, setSuccessOverlay] = useState("");
 
   useEffect(() => {
-    const state = location.state as { newOpId?: string } | null;
-    if (state?.newOpId) {
+    const state = location.state as { newOpId?: string; openCreateFlow?: boolean } | null;
+    if (state?.openCreateFlow) {
+      setSelTemplateId(null);
+      setCreateOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (state?.newOpId) {
       setSelTemplateId(state.newOpId);
       setCreateOpen(true);
       navigate(location.pathname, { replace: true, state: {} });
@@ -136,9 +140,17 @@ export function OperacionesPage() {
             <Package className="w-3.5 h-3.5" />
             Mesa de Conteo
           </Link>
-          <Button iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}>
-            Nueva Transacción
-          </Button>
+          <style>{`@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes glow{0%,100%{box-shadow:0 0 14px -2px var(--color-verde-100)}50%{box-shadow:0 0 22px -2px var(--color-verde-100),0 0 40px -8px var(--color-verde-100)}}`}</style>
+          <button
+            className="bg-[var(--color-verde-100)] text-white px-3 py-1.5 rounded-corner-m text-[12px] font-bold cursor-pointer flex items-center gap-1 transition-all hover:brightness-95 hover:scale-[1.02] active:brightness-75 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:animate-[shimmer_2.5s_infinite]"
+            style={{ animation: "glow 3s ease-in-out infinite", boxShadow: "0 0 14px -2px var(--color-verde-100)" }}
+            onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}
+          >
+            <span className="relative z-10 flex items-center gap-1">
+              <Plus className="w-[14px] h-[14px]" />
+              Nueva Operación
+            </span>
+          </button>
         </div>
       </div>
 
@@ -193,32 +205,54 @@ export function OperacionesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-3 mb-4 overflow-x-auto">
-        <div className="flex items-center gap-1">
-          <button
-            className={`px-3 py-1.5 text-[12px] font-medium rounded-corner-m transition-colors cursor-pointer ${activeTab === "all" ? "bg-[var(--color-verde-100)] text-white" : "text-[var(--color-neutro-600)] hover:bg-[var(--color-neutro-100)]"}`}
-            onClick={() => setActiveTab("all")}
-          >
-            Todas ({inst.instancias.length})
-          </button>
-          <button
-            className={`px-3 py-1.5 text-[12px] font-medium rounded-corner-m transition-colors cursor-pointer ${activeTab === "finalizadas" ? "bg-[var(--color-verde-100)] text-white" : "text-[var(--color-neutro-600)] hover:bg-[var(--color-neutro-100)]"}`}
-            onClick={() => setActiveTab("finalizadas")}
-          >
-            Finalizadas ({inst.instancias.filter((i) => { const a = i.historial[i.historial.length - 1]; return a?.accion === "completada" || a?.accion === "excepcion"; }).length})
-          </button>
-          {tabs.map((t) => {
-            const count = inst.instancias.filter((i) => i.templateId === t.id).length;
-            return (
-              <button key={t.id}
-                className={`px-3 py-1.5 text-[12px] font-medium rounded-corner-m transition-colors cursor-pointer whitespace-nowrap ${activeTab === t.id ? "bg-[var(--color-verde-100)] text-white" : "text-[var(--color-neutro-600)] hover:bg-[var(--color-neutro-100)]"}`}
-                onClick={() => setActiveTab(t.id)}
-              >
-                {t.nombre} ({count})
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <button
+          className={`rounded-corner-m transition-all cursor-pointer text-left shadow-sm ${activeTab === "all" ? "ring-2 ring-white ring-offset-1" : "hover:brightness-110"}`}
+          style={{ backgroundColor: "var(--color-verde-100)", flex: "1 0 140px", maxWidth: "180px" }}
+          onClick={() => setActiveTab("all")}
+        >
+          <div className="px-3 py-2.5 space-y-1">
+            <p className="text-[12px] font-bold leading-tight text-white">Todas</p>
+            <span className="text-[11px] text-white/80">{inst.instancias.length} transacciones</span>
+          </div>
+        </button>
+        <button
+          className={`rounded-corner-m transition-all cursor-pointer text-left shadow-sm ${activeTab === "finalizadas" ? "ring-2 ring-white ring-offset-1" : "hover:brightness-110"}`}
+          style={{ backgroundColor: "var(--color-verde-100)", flex: "1 0 140px", maxWidth: "180px" }}
+          onClick={() => setActiveTab("finalizadas")}
+        >
+          <div className="px-3 py-2.5 space-y-1">
+            <p className="text-[12px] font-bold leading-tight text-white">Finalizadas</p>
+            <span className="text-[11px] text-white/80">{inst.instancias.filter((i) => { const a = i.historial[i.historial.length - 1]; return a?.accion === "completada" || a?.accion === "excepcion"; }).length} transacciones</span>
+          </div>
+        </button>
+        {tabs.map((t) => {
+          const grupo = gruposOperaciones.find((g) => g.operacionIds.includes(t.id));
+          const color = grupo?.color ?? "var(--color-verde-100)";
+          const count = inst.instancias.filter((i) => i.templateId === t.id).length;
+          const isActive = activeTab === t.id;
+          return (
+            <button key={t.id}
+              className={`rounded-corner-m transition-all cursor-pointer text-left shadow-sm ${isActive ? "ring-2 ring-white ring-offset-1" : "hover:brightness-110"}`}
+              style={{ backgroundColor: color, flex: "1 0 180px", maxWidth: "260px" }}
+              onClick={() => setActiveTab(t.id)}
+            >
+              <div className="px-3 py-2.5 space-y-1">
+                <p className="text-[12px] font-bold leading-tight text-white">
+                  {t.nombre}
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-white/80">{count} transacciones</span>
+                  {grupo && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-white/20 text-white">
+                      {grupo.nombre}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-6">
@@ -229,9 +263,14 @@ export function OperacionesPage() {
             </div>
             <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-1">No hay transacciones activas</h3>
             <p className="text-[13px] text-[var(--color-neutro-500)] mb-4 max-w-md">Cree una nueva transacción para comenzar</p>
-            <Button iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}>
-              Nueva Transacción
-            </Button>
+            <button
+              className="bg-[var(--color-verde-100)] text-white px-3 py-1.5 rounded-corner-m text-[12px] font-bold cursor-pointer flex items-center gap-1 transition-all hover:brightness-95 hover:scale-[1.02] active:brightness-75"
+            style={{ boxShadow: "0 0 14px -2px var(--color-verde-100)" }}
+              onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}
+            >
+              <Plus className="w-[14px] h-[14px]" />
+              Nueva Operación
+            </button>
           </div>
         ) : viewMode === "table" ? (
           <ListaTabla
@@ -245,6 +284,7 @@ export function OperacionesPage() {
           <KanbanBoard
             template={procesosFinalizados.find((p) => p.id === activeTab)!}
             instances={filtered}
+            gruposOperaciones={gruposOperaciones}
             onSelect={(inst) => setDetailInst(inst)}
             onAdvanceNoData={(instId, stepId, stepName) => {
               inst.avanzarEstado(instId, stepId, stepName, "agencia", {}, false);
@@ -271,15 +311,20 @@ export function OperacionesPage() {
                   <span className="text-[12px] text-[var(--color-neutro-400)]">({lista.length})</span>
                 </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
-                  {lista.map((instancia) => (
+                  {lista.map((instancia) => {
+                    const tmpl = procesosFinalizados.find((p) => p.id === instancia.templateId);
+                    const grp = tmpl ? gruposOperaciones.find((g) => g.operacionIds.includes(tmpl.id)) : null;
+                    return (
                     <InstanciaCard
                       key={instancia.id}
                       instancia={instancia}
                       templateName={templateName(instancia.templateId)}
-                      parentSubtipo={procesosFinalizados.find((p) => p.id === instancia.templateId)?.origenTipo}
+                      parentSubtipo={tmpl?.origenTipo}
+                      barColor={grp?.color ?? null}
                       onClick={() => setDetailInst(instancia)}
                     />
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -324,14 +369,16 @@ export function OperacionesPage() {
 }
 
 /* ── Kanban Board ── */
-function KanbanBoard({ template, instances, onSelect, onAdvanceNoData, inst }: {
+function KanbanBoard({ template, instances, gruposOperaciones, onSelect, onAdvanceNoData, inst }: {
   template: ProcesoTransaccional;
   instances: TransaccionInstancia[];
+  gruposOperaciones: GrupoOperacion[];
   onSelect: (inst: TransaccionInstancia) => void;
   onAdvanceNoData: (instId: string, stepId: string, stepName: string) => void;
   inst: ReturnType<typeof useInstanciasStore>;
 }) {
   const [dragId, setDragId] = useState<string | null>(null);
+  const kanbanColor = gruposOperaciones.find((g) => g.operacionIds.includes(template.id))?.color ?? null;
   const [confirmReverse, setConfirmReverse] = useState<{ inst: TransaccionInstancia; step: TransaccionStep } | null>(null);
   const stepsSorted = [...template.steps].sort((a, b) => a.orden - b.orden);
 
@@ -414,9 +461,11 @@ function KanbanBoard({ template, instances, onSelect, onAdvanceNoData, inst }: {
                       draggable={!isComplete && !isException}
                       onDragStart={() => setDragId(instancia.id)}
                       onDragEnd={() => setDragId(null)}
-                      className={`bg-white border border-[var(--color-neutro-200)] rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md ${isComplete ? "opacity-60" : ""} ${dragId === instancia.id ? "opacity-40 ring-2 ring-[var(--color-verde-100)]" : ""}`}
+                      className={`bg-white border border-[var(--color-neutro-200)] rounded-lg shadow-sm cursor-grab active:cursor-grabbing transition-shadow hover:shadow-md overflow-hidden ${isComplete ? "opacity-60" : ""} ${dragId === instancia.id ? "opacity-40 ring-2 ring-[var(--color-verde-100)]" : ""}`}
                       onClick={() => { if (!isComplete && !isException) onSelect(instancia); }}
                     >
+                      {kanbanColor && <div className="h-1" style={{ backgroundColor: kanbanColor }} />}
+                      <div className="p-3">
                       <div className="flex items-start justify-between gap-1 mb-1.5">
                         <p className="text-[12px] font-bold text-[var(--color-neutro-900)] leading-tight">{template.nombre}</p>
                         {isException && <OctagonX className="w-3.5 h-3.5 text-red-500 shrink-0" />}
@@ -436,6 +485,7 @@ function KanbanBoard({ template, instances, onSelect, onAdvanceNoData, inst }: {
                           </button>
                         </div>
                       )}
+                    </div>
                     </div>
                   );
                 })}
@@ -469,11 +519,12 @@ function KanbanBoard({ template, instances, onSelect, onAdvanceNoData, inst }: {
 }
 
 /* ── Instance Card ── */
-function InstanciaCard({ instancia, templateName, onClick, parentSubtipo }: {
+function InstanciaCard({ instancia, templateName, onClick, parentSubtipo, barColor }: {
   instancia: TransaccionInstancia;
   templateName: string;
   onClick: () => void;
   parentSubtipo?: string | null;
+  barColor?: string | null;
 }) {
   const entities = useEntitiesStore.getState().entities;
   const divisas = useDivisasStore.getState().divisas;
@@ -490,9 +541,11 @@ function InstanciaCard({ instancia, templateName, onClick, parentSubtipo }: {
   const isComplete = lastAction?.accion === "completada" || lastAction?.accion === "excepcion";
   return (
     <button
-      className="w-full text-left bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-[var(--color-verde-100)] hover:shadow-md transition-all cursor-pointer flex flex-col gap-2.5"
+      className="w-full text-left bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-[var(--color-verde-100)] hover:shadow-md transition-all cursor-pointer overflow-hidden"
       onClick={onClick}
     >
+      {barColor && <div className="h-1" style={{ backgroundColor: barColor }} />}
+      <div className="p-4 flex flex-col gap-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-bold text-[var(--color-neutro-900)] truncate leading-tight">{templateName}</p>
@@ -529,6 +582,7 @@ function InstanciaCard({ instancia, templateName, onClick, parentSubtipo }: {
         {divisa && (instancia.monto ?? 0) > 0 && (
           <span className="text-[15px] font-bold text-[var(--color-verde-100)]">{divisa.simbolo} {(instancia.monto ?? 0).toLocaleString()}</span>
         )}
+      </div>
       </div>
     </button>
   );
@@ -617,32 +671,198 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
   onComplete: (instancia: TransaccionInstancia) => void;
   onCancel: () => void;
 }) {
+  const { gruposOperaciones } = useTransaccionesStore();
   const selectedTemplate = selectedId ? templates.find((t) => t.id === selectedId) ?? null : null;
 
+  const ungrouped = useMemo(() => templates.filter(
+    (t) => !gruposOperaciones.some((g) => g.operacionIds.includes(t.id))
+  ), [templates, gruposOperaciones]);
+
+  const allOps = useMemo(() => {
+    const result: ProcesoTransaccional[] = [];
+    for (const grupo of gruposOperaciones) {
+      for (const oid of grupo.operacionIds) {
+        const t = templates.find((p) => p.id === oid);
+        if (t) result.push(t);
+      }
+    }
+    result.push(...ungrouped);
+    return result;
+  }, [templates, gruposOperaciones, ungrouped]);
+
+  const [focusedIdx, setFocusedIdx] = useState(0);
+  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    const el = cardRefs.current[focusedIdx];
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [focusedIdx]);
+
+  useEffect(() => {
+    setFocusedIdx(0);
+  }, [allOps.length]);
+
+  const flatIdxMap = useMemo(() => {
+    const map = new Map<string, number>();
+    allOps.forEach((op, i) => map.set(op.id, i));
+    return map;
+  }, [allOps]);
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (allOps.length === 0) return;
+    switch (e.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        e.preventDefault();
+        setFocusedIdx((prev) => Math.min(prev + 1, allOps.length - 1));
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        e.preventDefault();
+        setFocusedIdx((prev) => Math.max(prev - 1, 0));
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        const t = allOps[focusedIdx];
+        if (t) onSelectTemplate(t.id);
+        break;
+    }
+  }
+
+  function focusCard(opId: string) {
+    const idx = flatIdxMap.get(opId);
+    if (idx != null) setFocusedIdx(idx);
+  }
+
   if (!selectedTemplate) {
+    cardRefs.current = [];
+
     return (
-      <div className="space-y-3">
-        <p className="text-[14px] font-semibold text-[var(--color-neutro-900)]">Seleccione una operación</p>
-        <div className="space-y-1">
-          {templates.map((t) => (
-            <button key={t.id}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-corner-m border border-[var(--color-neutro-200)] text-left hover:border-[var(--color-verde-100)] hover:bg-[var(--color-neutro-50)] transition-colors cursor-pointer"
-              onClick={() => onSelectTemplate(t.id)}>
-              <FolderOpen className="w-5 h-5 text-[var(--color-neutro-400)] shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-[var(--color-neutro-900)]">{t.nombre}</p>
-                <p className="text-[11px] text-[var(--color-neutro-400)]">{t.tipoCarga} · {t.steps.length} estados</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-[var(--color-verde-100)] shrink-0" />
-            </button>
-          ))}
+      <div className="space-y-6" onKeyDown={handleKeyDown}>
+        <div className="flex items-center justify-between">
+          <p className="text-[14px] font-semibold text-[var(--color-neutro-900)]">Seleccione una operación</p>
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
         </div>
-        <div className="flex justify-end pt-2">
-          <Button variant="outline" onClick={onCancel}>Cancelar</Button>
+        <div className="overflow-y-auto max-h-[60vh] space-y-8 outline-none p-2" tabIndex={-1}>
+          {gruposOperaciones.map((grupo) => {
+            const ops = grupo.operacionIds
+              .map((oid) => templates.find((t) => t.id === oid))
+              .filter((t): t is ProcesoTransaccional => t != null);
+            if (ops.length === 0) return null;
+            return (
+              <div key={grupo.id}>
+                <div className="relative mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: grupo.color }} />
+                    <p className="text-[13px] font-bold text-[var(--color-neutro-800)]">{grupo.nombre}</p>
+                    <span className="text-[11px] text-[var(--color-neutro-400)]">({ops.length})</span>
+                  </div>
+                  <div className="mt-2 h-px bg-gradient-to-r" style={{ backgroundImage: `linear-gradient(to right, ${grupo.color}44, transparent)` }} />
+                </div>
+                <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+                  {ops.map((t) => {
+                    const grupoActual = gruposOperaciones.find((g) => g.operacionIds.includes(t.id));
+                    const color = grupoActual?.color ?? "var(--color-verde-100)";
+                    const fi = flatIdxMap.get(t.id);
+                    const isFocused = fi != null && focusedIdx === fi;
+                    return (
+                      <button key={t.id}
+                        ref={(el) => { cardRefs.current[fi ?? -1] = el; }}
+                        tabIndex={-1}
+                        className={`rounded-xl text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm group ${isFocused ? "ring-[3px] ring-offset-[4px]" : ""}`}
+                        style={{ backgroundColor: color, "--tw-ring-color": color, "--tw-ring-offset-color": "white" } as any}
+                        onClick={() => onSelectTemplate(t.id)}
+                        onMouseEnter={() => focusCard(t.id)}
+                      >
+                        <div className="overflow-hidden rounded-xl relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:translate-x-[-100%] hover:before:animate-[shimmer_0.8s_ease-in-out_infinite] focus-visible:before:animate-[shimmer_0.8s_ease-in-out_infinite]">
+                        <div className="p-4 space-y-2.5 relative">
+                          <div className="absolute inset-0 bg-gradient-to-b from-white/0 to-black/10 pointer-events-none" />
+                          <div className="relative">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <p className="text-[14px] font-bold text-white leading-tight">{t.nombre}</p>
+                              <Package className="w-4 h-4 text-white/50 shrink-0 mt-0.5" />
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] text-white/70 mb-2">
+                              <span className="bg-white/15 px-2 py-0.5 rounded-md font-medium">{t.origenTipo}</span>
+                              <ArrowRight className="w-3 h-3 text-white/50" />
+                              <span className="bg-white/15 px-2 py-0.5 rounded-md font-medium">{t.destinoTipo}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-white/20 text-white">
+                                {t.tipoCarga}
+                              </span>
+                              <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-white/15 text-white/90">
+                                {t.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
+                              </span>
+                              <span className="text-[10px] text-white/60">
+                                {t.steps.length} {(t.steps.length === 1) ? 'estado' : 'estados'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          {ungrouped.length > 0 && (
+            <div>
+              <div className="relative mb-4">
+                <p className="text-[13px] font-bold text-[var(--color-neutro-700)]">Sin grupo</p>
+                <div className="mt-2 h-px bg-gradient-to-r from-[var(--color-neutro-300)] to-transparent" />
+              </div>
+              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
+                {ungrouped.map((t) => {
+                  const fi = flatIdxMap.get(t.id);
+                  const isFocused = fi != null && focusedIdx === fi;
+                  return (
+                    <button key={t.id}
+                      ref={(el) => { cardRefs.current[fi ?? -1] = el; }}
+                      tabIndex={-1}
+                      className={`rounded-xl text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm group ${isFocused ? "ring-[3px] ring-offset-[4px]" : ""}`}
+                      style={{ backgroundColor: "var(--color-neutro-400)", "--tw-ring-color": "var(--color-neutro-400)", "--tw-ring-offset-color": "white" } as any}
+                      onClick={() => onSelectTemplate(t.id)}
+                      onMouseEnter={() => focusCard(t.id)}
+                    >
+                      <div className="overflow-hidden rounded-xl">
+                      <div className="p-4 space-y-2.5 relative">
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/0 to-black/10 pointer-events-none" />
+                        <div className="relative">
+                          <p className="text-[14px] font-bold text-white leading-tight mb-2">{t.nombre}</p>
+                          <div className="flex items-center gap-1.5 text-[11px] text-white/70 mb-2">
+                            <span className="bg-white/15 px-2 py-0.5 rounded-md font-medium">{t.origenTipo}</span>
+                            <ArrowRight className="w-3 h-3 text-white/50" />
+                            <span className="bg-white/15 px-2 py-0.5 rounded-md font-medium">{t.destinoTipo}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-white/20 text-white">
+                              {t.tipoCarga}
+                            </span>
+                            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-white/15 text-white/90">
+                              {t.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
+                            </span>
+                            <span className="text-[10px] text-white/60">{t.steps.length} {t.steps.length === 1 ? 'estado' : 'estados'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
 /* ── Code Generator ── */
 let _codigoCounter = Date.now();
@@ -1975,9 +2195,9 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
           <div className="flex items-center gap-2">
             <Badge variant={isComplete ? "success" : isTerminated ? "error" : "warning"}>{currentStep?.nombre ?? instancia.estadoActual}</Badge>
             {responsable && <span className="text-[11px] text-[var(--color-neutro-500)]">{responsable.label}</span>}
-            {currentStep?.eventoContable && currentStep.eventoContable !== "ninguno" && (
-              <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-corner-m ${currentStep.eventoContable === "descuenta" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                {EVENTOS_CONTABLES.find((e) => e.value === currentStep.eventoContable)?.label}
+            {currentStep?.inventario && currentStep.inventario !== "ninguno" && (
+              <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-corner-m ${currentStep.inventario === "debita" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                {TIPOS_INVENTARIO.find((e) => e.value === currentStep.inventario)?.label}
               </span>
             )}
           </div>

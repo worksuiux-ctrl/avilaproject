@@ -18,8 +18,9 @@ export interface Excepcion {
   nombre: string;
   esTerminal: boolean;
   retrocedeA: string | null;
-  eventoContable: "descuenta" | "suma" | "ninguno";
-  unidadEvento: string | null;
+  inventario: "debita" | "acredita" | "ninguno";
+  unidadInventario: string | null;
+  eventoContable: string;
   unidadResponsableId: string | null;
   transferenciaCarga: "entrega" | "recepcion" | null;
   requiereAprobacion: boolean;
@@ -33,8 +34,9 @@ export interface TransaccionStep {
   id: string;
   nombre: string;
   orden: number;
-  eventoContable: "descuenta" | "suma" | "ninguno";
-  unidadEvento: string | null;
+  inventario: "debita" | "acredita" | "ninguno";
+  unidadInventario: string | null;
+  eventoContable: string;
   unidadResponsableId: string | null;
   transferenciaCarga: "entrega" | "recepcion" | null;
   requiereAprobacion: boolean;
@@ -49,6 +51,13 @@ export interface TransaccionStep {
   esTerminal?: boolean;
 }
 
+export interface GrupoOperacion {
+  id: string;
+  nombre: string;
+  color: string;
+  operacionIds: string[];
+}
+
 export interface ProcesoTransaccional {
   id: string;
   nombre: string;
@@ -60,6 +69,8 @@ export interface ProcesoTransaccional {
   ambito: "interna" | "entre-agencias" | "externa";
   usaTransportista: boolean;
   transportistasPermitidos: string[];
+  usaProducto: boolean;
+  productosPermitidos: string[];
   usaCodigoRemesa: boolean;
   usaCodigoEnvio: boolean;
   codigoRemesaFormato: string;
@@ -71,6 +82,7 @@ export interface ProcesoTransaccional {
 interface TransaccionesState {
   proceso: ProcesoTransaccional;
   procesosFinalizados: ProcesoTransaccional[];
+  gruposOperaciones: GrupoOperacion[];
   activeStepId: string | null;
   activeExceptionId: { stepId: string; exId: string } | null;
 
@@ -82,6 +94,8 @@ interface TransaccionesState {
   setAmbito: (v: "interna" | "entre-agencias" | "externa") => void;
   setUsaTransportista: (v: boolean) => void;
   toggleTransportistaPermitido: (id: string) => void;
+  setUsaProducto: (v: boolean) => void;
+  toggleProductoPermitido: (id: string) => void;
   setDivisasPermitidas: (ids: string[]) => void;
   setUsaCodigoRemesa: (v: boolean) => void;
   setUsaCodigoEnvio: (v: boolean) => void;
@@ -112,6 +126,13 @@ interface TransaccionesState {
   cargarProceso: (id: string) => void;
   eliminarProceso: (id: string) => void;
   reordenarProcesos: (fromIndex: number, toIndex: number) => void;
+
+  addGrupo: (nombre: string, color: string) => void;
+  updateGrupo: (id: string, updates: Partial<Pick<GrupoOperacion, "nombre" | "color">>) => void;
+  removeGrupo: (id: string) => void;
+  reordenarGrupos: (fromIndex: number, toIndex: number) => void;
+  reordenarOperacionesEnGrupo: (groupId: string, fromIndex: number, toIndex: number) => void;
+  moveOperacionToGrupo: (operacionId: string, fromGroupId: string | null, toGroupId: string | null, toIndex: number) => void;
 }
 
 let idCounter = 100;
@@ -131,14 +152,16 @@ function resetProceso(): ProcesoTransaccional {
     ambito: "interna",
     usaTransportista: false,
     transportistasPermitidos: [],
+    usaProducto: false,
+    productosPermitidos: [],
     usaCodigoRemesa: true,
     usaCodigoEnvio: true,
     codigoRemesaFormato: "REM-{YYYYMMDD}-{NNNNNN}",
     codigoEnvioFormato: "ENV-{YYYYMMDD}-{NNNNNN}",
     activo: true,
     steps: [
-      { id: makeId(), nombre: "Inicial", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
-      { id: makeId(), nombre: "Terminal", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
+      { id: makeId(), nombre: "Inicial", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
+      { id: makeId(), nombre: "Terminal", orden: 2, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
     ],
   };
 }
@@ -166,40 +189,40 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       activo: true,
       steps: [
         // 1. Solicitado — solo perfil responsable agencia, sin campos de captura
-        { id: "demo-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [
-          { id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 },
+        { id: "demo-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [
+          { id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 },
         ], camposSeleccionados: [], serviciosCategorias: [] },
         // 2. Aprobado — descuenta emisora, agencia despacha, bloquea saldo
-        { id: "demo-s-2", nombre: "Aprobado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [
-          { id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
-          { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 },
+        { id: "demo-s-2", nombre: "Aprobado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [
+          { id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
+          { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 },
         ], camposSeleccionados: ["cam-carta-porte-envases-detalle", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
         // 3. En Tránsito — transportista recibe carga, registra unidad y placa
-        { id: "demo-s-4", nombre: "En Tránsito", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, bloqueoSaldo: false, excepciones: [
-          { id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 },
-          { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 },
+        { id: "demo-s-4", nombre: "En Tránsito", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, bloqueoSaldo: false, excepciones: [
+          { id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 },
+          { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 },
         ], camposSeleccionados: ["cam-unidad", "cam-placa"], serviciosCategorias: ["Traslado", "Custodia", "Manipulación"] },
         // 4. Recibido — suma receptora, bloquea saldo, carta porte y envases
-        { id: "demo-s-5", nombre: "Recibido", orden: 4, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["cam-carta-porte-envases"], serviciosCategorias: ["Manipulación"] },
+        { id: "demo-s-5", nombre: "Recibido", orden: 4, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["cam-carta-porte-envases"], serviciosCategorias: ["Manipulación"] },
         // 5. Conteo — limpio, la mesa de conteo maneja la interfaz
-        { id: "demo-s-5b", nombre: "Conteo", orden: 5, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
+        { id: "demo-s-5b", nombre: "Conteo", orden: 5, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
         // 6. Confirmado — estado terminal, desbloquea saldo, observaciones
-        { id: "demo-s-6", nombre: "Confirmado", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+        { id: "demo-s-6", nombre: "Confirmado", orden: 6, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
         // Estados alternos
-        { id: "demo-s-7b", nombre: "Devuelto", orden: 7, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, excepciones: [
-          { id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
+        { id: "demo-s-7b", nombre: "Devuelto", orden: 7, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, excepciones: [
+          { id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
         ], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"] },
-        { id: "demo-s-7d", nombre: "Faltante", orden: 8, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, excepciones: [
-          { id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
-          { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 },
+        { id: "demo-s-7d", nombre: "Faltante", orden: 8, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, excepciones: [
+          { id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
+          { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 },
         ], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
-        { id: "demo-s-7e", nombre: "Sobrante", orden: 9, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, excepciones: [
-          { id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
-          { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 },
+        { id: "demo-s-7e", nombre: "Sobrante", orden: 9, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, excepciones: [
+          { id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
+          { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 },
         ], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
-        { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, excepciones: [
-          { id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
-          { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 },
+        { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, excepciones: [
+          { id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
+          { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 },
         ], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
       ],
     },
@@ -213,6 +236,8 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       ambito: "interna",
       usaTransportista: false,
       transportistasPermitidos: [],
+      usaProducto: false,
+      productosPermitidos: [],
       divisasPermitidas: ["div-2", "div-1"],
       usaCodigoRemesa: false,
       usaCodigoEnvio: false,
@@ -221,12 +246,151 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       activo: true,
       steps: [
         {
-          id: "bc-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, destino", timeoutMinutos: 0, excepciones: [
-            { id: "bc-e-1", nombre: "Cancelar", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 },
+          id: "bc-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, destino", timeoutMinutos: 0, excepciones: [
+            { id: "bc-e-1", nombre: "Cancelar", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 },
           ], camposSeleccionados: ["caja-numero", "caja-responsable", "bov-fecha", "bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
         {
-          id: "bc-s-2", nombre: "Confirmado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso"], serviciosCategorias: [] },
+          id: "bc-s-2", nombre: "Confirmado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso"], serviciosCategorias: [] },
       ],
+    },
+    {
+      id: "demo-bov-atm",
+      nombre: "Pase de Bóveda a ATM",
+      tipoCarga: "valores",
+      modoIngreso: "fajos",
+      origenTipo: "Bóveda",
+      destinoTipo: "Cajero",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      usaProducto: false,
+      productosPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "ba-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, atm_destino", timeoutMinutos: 120, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "ba-s-2", nombre: "Despachado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases"], serviciosCategorias: [] },
+        { id: "ba-s-3", nombre: "Confirmado", orden: 3, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-arqueo",
+      nombre: "Arqueo",
+      tipoCarga: "valores",
+      modoIngreso: "piezas",
+      origenTipo: "Caja",
+      destinoTipo: "Caja",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      usaProducto: false,
+      productosPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "ar-s-1", nombre: "Iniciado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["caja-numero", "caja-responsable", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "ar-s-2", nombre: "Conteo", orden: 2, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "denominaciones, total", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-denominaciones"], serviciosCategorias: ["Conteo"] },
+        { id: "ar-s-3", nombre: "Confirmado", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-mesa-cambios",
+      nombre: "Mesa de Cambios",
+      tipoCarga: "remesas",
+      modoIngreso: "piezas",
+      origenTipo: "Caja",
+      destinoTipo: "Caja",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      usaProducto: false,
+      productosPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "mc-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_origen, divisa_origen, divisa_destino", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones"], serviciosCategorias: [] },
+        { id: "mc-s-2", nombre: "Aprobado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "tasa_cambio, monto_final", timeoutMinutos: 30, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+        { id: "mc-s-3", nombre: "Confirmado", orden: 3, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-remesa-banco",
+      nombre: "Remesa Banco Central",
+      tipoCarga: "remesas",
+      modoIngreso: "fajos",
+      origenTipo: "Bóveda",
+      destinoTipo: "Banco",
+      ambito: "externa",
+      usaTransportista: true,
+      transportistasPermitidos: ["prov-1", "prov-6", "prov-7"],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: true,
+      usaCodigoEnvio: true,
+      codigoRemesaFormato: "REM-BC-{YYYYMMDD}-{NNNNNN}",
+      codigoEnvioFormato: "ENV-BC-{YYYYMMDD}-{NNNNNN}",
+      activo: true,
+      steps: [
+        { id: "rbc-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 1440, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "rbc-s-2", nombre: "Despachado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases", "cam-placa", "cam-conductor"], serviciosCategorias: ["Traslado", "Manipulación"] },
+        { id: "rbc-s-3", nombre: "En Tránsito", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 240, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Custodia"] },
+        { id: "rbc-s-4", nombre: "Recibido", orden: 4, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Manipulación"] },
+        { id: "rbc-s-5", nombre: "Confirmado", orden: 5, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-efectivo-cliente",
+      nombre: "Efectivo Cliente",
+      tipoCarga: "remesas",
+      modoIngreso: "piezas",
+      origenTipo: "Taquilla",
+      destinoTipo: "Caja",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      usaProducto: false,
+      productosPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "ec-s-1", nombre: "Recibido", orden: 1, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, cliente, denominaciones", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "ec-s-2", nombre: "Confirmado", orden: 2, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+  ],
+  gruposOperaciones: [
+    {
+      id: "grupo-remesas",
+      nombre: "Remesas",
+      color: "#2563EB",
+      operacionIds: ["demo-remesa-agencia", "demo-remesa-banco", "demo-efectivo-cliente"],
+    },
+    {
+      id: "grupo-valores",
+      nombre: "Operaciones Agencia",
+      color: "#7C3AED",
+      operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"],
+    },
+    {
+      id: "grupo-cambios",
+      nombre: "Cambios",
+      color: "#F59E0B",
+      operacionIds: ["demo-mesa-cambios"],
     },
   ],
   activeStepId: null,
@@ -279,6 +443,23 @@ export const useTransaccionesStore = create<TransaccionesState>()(
           : [...s.proceso.transportistasPermitidos, id],
       },
     })),
+  setUsaProducto: (v) =>
+    set((s) => ({
+      proceso: {
+        ...s.proceso,
+        usaProducto: v,
+        productosPermitidos: v ? s.proceso.productosPermitidos : [],
+      },
+    })),
+  toggleProductoPermitido: (id) =>
+    set((s) => ({
+      proceso: {
+        ...s.proceso,
+        productosPermitidos: s.proceso.productosPermitidos.includes(id)
+          ? s.proceso.productosPermitidos.filter((p) => p !== id)
+          : [...s.proceso.productosPermitidos, id],
+      },
+    })),
 
   setActiveStep: (id) => set({ activeStepId: id, activeExceptionId: null }),
 
@@ -312,8 +493,8 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         id: makeId(),
         nombre: "Nuevo paso",
         orden: maxOrden + 1,
-        eventoContable: "ninguno",
-        unidadEvento: null,
+        inventario: "ninguno", eventoContable: "",
+        unidadInventario: null,
         unidadResponsableId: null,
         transferenciaCarga: null,
         requiereAprobacion: false,
@@ -367,7 +548,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
                 ...st,
                 excepciones: [
                   ...st.excepciones,
-                  { id: makeId(), nombre: "Nueva excepción", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
+                  { id: makeId(), nombre: "Nueva excepción", esTerminal: false, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 },
                 ],
               }
             : st
@@ -528,8 +709,54 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       list.splice(toIndex, 0, moved);
       return { procesosFinalizados: list };
     }),
+
+  addGrupo: (nombre, color) =>
+    set((s) => ({
+      gruposOperaciones: [...s.gruposOperaciones, { id: makeId(), nombre, color, operacionIds: [] }],
+    })),
+  updateGrupo: (id, updates) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.map((g) =>
+        g.id === id ? { ...g, ...updates } : g
+      ),
+    })),
+  removeGrupo: (id) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.filter((g) => g.id !== id),
+    })),
+  reordenarGrupos: (fromIndex, toIndex) =>
+    set((s) => {
+      const list = [...s.gruposOperaciones];
+      const [moved] = list.splice(fromIndex, 1);
+      list.splice(toIndex, 0, moved);
+      return { gruposOperaciones: list };
+    }),
+  reordenarOperacionesEnGrupo: (groupId, fromIndex, toIndex) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.map((g) => {
+        if (g.id !== groupId) return g;
+        const ids = [...g.operacionIds];
+        const [moved] = ids.splice(fromIndex, 1);
+        ids.splice(toIndex, 0, moved);
+        return { ...g, operacionIds: ids };
+      }),
+    })),
+  moveOperacionToGrupo: (operacionId, fromGroupId, toGroupId, toIndex) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.map((g) => {
+        if (fromGroupId && g.id === fromGroupId) {
+          return { ...g, operacionIds: g.operacionIds.filter((id) => id !== operacionId) };
+        }
+        if (toGroupId && g.id === toGroupId) {
+          const ids = [...g.operacionIds];
+          ids.splice(toIndex, 0, operacionId);
+          return { ...g, operacionIds: ids };
+        }
+        return g;
+      }),
+    })),
 }),
-    { name: "transacciones-store", version: 10, migrate: (persisted: unknown, version: number) => {
+    { name: "transacciones-store", version: 14, migrate: (persisted: unknown, version: number) => {
     const state = persisted as Record<string, unknown>;
     if (version < 1) {
       const templates = (state as any)?.procesosFinalizados as any[];
@@ -616,8 +843,8 @@ export const useTransaccionesStore = create<TransaccionesState>()(
           const idxConteo = steps.findIndex((s: any) => s.id === "demo-s-5b");
           if (idxConteo !== -1) return t;
           const envConteo = {
-            id: "demo-s-5b", nombre: "En Conteo", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
-              { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
+            id: "demo-s-5b", nombre: "En Conteo", orden: 6, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
+              { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
             ], camposSeleccionados: [], serviciosCategorias: ["Conteo"],
           };
           const newSteps = [...steps];
@@ -638,8 +865,8 @@ export const useTransaccionesStore = create<TransaccionesState>()(
           const idxRecibido = steps.findIndex((s: any) => s.id === "demo-s-5");
           if (idxRecibido === -1) return t;
           const envConteo = {
-            id: "demo-s-5b", nombre: "En Conteo", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
-              { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
+            id: "demo-s-5b", nombre: "En Conteo", orden: 6, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [
+              { id: "demo-e-7", nombre: "Diferencia en conteo", esTerminal: false, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle de diferencias encontradas", timeoutMinutos: 1440 },
             ], camposSeleccionados: [], serviciosCategorias: ["Conteo"],
           };
           const newSteps = [...steps];
@@ -655,16 +882,16 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         state.procesosFinalizados = templates.map((t: any) => {
           if (t.id !== "demo-remesa-agencia") return t;
           t.steps = [
-            { id: "demo-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 }], camposSeleccionados: ["agencia-codigo", "agencia-nombre", "bov-fecha", "bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
-            { id: "demo-s-2", nombre: "Aprobado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [{ id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 }], camposSeleccionados: ["agencia-responsable", "agencia-autorizacion", "cam-carta-porte", "cam-placa", "cam-conductor", "cam-unidad", "cam-hora-salida", "cam-precinto-salida", "cam-envases", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
-            { id: "demo-s-4", nombre: "En Tránsito", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "transportista", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, excepciones: [{ id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 }, { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 }], camposSeleccionados: [], serviciosCategorias: ["Custodia"] },
-            { id: "demo-s-5", nombre: "Recibido", orden: 4, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["cam-carta-porte-envases"], serviciosCategorias: ["Manipulación"] },
-            { id: "demo-s-5b", nombre: "Conteo", orden: 5, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Conteo"] },
-            { id: "demo-s-6", nombre: "Confirmado", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
-            { id: "demo-s-7b", nombre: "Devuelto", orden: 7, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"] },
-            { id: "demo-s-7d", nombre: "Faltante", orden: 8, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
-            { id: "demo-s-7e", nombre: "Sobrante", orden: 9, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
-            { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
+            { id: "demo-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 }], camposSeleccionados: ["agencia-codigo", "agencia-nombre", "bov-fecha", "bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+            { id: "demo-s-2", nombre: "Aprobado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [{ id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 }], camposSeleccionados: ["agencia-responsable", "agencia-autorizacion", "cam-carta-porte", "cam-placa", "cam-conductor", "cam-unidad", "cam-hora-salida", "cam-precinto-salida", "cam-envases", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
+            { id: "demo-s-4", nombre: "En Tránsito", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "transportista", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, excepciones: [{ id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 }, { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 }], camposSeleccionados: [], serviciosCategorias: ["Custodia"] },
+            { id: "demo-s-5", nombre: "Recibido", orden: 4, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["cam-carta-porte-envases"], serviciosCategorias: ["Manipulación"] },
+            { id: "demo-s-5b", nombre: "Conteo", orden: 5, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Conteo"] },
+            { id: "demo-s-6", nombre: "Confirmado", orden: 6, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            { id: "demo-s-7b", nombre: "Devuelto", orden: 7, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"] },
+            { id: "demo-s-7d", nombre: "Faltante", orden: 8, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
+            { id: "demo-s-7e", nombre: "Sobrante", orden: 9, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
+            { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
           ];
           return t;
         }) as any;
@@ -677,44 +904,181 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         state.procesosFinalizados = templates.map((t: any) => {
           if (t.id !== "demo-remesa-agencia") return t;
           t.steps = [
-            { id: "demo-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 }], camposSeleccionados: ["agencia-codigo", "agencia-nombre", "bov-fecha", "bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [], bloqueoSaldo: false },
-            { id: "demo-s-2", nombre: "Aprobado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [{ id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 }], camposSeleccionados: ["agencia-responsable", "agencia-autorizacion", "cam-carta-porte", "cam-placa", "cam-conductor", "cam-unidad", "cam-hora-salida", "cam-precinto-salida", "cam-envases", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
-            { id: "demo-s-4", nombre: "En Tránsito", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "transportista", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, excepciones: [{ id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 }, { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 }], camposSeleccionados: [], serviciosCategorias: ["Custodia"], bloqueoSaldo: false },
-            { id: "demo-s-5", nombre: "Recibido", orden: 4, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["cam-carta-porte", "cam-precinto-llegada"], serviciosCategorias: ["Manipulación"], bloqueoSaldo: false },
-            { id: "demo-s-5b", nombre: "Conteo", orden: 5, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Conteo"], bloqueoSaldo: false },
-            { id: "demo-s-6", nombre: "Confirmado", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [], bloqueoSaldo: false },
-            { id: "demo-s-7b", nombre: "Devuelto", orden: 7, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"], bloqueoSaldo: false },
-            { id: "demo-s-7d", nombre: "Faltante", orden: 8, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"], bloqueoSaldo: false },
-            { id: "demo-s-7e", nombre: "Sobrante", orden: 9, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"], bloqueoSaldo: false },
-            { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"], bloqueoSaldo: false },
+            { id: "demo-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 }], camposSeleccionados: ["agencia-codigo", "agencia-nombre", "bov-fecha", "bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [], bloqueoSaldo: false },
+            { id: "demo-s-2", nombre: "Aprobado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [{ id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 }], camposSeleccionados: ["agencia-responsable", "agencia-autorizacion", "cam-carta-porte", "cam-placa", "cam-conductor", "cam-unidad", "cam-hora-salida", "cam-precinto-salida", "cam-envases", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
+            { id: "demo-s-4", nombre: "En Tránsito", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "transportista", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, excepciones: [{ id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 }, { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 }], camposSeleccionados: [], serviciosCategorias: ["Custodia"], bloqueoSaldo: false },
+            { id: "demo-s-5", nombre: "Recibido", orden: 4, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["cam-carta-porte", "cam-precinto-llegada"], serviciosCategorias: ["Manipulación"], bloqueoSaldo: false },
+            { id: "demo-s-5b", nombre: "Conteo", orden: 5, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Conteo"], bloqueoSaldo: false },
+            { id: "demo-s-6", nombre: "Confirmado", orden: 6, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [], bloqueoSaldo: false },
+            { id: "demo-s-7b", nombre: "Devuelto", orden: 7, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"], bloqueoSaldo: false },
+            { id: "demo-s-7d", nombre: "Faltante", orden: 8, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"], bloqueoSaldo: false },
+            { id: "demo-s-7e", nombre: "Sobrante", orden: 9, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"], bloqueoSaldo: false },
+            { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, excepciones: [{ id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"], bloqueoSaldo: false },
           ];
           return t;
         }) as any;
       }
     }
+    if (version < 12) {
+      // v12: inject 5 new demo operations + new Cambios group
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        const existingIds = new Set(templates.map((t: any) => t.id));
+        const nuevos: any[] = [];
+        if (!existingIds.has("demo-bov-atm")) {
+          nuevos.push({
+            id: "demo-bov-atm", nombre: "Pase de Bóveda a ATM", tipoCarga: "valores", modoIngreso: "fajos", origenTipo: "Bóveda", destinoTipo: "Cajero", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "ba-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, atm_destino", timeoutMinutos: 120, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "ba-s-2", nombre: "Despachado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases"], serviciosCategorias: [] },
+              { id: "ba-s-3", nombre: "Confirmado", orden: 3, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-arqueo")) {
+          nuevos.push({
+            id: "demo-arqueo", nombre: "Arqueo", tipoCarga: "valores", modoIngreso: "piezas", origenTipo: "Caja", destinoTipo: "Caja", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "ar-s-1", nombre: "Iniciado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["caja-numero", "caja-responsable", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "ar-s-2", nombre: "Conteo", orden: 2, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "denominaciones, total", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-denominaciones"], serviciosCategorias: ["Conteo"] },
+              { id: "ar-s-3", nombre: "Confirmado", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-mesa-cambios")) {
+          nuevos.push({
+            id: "demo-mesa-cambios", nombre: "Mesa de Cambios", tipoCarga: "remesas", modoIngreso: "piezas", origenTipo: "Caja", destinoTipo: "Caja", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "mc-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_origen, divisa_origen, divisa_destino", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones"], serviciosCategorias: [] },
+              { id: "mc-s-2", nombre: "Aprobado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "tasa_cambio, monto_final", timeoutMinutos: 30, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+              { id: "mc-s-3", nombre: "Confirmado", orden: 3, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-remesa-banco")) {
+          nuevos.push({
+            id: "demo-remesa-banco", nombre: "Remesa Banco Central", tipoCarga: "remesas", modoIngreso: "fajos", origenTipo: "Bóveda", destinoTipo: "Banco", ambito: "externa",       usaTransportista: true,
+      transportistasPermitidos: ["prov-1", "prov-6", "prov-7"],
+      usaProducto: false,
+      productosPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: true, usaCodigoEnvio: true, codigoRemesaFormato: "REM-BC-{YYYYMMDD}-{NNNNNN}", codigoEnvioFormato: "ENV-BC-{YYYYMMDD}-{NNNNNN}", activo: true,
+            steps: [
+              { id: "rbc-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 1440, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "rbc-s-2", nombre: "Despachado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases", "cam-placa", "cam-conductor"], serviciosCategorias: ["Traslado", "Manipulación"] },
+              { id: "rbc-s-3", nombre: "En Tránsito", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 240, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Custodia"] },
+              { id: "rbc-s-4", nombre: "Recibido", orden: 4, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Manipulación"] },
+              { id: "rbc-s-5", nombre: "Confirmado", orden: 5, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-efectivo-cliente")) {
+          nuevos.push({
+            id: "demo-efectivo-cliente", nombre: "Efectivo Cliente", tipoCarga: "remesas", modoIngreso: "piezas", origenTipo: "Taquilla", destinoTipo: "Caja", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "ec-s-1", nombre: "Recibido", orden: 1, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, cliente, denominaciones", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "ec-s-2", nombre: "Confirmado", orden: 2, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (nuevos.length > 0) {
+          (state as any).procesosFinalizados = [...templates, ...nuevos];
+        }
+        // Update grupos
+        (state as any).gruposOperaciones = [
+          { id: "grupo-remesas", nombre: "Remesas", color: "#2563EB", operacionIds: ["demo-remesa-agencia", "demo-remesa-banco", "demo-efectivo-cliente"] },
+          { id: "grupo-valores", nombre: "Operaciones Agencia", color: "#7C3AED", operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"] },
+          { id: "grupo-cambios", nombre: "Cambios", color: "#F59E0B", operacionIds: ["demo-mesa-cambios"] },
+        ];
+      }
+    }
+    if (version < 13) {
+      // v13: rename eventoContable→inventario, unidadEvento→unidadInventario, add eventoContable placeholder
+      const migrateEC = (obj: any) => {
+        if (obj && typeof obj === "object" && "eventoContable" in obj) {
+          const ec = obj.eventoContable;
+          if (ec === "descuenta") obj.inventario = "debita";
+          else if (ec === "suma") obj.inventario = "acredita";
+          else obj.inventario = "ninguno";
+          delete obj.eventoContable;
+          obj.eventoContable = "";
+          if ("unidadEvento" in obj) {
+            obj.unidadInventario = obj.unidadEvento;
+            delete obj.unidadEvento;
+          }
+        }
+      };
+      const proceso = state.proceso as Record<string, unknown> | undefined;
+      if (proceso) {
+        const steps = (proceso as any).steps as any[] | undefined;
+        if (steps) {
+          steps.forEach((s: any) => {
+            migrateEC(s);
+            const excs = s.excepciones as any[] | undefined;
+            if (excs) excs.forEach(migrateEC);
+          });
+        }
+      }
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        templates.forEach((t: any) => {
+          const steps = t.steps as any[] | undefined;
+          if (steps) {
+            steps.forEach((s: any) => {
+              migrateEC(s);
+              const excs = s.excepciones as any[] | undefined;
+              if (excs) excs.forEach(migrateEC);
+            });
+          }
+        });
+      }
+    }
+    if (version < 14) {
+      // v14: add usaProducto + productosPermitidos
+      const addProdDefaults = (obj: Record<string, unknown>) => ({
+        ...obj,
+        usaProducto: (obj as any).usaProducto ?? false,
+        productosPermitidos: (obj as any).productosPermitidos ?? [],
+      });
+      const proceso = state.proceso as Record<string, unknown> | undefined;
+      if (proceso) {
+        (state.proceso as any) = addProdDefaults(proceso);
+      }
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        state.procesosFinalizados = templates.map((t: any) => addProdDefaults(t)) as any;
+      }
+    }
+    if (version < 11) {
+      if (!(state as any).gruposOperaciones) {
+        (state as any).gruposOperaciones = [
+          { id: "grupo-remesas", nombre: "Remesas", color: "#2563EB", operacionIds: ["demo-remesa-agencia"] },
+          { id: "grupo-valores", nombre: "Operaciones Agencia", color: "#7C3AED", operacionIds: ["demo-boveda-caja"] },
+        ];
+      }
+    }
     if (version < 10) {
-      // v10: reconfigure "demo-remesa-agencia" steps — simplified Solicitado, Aprobado with detalle, En Tránsito with campos, Recibido bloquea saldo, Confirmado esTerminal
+      // v10: reconfigure "demo-remesa-agencia" steps
       const templates = (state as any)?.procesosFinalizados as any[];
       if (templates) {
         state.procesosFinalizados = templates.map((t: any) => {
           if (t.id !== "demo-remesa-agencia") return t;
           t.steps = [
-            { id: "demo-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 }], camposSeleccionados: [], serviciosCategorias: [] },
-            { id: "demo-s-2", nombre: "Aprobado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [{ id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 }], camposSeleccionados: ["cam-carta-porte-envases-detalle", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
-            { id: "demo-s-4", nombre: "En Tránsito", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, bloqueoSaldo: false, excepciones: [{ id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 }, { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 }], camposSeleccionados: ["cam-unidad", "cam-placa"], serviciosCategorias: ["Traslado", "Custodia", "Manipulación"] },
-            { id: "demo-s-5", nombre: "Recibido", orden: 4, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["cam-carta-porte-envases"], serviciosCategorias: ["Manipulación"] },
-            { id: "demo-s-5b", nombre: "Conteo", orden: 5, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
-            { id: "demo-s-6", nombre: "Confirmado", orden: 6, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
-            { id: "demo-s-7b", nombre: "Devuelto", orden: 7, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"] },
-            { id: "demo-s-7d", nombre: "Faltante", orden: 8, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
-            { id: "demo-s-7e", nombre: "Sobrante", orden: 9, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
-            { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
+            { id: "demo-s-1", nombre: "Solicitado", orden: 1, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-1", nombre: "Cancelado", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "Motivo de cancelación", timeoutMinutos: 0 }], camposSeleccionados: [], serviciosCategorias: [] },
+            { id: "demo-s-2", nombre: "Aprobado", orden: 2, inventario: "debita", eventoContable: "", unidadInventario: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [{ id: "demo-e-2", nombre: "Reversar", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-3", nombre: "Bóveda insuficiente", esTerminal: false, retrocedeA: "demo-s-1", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del faltante en bóveda", timeoutMinutos: 240 }], camposSeleccionados: ["cam-carta-porte-envases-detalle", "gral-observaciones"], serviciosCategorias: ["Traslado", "Manipulación"] },
+            { id: "demo-s-4", nombre: "En Tránsito", orden: 3, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 90, bloqueoSaldo: false, excepciones: [{ id: "demo-e-4", nombre: "Devuelto", esTerminal: false, retrocedeA: "demo-s-7b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Motivo de devolución, detalle", timeoutMinutos: 1440 }, { id: "demo-e-5", nombre: "Siniestro", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Tipo de siniestro, detalle, monto afectado", timeoutMinutos: 60 }], camposSeleccionados: ["cam-unidad", "cam-placa"], serviciosCategorias: ["Traslado", "Custodia", "Manipulación"] },
+            { id: "demo-s-5", nombre: "Recibido", orden: 4, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["cam-carta-porte-envases"], serviciosCategorias: ["Manipulación"] },
+            { id: "demo-s-5b", nombre: "Conteo", orden: 5, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
+            { id: "demo-s-6", nombre: "Confirmado", orden: 6, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            { id: "demo-s-7b", nombre: "Devuelto", orden: 7, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "motivo_devolucion, detalle", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-6", nombre: "Reingresar a conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Custodia"] },
+            { id: "demo-s-7d", nombre: "Faltante", orden: 8, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_faltante, monto_faltante", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-7", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-8", nombre: "Aceptar diferencia (justificar)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la diferencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
+            { id: "demo-s-7e", nombre: "Sobrante", orden: 9, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_sobrante, monto_sobrante", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-9", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-10", nombre: "Registrar ajuste contable", esTerminal: true, retrocedeA: null, inventario: "acredita", eventoContable: "", unidadInventario: "receptora", unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Detalle del ajuste, cuenta contable", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
+            { id: "demo-s-7g", nombre: "Inconsistente", orden: 10, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "detalle_inconsistencia, denominaciones_reportadas", timeoutMinutos: 4320, bloqueoSaldo: false, excepciones: [{ id: "demo-e-11", nombre: "Solicitar re-conteo", esTerminal: false, retrocedeA: "demo-s-5b", inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0 }, { id: "demo-e-12", nombre: "Aceptar inconsistencia (monto correcto)", esTerminal: true, retrocedeA: null, inventario: "ninguno", eventoContable: "", unidadInventario: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "central", requiereVariables: true, variables: "Justificación de la inconsistencia", timeoutMinutos: 1440 }], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Conteo", "Custodia"] },
           ];
           return t;
         }) as any;
       }
     }
-    return state as TransaccionesState;
+    return state as unknown as TransaccionesState;
   } }
 )
 );
@@ -738,16 +1102,28 @@ export const TIPOS_CARGA = [
   { value: "alimentos", label: "Alimentos" },
 ];
 
-export const EVENTOS_CONTABLES = [
-  { value: "ninguno", label: "Ninguno" },
-  { value: "descuenta", label: "Descuenta (Egreso)" },
-  { value: "suma", label: "Suma (Ingreso)" },
+export const PRODUCTOS = [
+  { value: "mesa-cambio", label: "Mesa de Cambio" },
+  { value: "intervencion-cambiaria", label: "Intervención Cambiaria" },
+  { value: "posicion-propia", label: "Posición Propia" },
+  { value: "menudeo", label: "Menudeo" },
+  { value: "garantia", label: "Garantía" },
+  { value: "swap", label: "Swap" },
+  { value: "custodia", label: "Custodia" },
 ];
 
-export const UNIDADES_EVENTO = [
+export const TIPOS_INVENTARIO = [
+  { value: "ninguno", label: "Ninguno" },
+  { value: "debita", label: "Debita (Desc. inventario)" },
+  { value: "acredita", label: "Acredita (Suma inventario)" },
+];
+
+export const UNIDADES_INVENTARIO = [
   { value: "emisora", label: "Unidad Emisora (Origen)" },
   { value: "receptora", label: "Unidad Receptora (Destino)" },
 ];
+
+export const EVENTOS_CONTABLES: { value: string; label: string }[] = [];
 
 export const TIPOS_APROBACION = [
   { value: "ninguno", label: "Sin aprobación" },
@@ -860,3 +1236,7 @@ export const CAMPOS_PREDEFINIDOS: CampoPredefinido[] = [
   { id: "cam-carta-porte-envases", nombre: "cartas_porte_envases", etiqueta: "Cartas porte y envases", tipo: "carta-porte-envases", requerido: true, opciones: [], aplicableA: ["Camión"] },
   { id: "cam-carta-porte-envases-detalle", nombre: "cartas_porte_envases_detalle", etiqueta: "Cartas porte, envases y detalle", tipo: "carta-porte-envases-detalle", requerido: true, opciones: [], aplicableA: ["Camión"] },
 ];
+
+
+
+
