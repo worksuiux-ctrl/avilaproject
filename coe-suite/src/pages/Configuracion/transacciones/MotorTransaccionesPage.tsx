@@ -24,28 +24,28 @@ import { CATEGORIAS_SERVICIO } from "@stores/proveedoresStore";
 
 const UNIDADES_POR_AMBITO: Record<string, { value: string; label: string }[]> = {
   interna: [
-    { value: "Bóveda", label: "Bóveda" },
+    { value: "BÃ³veda", label: "BÃ³veda" },
     { value: "Caja", label: "Caja" },
     { value: "Taquilla", label: "Taquilla" },
     { value: "Cajero", label: "Cajero / ATM" },
     { value: "Punto de Venta", label: "Punto de Venta" },
-    { value: "Almacén", label: "Almacén" },
+    { value: "AlmacÃ©n", label: "AlmacÃ©n" },
   ],
   "entre-agencias": [
     { value: "Agencia", label: "Agencia" },
-    { value: "Bóveda", label: "Bóveda" },
+    { value: "BÃ³veda", label: "BÃ³veda" },
     { value: "Caja", label: "Caja" },
     { value: "Taquilla", label: "Taquilla" },
     { value: "Cajero", label: "Cajero / ATM" },
-    { value: "Camión", label: "Camión" },
-    { value: "Almacén", label: "Almacén" },
+    { value: "CamiÃ³n", label: "CamiÃ³n" },
+    { value: "AlmacÃ©n", label: "AlmacÃ©n" },
   ],
   externa: [
     { value: "Agencia", label: "Agencia" },
     { value: "Taquilla Externa", label: "Taquilla Externa" },
-    { value: "Camión", label: "Camión" },
+    { value: "CamiÃ³n", label: "CamiÃ³n" },
     { value: "Banco", label: "Banco" },
-    { value: "Almacén", label: "Almacén" },
+    { value: "AlmacÃ©n", label: "AlmacÃ©n" },
     { value: "Punto de Venta", label: "Punto de Venta" },
   ],
 };
@@ -82,7 +82,7 @@ export function MotorTransaccionesPage() {
   }
 
   function handleEditSaved(id: string, name: string) {
-    if (window.confirm(`¿Está seguro de editar "${name}"? Esta operación podría estar en uso en transacciones activas.`)) {
+    if (window.confirm(`Â¿EstÃ¡ seguro de editar "${name}"? Esta operaciÃ³n podrÃ­a estar en uso en transacciones activas.`)) {
       store.cargarProceso(id);
     }
   }
@@ -163,7 +163,7 @@ export function MotorTransaccionesPage() {
   );
 }
 
-/* ── Operaciones Tab ── */
+/* â”€â”€ Operaciones Tab â”€â”€ */
 function OperacionesTab({
   store, proceso, selectedSavedId, savedProceso, isViewingSaved, displayProceso,
   onSelectSaved, onEditSaved, onNewOperation,
@@ -189,7 +189,7 @@ function OperacionesTab({
         </div>
         <div className="p-3 border-b border-[var(--color-neutro-200)]">
           <Button className="w-full !justify-center" size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>
-            Crear Nueva Operación
+            Crear Nueva OperaciÃ³n
           </Button>
         </div>
         <div className="p-2 space-y-1 flex-1 overflow-y-auto">
@@ -218,21 +218,21 @@ function OperacionesTab({
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
                 <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
-                  {p.tipoCarga} · {p.steps.length} estados
+                  {p.tipoCarga} Â· {p.steps.length} estados
                 </p>
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
                 <button
                   className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`}
-                  title="Editar operación"
+                  title="Editar operaciÃ³n"
                   onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
                 <button
                   className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white/70 hover:text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`}
-                  title="Eliminar operación"
-                  onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"? Esta acción no se puede deshacer.`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) setSelectedSavedId(null); } }}
+                  title="Eliminar operaciÃ³n"
+                  onClick={(e) => { e.stopPropagation(); if (window.confirm(`Â¿Eliminar "${p.nombre}"? Esta acciÃ³n no se puede deshacer.`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) setSelectedSavedId(null); } }}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -251,7 +251,7 @@ function OperacionesTab({
         <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)]">
             <span className="w-2 h-2 rounded-full bg-[var(--color-verde-100)]" />
-            <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Nombre de la Operación</p>
+            <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Nombre de la OperaciÃ³n</p>
           </div>
           <div className="p-4">
             {isViewingSaved ? (
@@ -321,12 +321,12 @@ function OperacionesTab({
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Origen</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.origenTipo ?? "—"}</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.origenTipo ?? "â€”"}</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-[var(--color-neutro-300)] mt-5 shrink-0" />
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Destino</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.destinoTipo ?? "—"}</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.destinoTipo ?? "â€”"}</p>
                   </div>
                 </div>
                 {displayProceso.ambito && (
@@ -367,7 +367,7 @@ function OperacionesTab({
                   </div>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Ámbito</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Ãmbito</p>
                   <Select options={AMBITOS} value={proceso.ambito} onChange={(v: string) => store.setAmbito(v as "interna" | "entre-agencias" | "externa")} />
                 </div>
                 <div>
@@ -404,7 +404,7 @@ function OperacionesTab({
         {!isViewingSaved && (
           <div className="shrink-0">
             <Button className="w-full !justify-center !bg-[var(--color-verde-100)] !text-white" size="sm" iconLeft={<Save className="w-4 h-4" />} onClick={store.finalizeProceso}>
-              Guardar Operación
+              Guardar OperaciÃ³n
             </Button>
           </div>
         )}
@@ -413,7 +413,7 @@ function OperacionesTab({
   );
 }
 
-/* ── Estados Tab ── */
+/* â”€â”€ Estados Tab â”€â”€ */
 function EstadosTab({
   store, isViewingSaved, displayProceso, hasActiveOperation, dragIndex, dragOverIndex,
   setDragIndex, setDragOverIndex, onSwitchTab,
@@ -446,15 +446,15 @@ function EstadosTab({
         <div className="flex items-center gap-3 p-3 mb-3 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <Package className="w-5 h-5 text-[var(--color-verde-100)] shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[var(--color-neutro-900)] truncate">Sin operación seleccionada</p>
+            <p className="text-[13px] font-bold text-[var(--color-neutro-900)] truncate">Sin operaciÃ³n seleccionada</p>
             <div className="flex items-center gap-2 text-[11px] text-[var(--color-neutro-500)]">
-              <span>Seleccione una operación para ver sus estados</span>
+              <span>Seleccione una operaciÃ³n para ver sus estados</span>
             </div>
           </div>
           <div className="w-[240px]">
             <Select
               options={[
-                { value: "", label: "Seleccionar operación..." },
+                { value: "", label: "Seleccionar operaciÃ³n..." },
                 ...store.procesosFinalizados.map((p) => ({ value: p.id, label: p.nombre })),
               ]}
               value=""
@@ -465,9 +465,9 @@ function EstadosTab({
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <Layers className="w-12 h-12 text-[var(--color-neutro-300)] mx-auto mb-3" />
-            <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-2">No hay operación seleccionada</h3>
+            <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-2">No hay operaciÃ³n seleccionada</h3>
             <p className="text-[13px] text-[var(--color-neutro-500)] mb-4">
-              Seleccione una operación en el selector superior o vaya a la pestaña Operaciones
+              Seleccione una operaciÃ³n en el selector superior o vaya a la pestaÃ±a Operaciones
             </p>
             <Button onClick={onSwitchTab}>
               Ir a Operaciones
@@ -488,9 +488,9 @@ function EstadosTab({
           <div className="flex items-center gap-2 text-[11px] text-[var(--color-neutro-500)]">
             <span>{displayProceso.tipoCarga}</span>
             {displayProceso.origenTipo && (
-              <><span>·</span><span>{displayProceso.origenTipo} <ArrowRight className="w-3 h-3 inline" /> {displayProceso.destinoTipo ?? "?"}</span></>
+              <><span>Â·</span><span>{displayProceso.origenTipo} <ArrowRight className="w-3 h-3 inline" /> {displayProceso.destinoTipo ?? "?"}</span></>
             )}
-            <span>·</span>
+            <span>Â·</span>
             <span>{displaySteps.length} estados</span>
           </div>
         </div>
@@ -498,7 +498,7 @@ function EstadosTab({
           <div className="w-[200px]">
             <Select
               options={[
-                { value: "", label: "Seleccionar operación..." },
+                { value: "", label: "Seleccionar operaciÃ³n..." },
                 ...store.procesosFinalizados.map((p) => ({ value: p.id, label: p.nombre })),
               ]}
               value={isViewingSaved ? displayProceso.id : proceso.id}
@@ -507,7 +507,7 @@ function EstadosTab({
           </div>
           {isViewingSaved && (
             <Button size="sm" iconLeft={<Pencil className="w-4 h-4" />} onClick={() => {
-              if (window.confirm(`¿Está seguro de editar "${displayProceso.nombre}"? Esta operación podría estar en uso en transacciones activas.`)) {
+              if (window.confirm(`Â¿EstÃ¡ seguro de editar "${displayProceso.nombre}"? Esta operaciÃ³n podrÃ­a estar en uso en transacciones activas.`)) {
                 store.cargarProceso(displayProceso.id);
               }
             }}>
@@ -527,7 +527,7 @@ function EstadosTab({
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-[var(--color-neutro-400)]">Inicial</span>
             <span className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="mx-1 text-[var(--color-neutro-300)]">···</span>
+            <span className="mx-1 text-[var(--color-neutro-300)]">Â·Â·Â·</span>
             <span className="w-3 h-3 rounded-full bg-red-400" />
             <span className="text-[10px] text-[var(--color-neutro-400)]">Terminal</span>
           </div>
@@ -584,7 +584,7 @@ function EstadosTab({
         ) : (
           <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
             <p className="text-[13px] text-[var(--color-neutro-400)]">
-              Seleccione un estado o excepción para ver sus propiedades
+              Seleccione un estado o excepciÃ³n para ver sus propiedades
             </p>
           </div>
         )}
@@ -594,7 +594,7 @@ function EstadosTab({
   );
 }
 
-/* ── Fusionado Tab ── */
+/* â”€â”€ Fusionado Tab â”€â”€ */
 function FusionadoTab({
   store, proceso, selectedSavedId, savedProceso, isViewingSaved, displayProceso,
   hasActiveOperation, dragIndex, dragOverIndex, setDragIndex, setDragOverIndex,
@@ -648,9 +648,9 @@ function FusionadoTab({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-[18px] font-bold text-[var(--color-neutro-900)]">Operaciones</h2>
-            <p className="text-[13px] text-[var(--color-neutro-500)]">Seleccione una operación para ver sus detalles</p>
+            <p className="text-[13px] text-[var(--color-neutro-500)]">Seleccione una operaciÃ³n para ver sus detalles</p>
           </div>
-          <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>Nueva Operación</Button>
+          <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>Nueva OperaciÃ³n</Button>
         </div>
         {store.gruposOperaciones.map((grupo) => {
           const ops = grupo.operacionIds
@@ -693,7 +693,7 @@ function FusionadoTab({
                           <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]" title="Duplicar" onClick={(e) => { e.stopPropagation(); store.duplicarProceso(p.id); }}>
                             <Copy className="w-3.5 h-3.5" />
                           </button>
-                          <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); } }}>
+                          <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar" onClick={(e) => { e.stopPropagation(); if (window.confirm(`Â¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); } }}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -732,7 +732,7 @@ function FusionadoTab({
                         <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]" title="Duplicar" onClick={(e) => { e.stopPropagation(); store.duplicarProceso(p.id); }}>
                           <Copy className="w-3.5 h-3.5" />
                         </button>
-                        <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); } }}>
+                        <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar" onClick={(e) => { e.stopPropagation(); if (window.confirm(`Â¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); } }}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -748,64 +748,14 @@ function FusionadoTab({
             <div className="text-center">
               <Layers className="w-12 h-12 text-[var(--color-neutro-300)] mx-auto mb-3" />
               <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-2">No hay operaciones</h3>
-              <p className="text-[13px] text-[var(--color-neutro-500)] mb-4">Cree su primera operación para comenzar</p>
-              <Button onClick={onNewOperation}>Crear Nueva Operación</Button>
+              <p className="text-[13px] text-[var(--color-neutro-500)] mb-4">Cree su primera operaciÃ³n para comenzar</p>
+              <Button onClick={onNewOperation}>Crear Nueva OperaciÃ³n</Button>
             </div>
           </div>
       )}
     </div>
   );
-}
-
-/* ── Eventos Contables Tab ── */
-function EventosContablesTab() {
-  return (
-    <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-      <div className="px-4 py-3 border-b border-[var(--color-neutro-200)]">
-        <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Eventos Contables</p>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-        <FileText className="w-12 h-12 text-[var(--color-neutro-300)] mb-3" />
-        <p className="text-[14px] font-medium text-[var(--color-neutro-500)]">Módulo de Contabilidad</p>
-        <p className="text-[12px] text-[var(--color-neutro-400)] mt-1">
-          Los eventos contables estarán disponibles cuando el módulo de Contabilidad esté activo.
-        </p>
-        <p className="text-[11px] text-[var(--color-neutro-400)] mt-4 italic">
-          Para configurar, activa el módulo de Contabilidad en la configuración del sistema.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/* ── Productos Tab ── */
-function ProductosTab() {
-  return (
-    <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-      <div className="px-4 py-3 border-b border-[var(--color-neutro-200)]">
-        <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Productos</p>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-[var(--color-neutro-200)]">
-              <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Valor</th>
-              <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PRODUCTOS.map((p) => (
-              <tr key={p.value} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
-                <td className="px-3 py-2.5 font-mono text-[12px] text-[var(--color-neutro-700)]">{p.value}</td>
-                <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{p.label}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+  }
 
   return (
     <div className="flex-1 flex gap-4 min-h-0">
@@ -818,7 +768,7 @@ function ProductosTab() {
         </div>
         <div className="p-3 border-b border-[var(--color-neutro-200)] flex gap-2">
           <Button className="flex-1 !justify-center" size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>
-            Crear Nueva Operación
+            Crear Nueva OperaciÃ³n
           </Button>
           <Button size="sm" variant="outline" className="!justify-center" iconLeft={<Layers className="w-3.5 h-3.5" />} onClick={() => { setEditGroupId(null); setShowGroupDialog(true); }}>
             Naturaleza
@@ -861,14 +811,14 @@ function ProductosTab() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
                       <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
-                        {p.tipoCarga} · {p.steps.length} estados{p.activo === false ? " · Inactivo" : ""}
+                        {p.tipoCarga} Â· {p.steps.length} estados{p.activo === false ? " Â· Inactivo" : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`} title="Editar operación" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`} title="Editar operaciÃ³n" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`} title="Eliminar operación" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}>
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`} title="Eliminar operaciÃ³n" onClick={(e) => { e.stopPropagation(); if (window.confirm(`Â¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -901,14 +851,14 @@ function ProductosTab() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
                       <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
-                        {p.tipoCarga} · {p.steps.length} estados{p.activo === false ? " · Inactivo" : ""}
+                        {p.tipoCarga} Â· {p.steps.length} estados{p.activo === false ? " Â· Inactivo" : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
-                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`} title="Editar operación" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`} title="Editar operaciÃ³n" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white/70 hover:text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`} title="Eliminar operación" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}>
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white/70 hover:text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`} title="Eliminar operaciÃ³n" onClick={(e) => { e.stopPropagation(); if (window.confirm(`Â¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -938,17 +888,17 @@ function ProductosTab() {
 
       {/* Center: form fields + inspector */}
       <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto">
-        {/* Detalles de la Operación — unificado */}
+        {/* Detalles de la OperaciÃ³n â€” unificado */}
         <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 cursor-pointer select-none transition-colors" style={{ backgroundColor: grupoColorActivo ?? 'var(--color-verde-100)' }} onClick={() => setCollapseDetalles(!collapseDetalles)}>
             <Package className="w-4 h-4 text-white" />
-            <p className="flex-1 text-[11px] font-bold text-white uppercase tracking-wide">Detalles de la Operación</p>
+            <p className="flex-1 text-[11px] font-bold text-white uppercase tracking-wide">Detalles de la OperaciÃ³n</p>
             <ChevronDown className={`w-4 h-4 text-white/70 transition-transform ${collapseDetalles ? "-rotate-90" : ""}`} />
           </div>
           {!collapseDetalles && (
           <div className="p-4 space-y-4">
             {isViewingSaved ? (
-              /* ── VIEW MODE ── */
+              /* â”€â”€ VIEW MODE â”€â”€ */
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
@@ -970,7 +920,7 @@ function ProductosTab() {
                 <hr className="border-[var(--color-neutro-100)]" />
 
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Mercancía a Transportar</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">MercancÃ­a a Transportar</p>
                   <span className="px-2 py-0.5 text-[12px] font-medium bg-[var(--color-neutro-100)] text-[var(--color-neutro-600)] rounded-corner-m">{displayProceso.tipoCarga}</span>
                   {(displayProceso.tipoCarga === "remesas" || displayProceso.tipoCarga === "valores") && (
                     <div className="mt-1 flex items-center gap-2">
@@ -988,12 +938,12 @@ function ProductosTab() {
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Origen</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.origenTipo ?? "—"}</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.origenTipo ?? "â€”"}</p>
                   </div>
                   <ArrowRight className="w-5 h-5 text-[var(--color-neutro-300)] mt-5 shrink-0" />
                   <div className="flex-1">
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Destino</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.destinoTipo ?? "—"}</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.destinoTipo ?? "â€”"}</p>
                   </div>
                 </div>
 
@@ -1026,29 +976,29 @@ function ProductosTab() {
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de remesa</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoRemesa ? "Sí" : "No"}</p>
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica cÃ³digo de remesa</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoRemesa ? "SÃ­" : "No"}</p>
                   </div>
                   {displayProceso.usaCodigoRemesa && (
-                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoRemesaFormato ?? "—"}</p>
+                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoRemesaFormato ?? "â€”"}</p>
                   )}
                   <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica código de envío</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoEnvio ? "Sí" : "No"}</p>
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Aplica cÃ³digo de envÃ­o</p>
+                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.usaCodigoEnvio ? "SÃ­" : "No"}</p>
                   </div>
                   {displayProceso.usaCodigoEnvio && (
-                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoEnvioFormato ?? "—"}</p>
+                    <p className="text-[13px] font-medium text-[var(--color-neutro-900)] font-mono">{displayProceso.codigoEnvioFormato ?? "â€”"}</p>
                   )}
                 </div>
               </div>
             ) : (
-              /* ── EDIT MODE ── */
+              /* â”€â”€ EDIT MODE â”€â”€ */
               <div className="space-y-4">
                 {/* 1. Nombre + Activo */}
                 <div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
-                      <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Nombre de la operación</p>
+                      <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Nombre de la operaciÃ³n</p>
                       <Input value={proceso.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setNombre(e.target.value)} placeholder="Ej: Pase de Caja a ATM..." />
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer pt-5 shrink-0">
@@ -1060,9 +1010,9 @@ function ProductosTab() {
 
                 <hr className="border-[var(--color-neutro-100)]" />
 
-                {/* 2. Mercancía a Transportar */}
+                {/* 2. MercancÃ­a a Transportar */}
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Mercancía a Transportar</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">MercancÃ­a a Transportar</p>
                   <Select options={TIPOS_CARGA} value={proceso.tipoCarga} onChange={(v: string) => store.setTipoCarga(v)} />
                   {proceso.tipoCarga === "remesas" && (
                     <div className="mt-3 space-y-3">
@@ -1087,7 +1037,7 @@ function ProductosTab() {
                   )}
                   {proceso.tipoCarga === "valores" && (
                     <div className="mt-3">
-                      <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase mb-1">Divisas permitidas (para valoración)</p>
+                      <p className="text-[10px] font-semibold text-[var(--color-neutro-400)] uppercase mb-1">Divisas permitidas (para valoraciÃ³n)</p>
                       <DivisaSelector ids={proceso.divisasPermitidas} onChange={(ids: string[]) => store.setDivisasPermitidas(ids)} />
                     </div>
                   )}
@@ -1095,16 +1045,16 @@ function ProductosTab() {
 
                 <hr className="border-[var(--color-neutro-100)]" />
 
-                {/* 3. Ámbito */}
+                {/* 3. Ãmbito */}
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Ámbito</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Ãmbito</p>
                   <Select options={AMBITOS} value={proceso.ambito} onChange={(v: string) => {
                     store.setAmbito(v as "interna" | "entre-agencias" | "externa");
                     if (v === "interna") store.setUsaTransportista(false);
                   }} />
                 </div>
 
-                {/* 4. Origen - Destino (filtered by ámbito) */}
+                {/* 4. Origen - Destino (filtered by Ã¡mbito) */}
                 <div>
                   <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Origen y Destino</p>
                   <div className="flex items-center gap-4 mb-2">
@@ -1164,25 +1114,25 @@ function ProductosTab() {
 
                 <hr className="border-[var(--color-neutro-100)]" />
 
-                {/* 7. Códigos de transacción */}
+                {/* 7. CÃ³digos de transacciÃ³n */}
                 <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Códigos de Transacción</p>
+                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">CÃ³digos de TransacciÃ³n</p>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 shrink-0">
-                      <Checkbox label="Código de remesa" checked={proceso.usaCodigoRemesa} onChange={(v: boolean) => store.setUsaCodigoRemesa(v)} />
+                      <Checkbox label="CÃ³digo de remesa" checked={proceso.usaCodigoRemesa} onChange={(v: boolean) => store.setUsaCodigoRemesa(v)} />
                     </div>
                     {proceso.usaCodigoRemesa && (
                       <Input value={proceso.codigoRemesaFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoRemesaFormato(e.target.value)} placeholder="Ej: REM-{YYYYMMDD}-{NNNNNN}" className="flex-1" />
                     )}
                     <div className="flex items-center gap-2 shrink-0">
-                      <Checkbox label="Código de envío" checked={proceso.usaCodigoEnvio} onChange={(v: boolean) => store.setUsaCodigoEnvio(v)} />
+                      <Checkbox label="CÃ³digo de envÃ­o" checked={proceso.usaCodigoEnvio} onChange={(v: boolean) => store.setUsaCodigoEnvio(v)} />
                     </div>
                     {proceso.usaCodigoEnvio && (
                       <Input value={proceso.codigoEnvioFormato} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setCodigoEnvioFormato(e.target.value)} placeholder="Ej: ENV-{YYYYMMDD}-{NNNNNN}" className="flex-1" />
                     )}
                   </div>
                   <p className="text-[10px] text-[var(--color-neutro-400)] italic mt-2">
-                    <span className="font-mono">{`{YYYY}`}</span> año, <span className="font-mono">{`{MM}`}</span> mes, <span className="font-mono">{`{DD}`}</span> día, <span className="font-mono">{`{N}`}</span> número secuencial
+                    <span className="font-mono">{`{YYYY}`}</span> aÃ±o, <span className="font-mono">{`{MM}`}</span> mes, <span className="font-mono">{`{DD}`}</span> dÃ­a, <span className="font-mono">{`{N}`}</span> nÃºmero secuencial
                   </p>
                 </div>
               </div>
@@ -1211,7 +1161,7 @@ function ProductosTab() {
         {!isViewingSaved && (
           <div className="shrink-0">
             <Button className="w-full !justify-center !bg-[var(--color-verde-100)] !text-white" size="sm" iconLeft={<Save className="w-4 h-4" />} onClick={store.finalizeProceso}>
-              Guardar Operación
+              Guardar OperaciÃ³n
             </Button>
           </div>
         )}
@@ -1224,7 +1174,7 @@ function ProductosTab() {
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-[var(--color-neutro-400)]">Inicial</span>
             <span className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="mx-1 text-[var(--color-neutro-300)]">···</span>
+            <span className="mx-1 text-[var(--color-neutro-300)]">Â·Â·Â·</span>
             <span className="w-3 h-3 rounded-full bg-red-400" />
             <span className="text-[10px] text-[var(--color-neutro-400)]">Terminal</span>
           </div>
@@ -1272,7 +1222,55 @@ function ProductosTab() {
   );
 }
 
-/* ── Estado Card (simplified StepCard) ── */
+/* â”€â”€ Eventos Contables Tab â”€â”€ */
+function EventosContablesTab() {
+  return (
+    <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="px-4 py-3 border-b border-[var(--color-neutro-200)]">
+        <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Eventos Contables</p>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <FileText className="w-12 h-12 text-[var(--color-neutro-300)] mb-3" />
+        <p className="text-[14px] font-medium text-[var(--color-neutro-500)]">MÃ³dulo de Contabilidad</p>
+        <p className="text-[12px] text-[var(--color-neutro-400)] mt-1">
+          Los eventos contables estarÃ¡n disponibles cuando el mÃ³dulo de Contabilidad estÃ© activo.
+        </p>
+        <p className="text-[11px] text-[var(--color-neutro-400)] mt-4 italic">
+          Para configurar, activa el mÃ³dulo de Contabilidad en la configuraciÃ³n del sistema.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* â”€â”€ Productos Tab â”€â”€ */
+function ProductosTab() {
+  return (
+    <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="px-4 py-3 border-b border-[var(--color-neutro-200)]">
+        <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Productos</p>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--color-neutro-200)]">
+              <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Valor</th>
+              <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PRODUCTOS.map((p) => (
+              <tr key={p.value} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
+                <td className="px-3 py-2.5 font-mono text-[12px] text-[var(--color-neutro-700)]">{p.value}</td>
+                <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{p.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 function EstadoCard({
   step, index, isActive, isFirst, isLast, isDragging, showDropBefore,
   readOnly = false,
@@ -1355,7 +1353,7 @@ function EstadoCard({
               )}
               {step.camposSeleccionados.length > 0 && (
                 <span className="flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-corner-m bg-purple-100 text-purple-700">
-                  <span>📋</span> {step.camposSeleccionados.length}
+                  <span>ðŸ“‹</span> {step.camposSeleccionados.length}
                 </span>
               )}
               {!readOnly && (
@@ -1373,7 +1371,7 @@ function EstadoCard({
 
           <div className="flex items-center gap-3 mt-1.5 ml-14">
             {responsable && <span className="text-[11px] text-[var(--color-neutro-500)]"><span className="font-medium">{responsable.label}</span></span>}
-            {step.transferenciaCarga && <span className="text-[11px] font-medium text-[var(--color-verde-100)]">↳ {step.transferenciaCarga === "entrega" ? "Entrega carga" : "Recibe carga"}</span>}
+            {step.transferenciaCarga && <span className="text-[11px] font-medium text-[var(--color-verde-100)]">â†³ {step.transferenciaCarga === "entrega" ? "Entrega carga" : "Recibe carga"}</span>}
             {step.requiereAprobacion && <span className="text-[11px] font-medium text-blue-600">Apr. {step.tipoAprobacion === "central" ? "Central" : "Agencia"}</span>}
           </div>
 
@@ -1404,7 +1402,7 @@ function EstadoCard({
                         <span className={`flex-1 text-[12px] font-medium ${exc.esTerminal ? "text-red-800" : "text-amber-800"}`}>{exc.nombre}</span>
                         {exc.inventario !== "ninguno" && (
                           <span className={`text-[9px] font-semibold px-1 py-0.5 rounded-corner-m ${exc.inventario === "debita" ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
-                            {exc.inventario === "debita" ? "−" : "+"}{exc.unidadInventario === "emisora" ? " Emi" : exc.unidadInventario === "receptora" ? " Rec" : ""}
+                            {exc.inventario === "debita" ? "âˆ’" : "+"}{exc.unidadInventario === "emisora" ? " Emi" : exc.unidadInventario === "receptora" ? " Rec" : ""}
                           </span>
                         )}
                         {exc.requiereAprobacion && <span className="text-[9px] font-semibold px-1 py-0.5 rounded-corner-m bg-blue-100 text-blue-600">Apr.</span>}
@@ -1428,7 +1426,7 @@ function EstadoCard({
                       {(excResponsable || exc.transferenciaCarga || exc.timeoutMinutos > 0) && (
                         <div className="flex items-center gap-2 mt-1 ml-5">
                           {excResponsable && <span className="text-[10px] text-[var(--color-neutro-500)]">{excResponsable.label}</span>}
-                          {exc.transferenciaCarga && <span className="text-[10px] font-medium text-[var(--color-verde-100)]">↳ {exc.transferenciaCarga === "entrega" ? "Entrega" : "Recepción"}</span>}
+                          {exc.transferenciaCarga && <span className="text-[10px] font-medium text-[var(--color-verde-100)]">â†³ {exc.transferenciaCarga === "entrega" ? "Entrega" : "RecepciÃ³n"}</span>}
                           {exc.timeoutMinutos > 0 && <span className="flex items-center gap-0.5 text-[10px] text-amber-600"><Clock className="w-2.5 h-2.5" />{exc.timeoutMinutos}m</span>}
                         </div>
                       )}
@@ -1444,8 +1442,8 @@ function EstadoCard({
   );
 }
 
-/* ── Property Inspector ── */
-const CATEGORIAS_OPERACIONES = ["Traslado", "Conteo", "Manipulación", "Custodia"];
+/* â”€â”€ Property Inspector â”€â”€ */
+const CATEGORIAS_OPERACIONES = ["Traslado", "Conteo", "ManipulaciÃ³n", "Custodia"];
 
 function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, usaTransportista = false }: { step: TransaccionStep; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean; usaTransportista?: boolean }) {
   const { updateStepProperty, toggleServicioCategoriaEnStep } = useTransaccionesStore();
@@ -1457,9 +1455,9 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
   return (
     <div className="p-3 space-y-3 overflow-y-auto flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
 
-      {/* ── General ── */}
+      {/* â”€â”€ General â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
-        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Información General</p>
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">InformaciÃ³n General</p>
         <div>
           {readOnly ? (
             <p className="text-[14px] font-bold text-[var(--color-neutro-900)]">{step.nombre}</p>
@@ -1469,9 +1467,9 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         </div>
       </div>
 
-      {/* ── Operational ── */}
+      {/* â”€â”€ Operational â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
-        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Configuración Operativa</p>
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">ConfiguraciÃ³n Operativa</p>
 
         <div>
           <p className={labelClass}>Descuento de Inventario</p>
@@ -1479,7 +1477,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
             <p className={valueClass}>
               {TIPOS_INVENTARIO.find((e) => e.value === step.inventario)?.label ?? step.inventario}
               {step.inventario !== "ninguno" && step.unidadInventario && (
-                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_INVENTARIO.find((u) => u.value === step.unidadInventario)?.label ?? step.unidadInventario}</span>
+                <span className="ml-1 text-[var(--color-neutro-500)]">â€” {UNIDADES_INVENTARIO.find((u) => u.value === step.unidadInventario)?.label ?? step.unidadInventario}</span>
               )}
             </p>
           ) : (
@@ -1500,7 +1498,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         <div>
           <p className={labelClass}>Evento Contable</p>
           <div className="text-[13px] px-2.5 py-1.5 rounded-corner-m bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] border border-dashed border-[var(--color-neutro-300)]">
-            Disponible en módulo de Contabilidad
+            Disponible en mÃ³dulo de Contabilidad
           </div>
         </div>
 
@@ -1532,12 +1530,12 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         </div>
       </div>
 
-      {/* ── Control ── */}
+      {/* â”€â”€ Control â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
         <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Control de Flujo</p>
 
         <div>
-          <p className={labelClass}>Aprobación</p>
+          <p className={labelClass}>AprobaciÃ³n</p>
           {readOnly ? (
             <p className={valueClass}>{TIPOS_APROBACION.find((t) => t.value === step.tipoAprobacion)?.label ?? step.tipoAprobacion}</p>
           ) : (
@@ -1549,19 +1547,19 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         </div>
 
         <div>
-          <p className={labelClass}>Tiempo máximo (minutos)</p>
+          <p className={labelClass}>Tiempo mÃ¡ximo (minutos)</p>
           {readOnly ? (
-            <p className={valueClass}>{step.timeoutMinutos > 0 ? `${step.timeoutMinutos} min` : "Sin límite"}</p>
+            <p className={valueClass}>{step.timeoutMinutos > 0 ? `${step.timeoutMinutos} min` : "Sin lÃ­mite"}</p>
           ) : (
             <div className="flex items-center gap-2">
               <Input type="number" value={step.timeoutMinutos} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateStepProperty(sid, "timeoutMinutos", Number(e.target.value))} className="flex-1" />
-              <span className="text-[12px] text-[var(--color-neutro-500)]">0 = sin límite</span>
+              <span className="text-[12px] text-[var(--color-neutro-500)]">0 = sin lÃ­mite</span>
             </div>
           )}
           {step.timeoutMinutos > 0 && (
             <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              Se levantará alerta si supera los {step.timeoutMinutos} minutos
+              Se levantarÃ¡ alerta si supera los {step.timeoutMinutos} minutos
             </p>
           )}
         </div>
@@ -1573,7 +1571,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
               {step.bloqueoSaldo ? (
                 <span className="flex items-center gap-1 text-amber-700">
                   <Lock className="w-3.5 h-3.5" />
-                  Bloquea saldo al entrar — las excepciones que retrocedan deben desbloquear
+                  Bloquea saldo al entrar â€” las excepciones que retrocedan deben desbloquear
                 </span>
               ) : "Sin bloqueo de saldo"}
             </p>
@@ -1585,7 +1583,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
           )}
           {step.bloqueoSaldo && (
             <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
-              Las excepciones que retrocedan desde este estado deberán desbloquear el saldo
+              Las excepciones que retrocedan desde este estado deberÃ¡n desbloquear el saldo
             </p>
           )}
         </div>
@@ -1597,7 +1595,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
               {step.esTerminal ? (
                 <span className="flex items-center gap-1 text-green-700">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  Estado terminal — al llegar aquí la transacción finaliza
+                  Estado terminal â€” al llegar aquÃ­ la transacciÃ³n finaliza
                 </span>
               ) : "No es terminal"}
             </p>
@@ -1610,7 +1608,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         </div>
       </div>
 
-      {/* ── Data Capture ── */}
+      {/* â”€â”€ Data Capture â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
         <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Captura de Datos</p>
 
@@ -1618,7 +1616,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
           {readOnly ? (
             <div>
               <p className={labelClass}>Variables</p>
-              <p className={valueClass}>{step.requiereVariables ? (step.variables || "Sí (sin especificar)") : "No requiere"}</p>
+              <p className={valueClass}>{step.requiereVariables ? (step.variables || "SÃ­ (sin especificar)") : "No requiere"}</p>
             </div>
           ) : (
             <>
@@ -1629,7 +1627,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
               {step.requiereVariables && (
                 <input value={step.variables} onChange={(e) => updateStepProperty(sid, "variables", e.target.value)}
                   className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
-                  placeholder="Ej: Número de precinto, peso, lote..." />
+                  placeholder="Ej: NÃºmero de precinto, peso, lote..." />
               )}
             </>
           )}
@@ -1638,16 +1636,16 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         <CamposFormularioSection stepId={step.id} camposSeleccionados={step.camposSeleccionados} origenTipo={origenTipo} destinoTipo={destinoTipo} readOnly={readOnly} usaTransportista={usaTransportista} />
       </div>
 
-      {/* ── Servicios ── */}
+      {/* â”€â”€ Servicios â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
         <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Servicios al Avanzar</p>
         {(() => {
           const cats = CATEGORIAS_OPERACIONES.filter((cat) => {
             if (cat === "Traslado" && !usaTransportista) return false;
-            if (cat === "Manipulación" && !step.transferenciaCarga) return false;
+            if (cat === "ManipulaciÃ³n" && !step.transferenciaCarga) return false;
             return true;
           });
-          if (cats.length === 0) return <p className="text-[12px] text-[var(--color-neutro-400)]">No hay categorías de servicio disponibles</p>;
+          if (cats.length === 0) return <p className="text-[12px] text-[var(--color-neutro-400)]">No hay categorÃ­as de servicio disponibles</p>;
           return (
             <div className="space-y-1 max-h-48 overflow-y-auto">
               {cats.map((cat) => {
@@ -1672,7 +1670,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
   );
 }
 
-/* ── Exception Property Inspector ── */
+/* â”€â”€ Exception Property Inspector â”€â”€ */
 function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps }: { exception: Excepcion; stepId: string; readOnly?: boolean; steps?: TransaccionStep[] }) {
   const { updateExcepcionProperty, setExcepcionTerminal } = useTransaccionesStore();
   const eid = exception.id;
@@ -1696,7 +1694,7 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
   return (
     <div className="p-3 space-y-3 overflow-y-auto flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-center gap-2 bg-[var(--color-neutro-50)] rounded-corner-m p-3">
         {exception.esTerminal ? <OctagonX className="w-5 h-5 text-red-500 shrink-0" /> : <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />}
         <div className="flex-1 min-w-0">
@@ -1711,14 +1709,14 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
         </div>
       </div>
 
-      {/* ── Terminal / Fin ── */}
+      {/* â”€â”€ Terminal / Fin â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3">
         {readOnly ? (
           <div>
             <p className={labelClass}>Comportamiento</p>
             <p className={valueClass}>
               {exception.esTerminal
-                ? "Finaliza la transacción (estado terminal)"
+                ? "Finaliza la transacciÃ³n (estado terminal)"
                 : pasoDestino
                   ? `Retrocede al estado "${pasoDestino.nombre}"`
                   : "Solo registra la ruta, no altera el flujo"}
@@ -1733,13 +1731,13 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
             }} />
             <div>
               <span className="text-[13px] text-[var(--color-neutro-700)]">Estado terminal</span>
-              <p className="text-[10px] text-[var(--color-neutro-400)]">Finaliza la transacción al activarse</p>
+              <p className="text-[10px] text-[var(--color-neutro-400)]">Finaliza la transacciÃ³n al activarse</p>
             </div>
           </label>
         )}
       </div>
 
-      {/* ── Retroceso ── (only if NOT terminal) */}
+      {/* â”€â”€ Retroceso â”€â”€ (only if NOT terminal) */}
       {!exception.esTerminal && pasosAnteriores.length > 0 && (
         <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
           <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide flex items-center gap-1.5">
@@ -1754,14 +1752,14 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
                 }} />
               <div>
                 <span className="text-[13px] text-[var(--color-neutro-700)]">Volver al estado anterior</span>
-                <p className="text-[10px] text-[var(--color-neutro-400)]">La transacción retrocederá a &quot;{pasoAnterior.nombre}&quot;</p>
+                <p className="text-[10px] text-[var(--color-neutro-400)]">La transacciÃ³n retrocederÃ¡ a &quot;{pasoAnterior.nombre}&quot;</p>
               </div>
             </label>
           )}
 
           {!readOnly && (
             <div>
-              <p className="text-[11px] text-[var(--color-neutro-500)] mb-1">O retroceder a un estado específico:</p>
+              <p className="text-[11px] text-[var(--color-neutro-500)] mb-1">O retroceder a un estado especÃ­fico:</p>
               <Select
                 options={retrocedeOptions}
                 value={exception.retrocedeA ?? ""}
@@ -1770,7 +1768,7 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
               {exception.retrocedeA && pasoDestino && (
                 <p className="text-[11px] text-blue-600 mt-1 flex items-center gap-1">
                   <Undo2 className="w-3 h-3" />
-                  La transacción volverá al estado &quot;{pasoDestino.nombre}&quot;
+                  La transacciÃ³n volverÃ¡ al estado &quot;{pasoDestino.nombre}&quot;
                 </p>
               )}
             </div>
@@ -1786,9 +1784,9 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
         </div>
       )}
 
-      {/* ── Operational ── */}
+      {/* â”€â”€ Operational â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
-        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Configuración Operativa</p>
+        <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">ConfiguraciÃ³n Operativa</p>
 
         <div>
           <p className={labelClass}>Descuento de Inventario</p>
@@ -1796,7 +1794,7 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
             <p className={valueClass}>
               {TIPOS_INVENTARIO.find((e) => e.value === exception.inventario)?.label ?? exception.inventario}
               {exception.inventario !== "ninguno" && exception.unidadInventario && (
-                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_INVENTARIO.find((u) => u.value === exception.unidadInventario)?.label ?? exception.unidadInventario}</span>
+                <span className="ml-1 text-[var(--color-neutro-500)]">â€” {UNIDADES_INVENTARIO.find((u) => u.value === exception.unidadInventario)?.label ?? exception.unidadInventario}</span>
               )}
             </p>
           ) : (
@@ -1817,7 +1815,7 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
         <div>
           <p className={labelClass}>Evento Contable</p>
           <div className="text-[13px] px-2.5 py-1.5 rounded-corner-m bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] border border-dashed border-[var(--color-neutro-300)]">
-            Disponible en módulo de Contabilidad
+            Disponible en mÃ³dulo de Contabilidad
           </div>
         </div>
 
@@ -1849,12 +1847,12 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
         </div>
       </div>
 
-      {/* ── Control ── */}
+      {/* â”€â”€ Control â”€â”€ */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
         <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Control de Flujo</p>
 
         <div>
-          <p className={labelClass}>Aprobación</p>
+          <p className={labelClass}>AprobaciÃ³n</p>
           {readOnly ? (
             <p className={valueClass}>{TIPOS_APROBACION.find((t) => t.value === exception.tipoAprobacion)?.label ?? exception.tipoAprobacion}</p>
           ) : (
@@ -1866,9 +1864,9 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
         </div>
 
         <div>
-          <p className={labelClass}>Tiempo máximo (minutos)</p>
+          <p className={labelClass}>Tiempo mÃ¡ximo (minutos)</p>
           {readOnly ? (
-            <p className={valueClass}>{exception.timeoutMinutos > 0 ? `${exception.timeoutMinutos} min` : "Sin límite"}</p>
+            <p className={valueClass}>{exception.timeoutMinutos > 0 ? `${exception.timeoutMinutos} min` : "Sin lÃ­mite"}</p>
           ) : (
             <>
               <Input type="number" value={exception.timeoutMinutos} onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateExcepcionProperty(stepId, eid, "timeoutMinutos", Number(e.target.value))} />
@@ -1886,12 +1884,12 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
   );
 }
 
-/* ── Campos del formulario section ── */
+/* â”€â”€ Campos del formulario section â”€â”€ */
 function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, destinoTipo, readOnly = false, usaTransportista = false }: { stepId: string; camposSeleccionados: string[]; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean; usaTransportista?: boolean }) {
   const { toggleCampoSeleccionado } = useTransaccionesStore();
 
   const tiposUnidad = [origenTipo, destinoTipo].filter((t): t is string => t !== null);
-  if (usaTransportista && !tiposUnidad.includes("Camión")) tiposUnidad.push("Camión");
+  if (usaTransportista && !tiposUnidad.includes("CamiÃ³n")) tiposUnidad.push("CamiÃ³n");
   const camposDisponibles = CAMPOS_PREDEFINIDOS.filter((c) =>
     c.aplicableA.some((t) => tiposUnidad.includes(t))
   );
@@ -1945,7 +1943,7 @@ function CamposFormularioSection({ stepId, camposSeleccionados, origenTipo, dest
   );
 }
 
-/* ── New Operation Dialog ── */
+/* â”€â”€ New Operation Dialog â”€â”€ */
 function NewOperationDialog({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (vals: { nombre: string; tipoCarga: string; ambito: "interna" | "entre-agencias" | "externa"; modoIngreso: "fajos" | "piezas"; origenTipo: string | null; destinoTipo: string | null }) => void }) {
   const [nombre, setNombre] = useState("");
   const [tipoCarga, setTipoCarga] = useState("remesas");
@@ -1955,28 +1953,28 @@ function NewOperationDialog({ open, onClose, onCreate }: { open: boolean; onClos
   const [destinoTipo, setDestinoTipo] = useState("");
 
   return (
-    <Modal open={open} onClose={onClose} title="Nueva Operación" size="md"
+    <Modal open={open} onClose={onClose} title="Nueva OperaciÃ³n" size="md"
       actions={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button onClick={() => {
             if (!nombre.trim()) return;
             onCreate({ nombre: nombre.trim(), tipoCarga, ambito, modoIngreso, origenTipo: origenTipo || null, destinoTipo: destinoTipo || null });
-          }} disabled={!nombre.trim()}>Crear Operación</Button>
+          }} disabled={!nombre.trim()}>Crear OperaciÃ³n</Button>
         </div>
       }
     >
       <div className="space-y-4">
         <div>
-          <p className="text-[13px] font-semibold text-[var(--color-neutro-700)] mb-1">Nombre de la Operación *</p>
-          <Input value={nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)} placeholder="Ej: Envío de Remesa" />
+          <p className="text-[13px] font-semibold text-[var(--color-neutro-700)] mb-1">Nombre de la OperaciÃ³n *</p>
+          <Input value={nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNombre(e.target.value)} placeholder="Ej: EnvÃ­o de Remesa" />
         </div>
         <div>
           <p className="text-[13px] font-semibold text-[var(--color-neutro-700)] mb-1">Tipo de Carga</p>
           <Select options={TIPOS_CARGA} value={tipoCarga} onChange={(v: string) => setTipoCarga(v)} />
         </div>
         <div>
-          <p className="text-[13px] font-semibold text-[var(--color-neutro-700)] mb-1">Ámbito</p>
+          <p className="text-[13px] font-semibold text-[var(--color-neutro-700)] mb-1">Ãmbito</p>
           <Select options={AMBITOS} value={ambito} onChange={(v: string) => setAmbito(v as "interna" | "entre-agencias" | "externa")} />
         </div>
         <div className="flex gap-3">
@@ -2001,7 +1999,7 @@ function NewOperationDialog({ open, onClose, onCreate }: { open: boolean; onClos
   );
 }
 
-/* ── Group Dialog ── */
+/* â”€â”€ Group Dialog â”€â”€ */
 const GROUP_COLORS = ["#2563EB", "#7C3AED", "#DC2626", "#EA580C", "#D97706", "#65A30D", "#059669", "#0891B2", "#4F46E5", "#DB2777", "#78716C", "#A8A29E"];
 
 function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones, onAddGrupo, onUpdateGrupo, onRemoveGrupo, onMoveOperacion, onClose }: {
@@ -2094,7 +2092,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
                     </div>
                     {unassignedOps.length > 0 && (
                       <div>
-                        <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] mb-1">Agregar operación</p>
+                        <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] mb-1">Agregar operaciÃ³n</p>
                         <div className="space-y-1 max-h-[120px] overflow-y-auto">
                           {unassignedOps.map((p) => (
                             <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--color-neutro-50)] cursor-pointer">
@@ -2121,7 +2119,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
                     <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)] hover:text-blue-600 transition-colors cursor-pointer" title="Editar" onClick={() => startEdit(g.id)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
-                    <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer" title="Eliminar" onClick={() => { if (window.confirm(`¿Eliminar el grupo "${g.nombre}"? Las operaciones no se eliminarán.`)) { onRemoveGrupo(g.id); } }}>
+                    <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer" title="Eliminar" onClick={() => { if (window.confirm(`Â¿Eliminar el grupo "${g.nombre}"? Las operaciones no se eliminarÃ¡n.`)) { onRemoveGrupo(g.id); } }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -2187,7 +2185,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
   );
 }
 
-/* ── Divisa Selector ── */
+/* â”€â”€ Divisa Selector â”€â”€ */
 function DivisaSelector({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) => void }) {
   const { divisas } = useDivisasStore();
   return (
@@ -2207,7 +2205,7 @@ function DivisaSelector({ ids, onChange }: { ids: string[]; onChange: (ids: stri
   );
 }
 
-/* ── Contabilidad Tab ── */
+/* â”€â”€ Contabilidad Tab â”€â”€ */
 interface CuentaContable {
   id: string;
   codigo: string;
@@ -2217,25 +2215,25 @@ interface CuentaContable {
 }
 
 const CUENTAS_MOCK: CuentaContable[] = [
-  { id: "c1", codigo: "1.1.01.001", nombre: "Efectivo en Bóveda", tipo: "deudora", descripcion: "Disponibilidades en bóveda central" },
-  { id: "c2", codigo: "1.1.01.002", nombre: "Efectivo en ATM", tipo: "deudora", descripcion: "Efectivo cargado en cajeros automáticos" },
-  { id: "c3", codigo: "1.1.01.003", nombre: "Efectivo en Tránsito", tipo: "deudora", descripcion: "Remesas en tránsito entre agencias" },
-  { id: "c4", codigo: "1.1.02.001", nombre: "Depósitos en Banco Central", tipo: "deudora", descripcion: "Depósitos de reserva en Banco Central" },
-  { id: "c5", codigo: "1.2.01.001", nombre: "Inversiones en Valores", tipo: "deudora", descripcion: "Inversiones en títulos valores" },
+  { id: "c1", codigo: "1.1.01.001", nombre: "Efectivo en BÃ³veda", tipo: "deudora", descripcion: "Disponibilidades en bÃ³veda central" },
+  { id: "c2", codigo: "1.1.01.002", nombre: "Efectivo en ATM", tipo: "deudora", descripcion: "Efectivo cargado en cajeros automÃ¡ticos" },
+  { id: "c3", codigo: "1.1.01.003", nombre: "Efectivo en TrÃ¡nsito", tipo: "deudora", descripcion: "Remesas en trÃ¡nsito entre agencias" },
+  { id: "c4", codigo: "1.1.02.001", nombre: "DepÃ³sitos en Banco Central", tipo: "deudora", descripcion: "DepÃ³sitos de reserva en Banco Central" },
+  { id: "c5", codigo: "1.2.01.001", nombre: "Inversiones en Valores", tipo: "deudora", descripcion: "Inversiones en tÃ­tulos valores" },
   { id: "c6", codigo: "1.3.01.001", nombre: "Cuentas por Cobrar", tipo: "deudora", descripcion: "Operaciones por cobrar a clientes" },
-  { id: "c7", codigo: "2.1.01.001", nombre: "Depósitos de Clientes", tipo: "acreedora", descripcion: "Obligaciones por depósitos recibidos" },
-  { id: "c8", codigo: "2.1.01.002", nombre: "Remesas por Liquidar", tipo: "acreedora", descripcion: "Remesas pendientes de liquidación" },
+  { id: "c7", codigo: "2.1.01.001", nombre: "DepÃ³sitos de Clientes", tipo: "acreedora", descripcion: "Obligaciones por depÃ³sitos recibidos" },
+  { id: "c8", codigo: "2.1.01.002", nombre: "Remesas por Liquidar", tipo: "acreedora", descripcion: "Remesas pendientes de liquidaciÃ³n" },
   { id: "c9", codigo: "2.2.01.001", nombre: "Proveedores Varios", tipo: "acreedora", descripcion: "Obligaciones con proveedores" },
   { id: "c10", codigo: "3.1.01.001", nombre: "Capital Social", tipo: "acreedora", descripcion: "Capital suscrito y pagado" },
   { id: "c11", codigo: "4.1.01.001", nombre: "Ingresos por Comisiones", tipo: "acreedora", descripcion: "Comisiones cobradas por servicios" },
   { id: "c12", codigo: "4.1.02.001", nombre: "Diferencial Cambiario", tipo: "acreedora", descripcion: "Ganancia por diferencia en tipo de cambio" },
   { id: "c13", codigo: "5.1.01.001", nombre: "Gastos por Servicios", tipo: "deudora", descripcion: "Gastos operativos y de servicios" },
-  { id: "c14", codigo: "5.1.02.001", nombre: "Pérdida Cambiaria", tipo: "deudora", descripcion: "Pérdida por diferencia en tipo de cambio" },
+  { id: "c14", codigo: "5.1.02.001", nombre: "PÃ©rdida Cambiaria", tipo: "deudora", descripcion: "PÃ©rdida por diferencia en tipo de cambio" },
   { id: "c15", codigo: "5.2.01.001", nombre: "Gastos de Transporte", tipo: "deudora", descripcion: "Gastos por servicio de transporte de valores" },
   { id: "c16", codigo: "8.1.01.001", nombre: "Valores Custodiados (Deudora)", tipo: "orden", descripcion: "Control de valores recibidos en custodia" },
   { id: "c17", codigo: "8.1.01.002", nombre: "Valores Custodiados (Acreedora)", tipo: "orden", descripcion: "Contrapartida de valores en custodia" },
-  { id: "c18", codigo: "8.2.01.001", nombre: "Garantías Recibidas (Deudora)", tipo: "orden", descripcion: "Garantías recibidas de clientes" },
-  { id: "c19", codigo: "8.2.01.002", nombre: "Garantías Recibidas (Acreedora)", tipo: "orden", descripcion: "Contrapartida de garantías recibidas" },
+  { id: "c18", codigo: "8.2.01.001", nombre: "GarantÃ­as Recibidas (Deudora)", tipo: "orden", descripcion: "GarantÃ­as recibidas de clientes" },
+  { id: "c19", codigo: "8.2.01.002", nombre: "GarantÃ­as Recibidas (Acreedora)", tipo: "orden", descripcion: "Contrapartida de garantÃ­as recibidas" },
   { id: "c20", codigo: "8.3.01.001", nombre: "Bienes en Comodato (Deudora)", tipo: "orden", descripcion: "Bienes recibidos en comodato" },
   { id: "c21", codigo: "8.3.01.002", nombre: "Bienes en Comodato (Acreedora)", tipo: "orden", descripcion: "Contrapartida de bienes en comodato" },
 ];
@@ -2281,7 +2279,7 @@ function ContabilidadTab() {
     <div className="flex-1 flex gap-4 min-h-0">
       <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-neutro-200)]">
-          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Catálogo de Cuentas Contables</p>
+          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">CatÃ¡logo de Cuentas Contables</p>
           <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setShowForm(true); setEditId(null); setForm({ id: "", codigo: "", nombre: "", tipo: "deudora", descripcion: "" }); }}>
             Agregar Cuenta
           </Button>
@@ -2290,10 +2288,10 @@ function ContabilidadTab() {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[var(--color-neutro-200)]">
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Código</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">CÃ³digo</th>
                 <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
                 <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Tipo</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Descripción</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">DescripciÃ³n</th>
                 <th className="w-20 px-3 py-2" />
               </tr>
             </thead>
@@ -2342,7 +2340,7 @@ function ContabilidadTab() {
           </div>
           <div className="p-4 space-y-4 overflow-y-auto flex-1">
             <div>
-              <p className={labelClass}>Código</p>
+              <p className={labelClass}>CÃ³digo</p>
               <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })}
                 className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white font-mono"
                 placeholder="Ej: 1.1.01.001" />
@@ -2371,10 +2369,10 @@ function ContabilidadTab() {
               </div>
             </div>
             <div>
-              <p className={labelClass}>Descripción</p>
+              <p className={labelClass}>DescripciÃ³n</p>
               <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                 className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white resize-none"
-                rows={3} placeholder="Descripción opcional" />
+                rows={3} placeholder="DescripciÃ³n opcional" />
             </div>
           </div>
           <div className="p-4 border-t border-[var(--color-neutro-200)]">
