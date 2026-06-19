@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { CalendarDays, CheckCircle2, XCircle, Download } from "lucide-react";
 import { IntegrationCard } from "./components/IntegrationCard";
 import { MetricsModal } from "./components/MetricsModal";
+import { CurrencyConfigModal } from "./components/CurrencyConfigModal";
 import { INTEGRACIONES_MOCK } from "./data/integracionesMocks";
 import { SUDEBAN_2026, type SudebanEntry } from "./data/sudeban2026";
 import { importSudeban2026 } from "../../../services/sudebanCalendar";
@@ -59,6 +60,7 @@ export function PanelIntegraciones() {
   const [metricsTarget, setMetricsTarget] = useState<IntegrationItem | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [currencyConfigOpen, setCurrencyConfigOpen] = useState(false);
   const calendarioStore = useCalendarioStore();
   const [logsState, setLogsState] = useState<Record<string, LogEntry[]>>(() => {
     const map: Record<string, LogEntry[]> = {};
@@ -242,6 +244,7 @@ export function PanelIntegraciones() {
                 onMetrics={() => setMetricsTarget(item)}
                 onLogs={() => setLogsTarget(item)}
                 onImport={item.id === "int-sudeban" ? () => setImportConfirm(true) : undefined}
+                onConfigurar={item.id === "int-divisas" ? () => setCurrencyConfigOpen(true) : undefined}
               />
             ))}
           </div>
@@ -302,6 +305,11 @@ export function PanelIntegraciones() {
           </div>
         </Dialog>
       )}
+
+      <CurrencyConfigModal
+        open={currencyConfigOpen}
+        onClose={() => setCurrencyConfigOpen(false)}
+      />
 
       {importResult && (
         <Dialog

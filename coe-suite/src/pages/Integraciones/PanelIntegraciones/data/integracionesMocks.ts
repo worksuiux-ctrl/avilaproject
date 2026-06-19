@@ -46,4 +46,13 @@ export const INTEGRACIONES_MOCK: IntegrationItem[] = [
     icon: "CalendarDays",
     color: "#c0392b",
   },
+  {
+    id: "int-divisas",
+    nombre: "API de Divisas — Currency Denominations",
+    descripcion: "Librería de denominaciones monetarias globales con más de 170 divisas. Seleccione las monedas que desea habilitar en el módulo de Gestión de Divisas con sus billetes y monedas oficiales.",
+    tipo: "API / Librería",
+    estado: "Activo",
+    icon: "DollarSign",
+    color: "#0d9ddb",
+  },
 ];

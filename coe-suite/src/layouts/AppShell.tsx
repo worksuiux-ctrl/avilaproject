@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { CoengineWidget } from "../components/coengine/CoengineWidget";
 
 export function AppShell() {
   return (
@@ -21,6 +22,7 @@ export function AppShell() {
         <main className="flex-1 overflow-y-auto p-5 px-6 relative z-10">
           <Outlet />
         </main>
+        <CoengineWidget />
       </div>
     </div>
   );

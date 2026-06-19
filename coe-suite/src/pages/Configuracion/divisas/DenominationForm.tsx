@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button, Input, Select, Checkbox } from "@coe/design-system";
+import { toast } from "sonner";
 import { useDivisasStore, TIPOS_DENOMINACION } from "@stores/divisasStore";
 import { Modal } from "@components/ui/Modal";
+import { isValidDenomination } from "@services/currencyIntegrationService";
 
 interface DenominationFormProps {
   open: boolean;
@@ -13,6 +15,7 @@ interface DenominationFormProps {
 export function DenominationForm({ open, onClose, editId, divisaId }: DenominationFormProps) {
   const store = useDivisasStore();
   const existing = editId ? store.denominaciones.find((d) => d.id === editId) : null;
+  const divisa = store.divisas.find((d) => d.id === divisaId);
 
   const [form, setForm] = useState({
     nombre: "",
@@ -46,6 +49,12 @@ export function DenominationForm({ open, onClose, editId, divisaId }: Denominati
 
   function handleSave() {
     if (!form.nombre || form.valor <= 0) return;
+    if (!editId && divisa) {
+      const known = isValidDenomination(divisa.codigoISO, form.valor, form.tipo);
+      if (!known) {
+        toast.warning(`${form.tipo} valor ${form.valor} no existe para ${divisa.codigoISO} en la API de divisas. Se creará bajo su responsabilidad.`);
+      }
+    }
     const data = {
       divisaId,
       nombre: form.nombre,
@@ -60,6 +69,7 @@ export function DenominationForm({ open, onClose, editId, divisaId }: Denominati
     };
     if (editId) store.updateDenominacion(editId, data);
     else store.addDenominacion(data);
+    toast.success(editId ? "Denominación actualizada" : "Denominación creada correctamente");
     onClose();
   }
 
