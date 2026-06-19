@@ -364,7 +364,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
     },
     {
       id: "grupo-valores",
-      nombre: "Valores",
+      nombre: "Operaciones Agencia",
       color: "#7C3AED",
       operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"],
     },
@@ -947,7 +947,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         // Update grupos
         (state as any).gruposOperaciones = [
           { id: "grupo-remesas", nombre: "Remesas", color: "#2563EB", operacionIds: ["demo-remesa-agencia", "demo-remesa-banco", "demo-efectivo-cliente"] },
-          { id: "grupo-valores", nombre: "Valores", color: "#7C3AED", operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"] },
+          { id: "grupo-valores", nombre: "Operaciones Agencia", color: "#7C3AED", operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"] },
           { id: "grupo-cambios", nombre: "Cambios", color: "#F59E0B", operacionIds: ["demo-mesa-cambios"] },
         ];
       }
@@ -956,7 +956,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       if (!(state as any).gruposOperaciones) {
         (state as any).gruposOperaciones = [
           { id: "grupo-remesas", nombre: "Remesas", color: "#2563EB", operacionIds: ["demo-remesa-agencia"] },
-          { id: "grupo-valores", nombre: "Valores", color: "#7C3AED", operacionIds: ["demo-boveda-caja"] },
+          { id: "grupo-valores", nombre: "Operaciones Agencia", color: "#7C3AED", operacionIds: ["demo-boveda-caja"] },
         ];
       }
     }

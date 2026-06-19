@@ -730,7 +730,7 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
           <p className="text-[14px] font-semibold text-[var(--color-neutro-900)]">Seleccione una operación</p>
           <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
         </div>
-        <div className="overflow-y-auto max-h-[60vh] space-y-8 outline-none p-[5px]" tabIndex={-1}>
+        <div className="overflow-y-auto max-h-[60vh] space-y-8 outline-none p-2" tabIndex={-1}>
           {gruposOperaciones.map((grupo) => {
             const ops = grupo.operacionIds
               .map((oid) => templates.find((t) => t.id === oid))
