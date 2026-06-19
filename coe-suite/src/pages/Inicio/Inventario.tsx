@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { ChevronDown, ChevronUp, GripVertical, Plus } from "lucide-react";
-import { Button, Select } from "@coe/design-system";
+import { Button, Select, Dialog } from "@coe/design-system";
 import { EntityTree } from "@components/entities";
 import { useEntitiesStore } from "@stores/entitiesStore";
 
@@ -244,6 +244,8 @@ export function Inventario() {
     });
   };
 
+  const [showDiferenciaDialog, setShowDiferenciaDialog] = useState(false);
+
   const bovedaOptions = BOVEDA_OPTIONS_BY_ENTITY[selectedId ?? ""] ?? BOVEDA_OPTIONS_BY_ENTITY.default;
   const anaquelOptions = ANAQUEL_OPTIONS_BY_ENTITY[selectedId ?? ""] ?? ANAQUEL_OPTIONS_BY_ENTITY.default;
 
@@ -256,8 +258,28 @@ export function Inventario() {
             Consulta y ajuste de inventario por entidad, divisa y clasificación
           </p>
         </div>
-        <button className="inline-flex items-center justify-center gap-gap-xs font-semibold rounded-corner-m transition-colors cursor-pointer bg-surface-green border border-surface-white text-neutro-white hover:brightness-90 active:brightness-75 disabled:bg-neutro-300 disabled:text-neutro-500 disabled:border-transparent py-4 px-6 text-base ml-auto">Ajustar inventario</button>
+        <button className="inline-flex items-center justify-center gap-gap-xs font-semibold rounded-corner-m transition-colors cursor-pointer bg-surface-green border border-surface-white text-neutro-white hover:brightness-90 active:brightness-75 disabled:bg-neutro-300 disabled:text-neutro-500 disabled:border-transparent py-4 px-6 text-base ml-auto" onClick={() => setShowDiferenciaDialog(true)}>Declarar Diferencia</button>
       </div>
+
+      <Dialog
+        open={showDiferenciaDialog}
+        onClose={() => setShowDiferenciaDialog(false)}
+        title="Declarar Diferencia"
+        size="sm"
+      >
+        <p className="text-[14px] text-[var(--color-neutro-700)] mb-4">¿Es un sobrante o un faltante?</p>
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowDiferenciaDialog(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => { setShowDiferenciaDialog(false); /* TODO: sobrante */ }}>
+            Sobrante
+          </Button>
+          <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50" onClick={() => { setShowDiferenciaDialog(false); /* TODO: faltante */ }}>
+            Faltante
+          </Button>
+        </div>
+      </Dialog>
 
       <div className="flex-1 flex gap-4 min-h-0">
         <div className="w-[410px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto">
