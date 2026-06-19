@@ -5,7 +5,7 @@ import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight
 import { Button, Badge, Select, Input } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import { SearchableSelect } from "@components/ui/SearchableSelect";
-import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, EVENTOS_CONTABLES, TIPOS_APROBACION, TIPOS_UNIDAD, type ProcesoTransaccional, type TransaccionStep, type GrupoOperacion } from "@stores/transaccionesStore";
+import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, TIPOS_INVENTARIO, TIPOS_APROBACION, TIPOS_UNIDAD, type ProcesoTransaccional, type TransaccionStep, type GrupoOperacion } from "@stores/transaccionesStore";
 import { useInstanciasStore, type TransaccionInstancia } from "@stores/instanciasStore";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { useDivisasStore } from "@stores/divisasStore";
@@ -33,8 +33,12 @@ export function OperacionesPage() {
   const [successOverlay, setSuccessOverlay] = useState("");
 
   useEffect(() => {
-    const state = location.state as { newOpId?: string } | null;
-    if (state?.newOpId) {
+    const state = location.state as { newOpId?: string; openCreateFlow?: boolean } | null;
+    if (state?.openCreateFlow) {
+      setSelTemplateId(null);
+      setCreateOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (state?.newOpId) {
       setSelTemplateId(state.newOpId);
       setCreateOpen(true);
       navigate(location.pathname, { replace: true, state: {} });
@@ -136,9 +140,17 @@ export function OperacionesPage() {
             <Package className="w-3.5 h-3.5" />
             Mesa de Conteo
           </Link>
-          <Button iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}>
-            Nueva Transacción
-          </Button>
+          <style>{`@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}@keyframes glow{0%,100%{box-shadow:0 0 14px -2px var(--color-verde-100)}50%{box-shadow:0 0 22px -2px var(--color-verde-100),0 0 40px -8px var(--color-verde-100)}}`}</style>
+          <button
+            className="bg-[var(--color-verde-100)] text-white px-3 py-1.5 rounded-corner-m text-[12px] font-bold cursor-pointer flex items-center gap-1 transition-all hover:brightness-95 hover:scale-[1.02] active:brightness-75 relative overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:animate-[shimmer_2.5s_infinite]"
+            style={{ animation: "glow 3s ease-in-out infinite", boxShadow: "0 0 14px -2px var(--color-verde-100)" }}
+            onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}
+          >
+            <span className="relative z-10 flex items-center gap-1">
+              <Plus className="w-[14px] h-[14px]" />
+              Nueva Operación
+            </span>
+          </button>
         </div>
       </div>
 
@@ -251,9 +263,14 @@ export function OperacionesPage() {
             </div>
             <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-1">No hay transacciones activas</h3>
             <p className="text-[13px] text-[var(--color-neutro-500)] mb-4 max-w-md">Cree una nueva transacción para comenzar</p>
-            <Button iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}>
-              Nueva Transacción
-            </Button>
+            <button
+              className="bg-[var(--color-verde-100)] text-white px-3 py-1.5 rounded-corner-m text-[12px] font-bold cursor-pointer flex items-center gap-1 transition-all hover:brightness-95 hover:scale-[1.02] active:brightness-75"
+            style={{ boxShadow: "0 0 14px -2px var(--color-verde-100)" }}
+              onClick={() => { setSelTemplateId(null); setCreateOpen(true); }}
+            >
+              <Plus className="w-[14px] h-[14px]" />
+              Nueva Operación
+            </button>
           </div>
         ) : viewMode === "table" ? (
           <ListaTabla
@@ -761,7 +778,7 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
                         onClick={() => onSelectTemplate(t.id)}
                         onMouseEnter={() => focusCard(t.id)}
                       >
-                        <div className="overflow-hidden rounded-xl">
+                        <div className="overflow-hidden rounded-xl relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:translate-x-[-100%] hover:before:animate-[shimmer_0.8s_ease-in-out_infinite] focus-visible:before:animate-[shimmer_0.8s_ease-in-out_infinite]">
                         <div className="p-4 space-y-2.5 relative">
                           <div className="absolute inset-0 bg-gradient-to-b from-white/0 to-black/10 pointer-events-none" />
                           <div className="relative">
@@ -2178,9 +2195,9 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
           <div className="flex items-center gap-2">
             <Badge variant={isComplete ? "success" : isTerminated ? "error" : "warning"}>{currentStep?.nombre ?? instancia.estadoActual}</Badge>
             {responsable && <span className="text-[11px] text-[var(--color-neutro-500)]">{responsable.label}</span>}
-            {currentStep?.eventoContable && currentStep.eventoContable !== "ninguno" && (
-              <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-corner-m ${currentStep.eventoContable === "descuenta" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                {EVENTOS_CONTABLES.find((e) => e.value === currentStep.eventoContable)?.label}
+            {currentStep?.inventario && currentStep.inventario !== "ninguno" && (
+              <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-corner-m ${currentStep.inventario === "debita" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                {TIPOS_INVENTARIO.find((e) => e.value === currentStep.inventario)?.label}
               </span>
             )}
           </div>

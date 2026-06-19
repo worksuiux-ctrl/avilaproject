@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2, Lock, CheckCircle, GripHorizontal } from "lucide-react";
+import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2, Lock, CheckCircle, GripHorizontal, BookOpen, FileText, Tag } from "lucide-react";
 import { Button, Input, Select, Switch, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import {
@@ -13,9 +13,10 @@ import {
   TIPOS_UNIDAD,
   AMBITOS,
   PERFILES_RESPONSABLE,
-  EVENTOS_CONTABLES,
-  UNIDADES_EVENTO,
+  TIPOS_INVENTARIO,
+  UNIDADES_INVENTARIO,
   TIPOS_APROBACION,
+  PRODUCTOS,
 } from "@stores/transaccionesStore";
 import { useDivisasStore } from "@stores/divisasStore";
 import { useProveedoresStore } from "@stores/proveedoresStore";
@@ -52,7 +53,7 @@ const UNIDADES_POR_AMBITO: Record<string, { value: string; label: string }[]> = 
 export function MotorTransaccionesPage() {
   const store = useTransaccionesStore();
   const { proceso } = store;
-  const [activeTab, setActiveTab] = useState<"operaciones-y-estados">("operaciones-y-estados");
+  const [activeTab, setActiveTab] = useState<"operaciones-y-estados" | "cuentas-contables" | "eventos-contables" | "productos">("operaciones-y-estados");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
@@ -88,6 +89,9 @@ export function MotorTransaccionesPage() {
 
   const tabs = [
     { id: "operaciones-y-estados" as const, label: "Operaciones y Estados", icon: Package },
+    { id: "cuentas-contables" as const, label: "Cuentas Contables", icon: BookOpen },
+    { id: "eventos-contables" as const, label: "Eventos Contables", icon: FileText },
+    { id: "productos" as const, label: "Productos", icon: Tag },
   ];
 
   return (
@@ -131,6 +135,15 @@ export function MotorTransaccionesPage() {
           onEditSaved={handleEditSaved}
           onNewOperation={handleNewOperation}
         />
+      )}
+      {activeTab === "cuentas-contables" && (
+        <ContabilidadTab />
+      )}
+      {activeTab === "eventos-contables" && (
+        <EventosContablesTab />
+      )}
+      {activeTab === "productos" && (
+        <ProductosTab />
       )}
       <NewOperationDialog open={showNewDialog} onClose={() => setShowNewDialog(false)} onCreate={(vals) => {
         store.nuevoProceso();
@@ -739,31 +752,166 @@ function FusionadoTab({
               <Button onClick={onNewOperation}>Crear Nueva Operación</Button>
             </div>
           </div>
-        )}
+      )}
+    </div>
+  );
+}
+
+/* ── Eventos Contables Tab ── */
+function EventosContablesTab() {
+  return (
+    <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="px-4 py-3 border-b border-[var(--color-neutro-200)]">
+        <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Eventos Contables</p>
       </div>
-    );
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <FileText className="w-12 h-12 text-[var(--color-neutro-300)] mb-3" />
+        <p className="text-[14px] font-medium text-[var(--color-neutro-500)]">Módulo de Contabilidad</p>
+        <p className="text-[12px] text-[var(--color-neutro-400)] mt-1">
+          Los eventos contables estarán disponibles cuando el módulo de Contabilidad esté activo.
+        </p>
+        <p className="text-[11px] text-[var(--color-neutro-400)] mt-4 italic">
+          Para configurar, activa el módulo de Contabilidad en la configuración del sistema.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Productos Tab ── */
+function ProductosTab() {
+  const [productos, setProductos] = useState(PRODUCTOS.map((p, i) => ({ ...p, id: `p${i}`, descripcion: "" })));
+  const [editId, setEditId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ id: "", value: "", label: "", descripcion: "" });
+
+  function handleSave() {
+    if (!form.value || !form.label) return;
+    if (editId) {
+      setProductos(productos.map((p) => p.id === editId ? { ...form, id: editId } : p));
+    } else {
+      setProductos([...productos, { ...form, id: `p${Date.now()}` }]);
+    }
+    setForm({ id: "", value: "", label: "", descripcion: "" });
+    setEditId(null);
+    setShowForm(false);
   }
+
+  function handleEdit(p: typeof productos[0]) {
+    setForm(p);
+    setEditId(p.id);
+    setShowForm(true);
+  }
+
+  function handleDelete(id: string) {
+    setProductos(productos.filter((p) => p.id !== id));
+  }
+
+  const labelClass = "text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1";
+
+  return (
+    <div className="flex-1 flex gap-4 min-h-0">
+      <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-neutro-200)]">
+          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Catálogo de Productos</p>
+          <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setShowForm(true); setEditId(null); setForm({ id: "", value: "", label: "", descripcion: "" }); }}>
+            Agregar Producto
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--color-neutro-200)]">
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Valor</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Descripción</th>
+                <th className="w-20 px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {productos.map((p) => (
+                <tr key={p.id} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
+                  <td className="px-3 py-2.5 font-mono text-[12px] text-[var(--color-neutro-700)]">{p.value}</td>
+                  <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{p.label}</td>
+                  <td className="px-3 py-2.5 text-[var(--color-neutro-500)]">{p.descripcion || "—"}</td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1">
+                      <button className="p-1 rounded hover:bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] hover:text-blue-500 transition-colors cursor-pointer" title="Editar" onClick={() => handleEdit(p)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button className="p-1 rounded hover:bg-red-50 text-[var(--color-neutro-400)] hover:text-red-500 transition-colors cursor-pointer" title="Eliminar" onClick={() => handleDelete(p.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {productos.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
+              <p className="text-[13px] text-[var(--color-neutro-400)]">No hay productos registrados</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="w-[380px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-neutro-200)]">
+            <p className="flex-1 text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
+              {editId ? "Editar Producto" : "Nuevo Producto"}
+            </p>
+            <button className="p-1 rounded hover:bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] hover:text-[var(--color-neutro-600)] transition-colors cursor-pointer" onClick={() => { setShowForm(false); setEditId(null); }}>
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-4 space-y-4 overflow-y-auto flex-1">
+            <div>
+              <p className={labelClass}>Valor</p>
+              <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })}
+                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white font-mono"
+                placeholder="Ej: mesa-cambio" />
+            </div>
+            <div>
+              <p className={labelClass}>Nombre</p>
+              <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
+                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                placeholder="Ej: Mesa de Cambio" />
+            </div>
+            <div>
+              <p className={labelClass}>Descripción</p>
+              <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white resize-none"
+                rows={3} placeholder="Descripción opcional" />
+            </div>
+          </div>
+          <div className="p-4 border-t border-[var(--color-neutro-200)]">
+            <Button className="w-full !justify-center !bg-[var(--color-verde-100)] !text-white" size="sm" onClick={handleSave}>
+              {editId ? "Guardar Cambios" : "Agregar Producto"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       {/* Left: saved operations */}
       <div className="w-[312px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-neutro-200)]">
+        <div className="px-3 py-2.5 border-b border-[var(--color-neutro-200)]">
           <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
             Operaciones ({store.procesosFinalizados.length})
           </p>
-          <button
-            className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)] rounded-corner-m transition-colors cursor-pointer"
-            onClick={() => { setEditGroupId(null); setShowGroupDialog(true); }}
-            title="Administrar grupos"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Grupos
-          </button>
         </div>
-        <div className="p-3 border-b border-[var(--color-neutro-200)]">
-          <Button className="w-full !justify-center" size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>
+        <div className="p-3 border-b border-[var(--color-neutro-200)] flex gap-2">
+          <Button className="flex-1 !justify-center" size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>
             Crear Nueva Operación
+          </Button>
+          <Button size="sm" variant="outline" className="!justify-center" iconLeft={<Layers className="w-3.5 h-3.5" />} onClick={() => { setEditGroupId(null); setShowGroupDialog(true); }}>
+            Naturaleza
           </Button>
         </div>
         <div className="p-2 space-y-2 flex-1 overflow-y-auto">
@@ -939,7 +1087,7 @@ function FusionadoTab({
                   </div>
                 </div>
 
-                {displayProceso.usaTransportista && (
+                  {displayProceso.usaTransportista && (
                   <div>
                     <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Transportistas permitidos</p>
                     <div className="flex flex-wrap gap-1.5">
@@ -948,6 +1096,17 @@ function FusionadoTab({
                         return t ? (
                           <span key={tId} className="px-2 py-0.5 text-[12px] font-medium bg-blue-50 text-blue-700 rounded-corner-m">{t.nombre}</span>
                         ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
+                {displayProceso.usaProducto && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-1">Productos</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(displayProceso.productosPermitidos ?? []).map((pId) => {
+                        const p = PRODUCTOS.find((pr) => pr.value === pId);
+                        return p ? <span key={pId} className="px-2 py-0.5 text-[12px] font-medium bg-purple-50 text-purple-700 rounded-corner-m">{p.label}</span> : null;
                       })}
                     </div>
                   </div>
@@ -1072,9 +1231,30 @@ function FusionadoTab({
                   )}
                 </div>
 
+                {/* 6. Producto */}
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch checked={proceso.usaProducto} onChange={store.setUsaProducto} />
+                    <span className="text-[13px] text-[var(--color-neutro-700)]">Producto</span>
+                  </label>
+                  {proceso.usaProducto && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {PRODUCTOS.map((pr) => {
+                        const selected = proceso.productosPermitidos.includes(pr.value);
+                        return (
+                          <button key={pr.value} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors cursor-pointer ${selected ? "bg-purple-600 text-white border-purple-600" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-purple-300"}`} onClick={() => store.toggleProductoPermitido(pr.value)}>
+                            <CheckCheck className={`w-3 h-3 ${selected ? "block" : "hidden"}`} />
+                            {pr.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 <hr className="border-[var(--color-neutro-100)]" />
 
-                {/* 6. Códigos de transacción */}
+                {/* 7. Códigos de transacción */}
                 <div>
                   <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-2">Códigos de Transacción</p>
                   <div className="flex items-center gap-4">
@@ -1102,7 +1282,7 @@ function FusionadoTab({
         </div>
 
         {/* Property inspector */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden min-h-[200px]">
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] min-h-[200px] flex flex-col">
           <div className="flex items-center gap-2 px-4 py-3 select-none" style={{ backgroundColor: 'var(--color-verde-100)' }}>
             <p className="flex-1 text-[12px] font-semibold text-white uppercase tracking-wide">Inspector de Propiedades</p>
           </div>
@@ -1253,9 +1433,9 @@ function EstadoCard({
               <p className="text-[14px] font-semibold text-[var(--color-neutro-900)]">{step.nombre}</p>
             </div>
             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-              {step.eventoContable !== "ninguno" && (
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-corner-m ${step.eventoContable === "descuenta" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                  {step.eventoContable === "descuenta" ? "-" : "+"}{step.unidadEvento === "emisora" ? " Emi" : step.unidadEvento === "receptora" ? " Rec" : ""}
+              {step.inventario !== "ninguno" && (
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-corner-m ${step.inventario === "debita" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                  {step.inventario === "debita" ? "-" : "+"}{step.unidadInventario === "emisora" ? " Emi" : step.unidadInventario === "receptora" ? " Rec" : ""}
                 </span>
               )}
               {step.timeoutMinutos > 0 && (
@@ -1312,9 +1492,9 @@ function EstadoCard({
                       <div className="flex items-center gap-2">
                         {exc.esTerminal ? <OctagonX className="w-3.5 h-3.5 text-red-500 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
                         <span className={`flex-1 text-[12px] font-medium ${exc.esTerminal ? "text-red-800" : "text-amber-800"}`}>{exc.nombre}</span>
-                        {exc.eventoContable !== "ninguno" && (
-                          <span className={`text-[9px] font-semibold px-1 py-0.5 rounded-corner-m ${exc.eventoContable === "descuenta" ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
-                            {exc.eventoContable === "descuenta" ? "−" : "+"}{exc.unidadEvento === "emisora" ? " Emi" : exc.unidadEvento === "receptora" ? " Rec" : ""}
+                        {exc.inventario !== "ninguno" && (
+                          <span className={`text-[9px] font-semibold px-1 py-0.5 rounded-corner-m ${exc.inventario === "debita" ? "bg-red-100 text-red-600" : "bg-green-100 text-green-600"}`}>
+                            {exc.inventario === "debita" ? "−" : "+"}{exc.unidadInventario === "emisora" ? " Emi" : exc.unidadInventario === "receptora" ? " Rec" : ""}
                           </span>
                         )}
                         {exc.requiereAprobacion && <span className="text-[9px] font-semibold px-1 py-0.5 rounded-corner-m bg-blue-100 text-blue-600">Apr.</span>}
@@ -1365,7 +1545,7 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
   const valueClass = "text-[13px] text-[var(--color-neutro-900)] py-1";
 
   return (
-    <div className="p-3 space-y-3 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="p-3 space-y-3 overflow-y-auto flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
 
       {/* ── General ── */}
       <div className="bg-[var(--color-neutro-50)] rounded-corner-m p-3 space-y-3">
@@ -1384,27 +1564,34 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
         <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Configuración Operativa</p>
 
         <div>
-          <p className={labelClass}>Evento Contable</p>
+          <p className={labelClass}>Descuento de Inventario</p>
           {readOnly ? (
             <p className={valueClass}>
-              {EVENTOS_CONTABLES.find((e) => e.value === step.eventoContable)?.label ?? step.eventoContable}
-              {step.eventoContable !== "ninguno" && step.unidadEvento && (
-                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_EVENTO.find((u) => u.value === step.unidadEvento)?.label ?? step.unidadEvento}</span>
+              {TIPOS_INVENTARIO.find((e) => e.value === step.inventario)?.label ?? step.inventario}
+              {step.inventario !== "ninguno" && step.unidadInventario && (
+                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_INVENTARIO.find((u) => u.value === step.unidadInventario)?.label ?? step.unidadInventario}</span>
               )}
             </p>
           ) : (
             <div className="space-y-1.5">
-              <Select options={EVENTOS_CONTABLES} value={step.eventoContable} onChange={(v: string) => {
-                updateStepProperty(sid, "eventoContable", v);
-                if (v === "ninguno") updateStepProperty(sid, "unidadEvento", null);
-                else if (v === "descuenta" && !step.unidadEvento) updateStepProperty(sid, "unidadEvento", "emisora");
-                else if (v === "suma" && !step.unidadEvento) updateStepProperty(sid, "unidadEvento", "receptora");
+              <Select options={TIPOS_INVENTARIO} value={step.inventario} onChange={(v: string) => {
+                updateStepProperty(sid, "inventario", v);
+                if (v === "ninguno") updateStepProperty(sid, "unidadInventario", null);
+                else if (v === "debita" && !step.unidadInventario) updateStepProperty(sid, "unidadInventario", "emisora");
+                else if (v === "acredita" && !step.unidadInventario) updateStepProperty(sid, "unidadInventario", "receptora");
               }} />
-              {step.eventoContable !== "ninguno" && (
-                <Select options={UNIDADES_EVENTO} value={step.unidadEvento ?? ""} onChange={(v: string) => updateStepProperty(sid, "unidadEvento", v)} />
+              {step.inventario !== "ninguno" && (
+                <Select options={UNIDADES_INVENTARIO} value={step.unidadInventario ?? ""} onChange={(v: string) => updateStepProperty(sid, "unidadInventario", v)} />
               )}
             </div>
           )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Evento Contable</p>
+          <div className="text-[13px] px-2.5 py-1.5 rounded-corner-m bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] border border-dashed border-[var(--color-neutro-300)]">
+            Disponible en módulo de Contabilidad
+          </div>
         </div>
 
         <div>
@@ -1597,7 +1784,7 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
     : null;
 
   return (
-    <div className="p-3 space-y-3 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="p-3 space-y-3 overflow-y-auto flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
 
       {/* ── Header ── */}
       <div className="flex items-center gap-2 bg-[var(--color-neutro-50)] rounded-corner-m p-3">
@@ -1694,27 +1881,34 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
         <p className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Configuración Operativa</p>
 
         <div>
-          <p className={labelClass}>Evento Contable</p>
+          <p className={labelClass}>Descuento de Inventario</p>
           {readOnly ? (
             <p className={valueClass}>
-              {EVENTOS_CONTABLES.find((e) => e.value === exception.eventoContable)?.label ?? exception.eventoContable}
-              {exception.eventoContable !== "ninguno" && exception.unidadEvento && (
-                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_EVENTO.find((u) => u.value === exception.unidadEvento)?.label ?? exception.unidadEvento}</span>
+              {TIPOS_INVENTARIO.find((e) => e.value === exception.inventario)?.label ?? exception.inventario}
+              {exception.inventario !== "ninguno" && exception.unidadInventario && (
+                <span className="ml-1 text-[var(--color-neutro-500)]">— {UNIDADES_INVENTARIO.find((u) => u.value === exception.unidadInventario)?.label ?? exception.unidadInventario}</span>
               )}
             </p>
           ) : (
             <div className="space-y-1.5">
-              <Select options={EVENTOS_CONTABLES} value={exception.eventoContable} onChange={(v: string) => {
-                updateExcepcionProperty(stepId, eid, "eventoContable", v);
-                if (v === "ninguno") updateExcepcionProperty(stepId, eid, "unidadEvento", null);
-                else if (v === "descuenta" && !exception.unidadEvento) updateExcepcionProperty(stepId, eid, "unidadEvento", "emisora");
-                else if (v === "suma" && !exception.unidadEvento) updateExcepcionProperty(stepId, eid, "unidadEvento", "receptora");
+              <Select options={TIPOS_INVENTARIO} value={exception.inventario} onChange={(v: string) => {
+                updateExcepcionProperty(stepId, eid, "inventario", v);
+                if (v === "ninguno") updateExcepcionProperty(stepId, eid, "unidadInventario", null);
+                else if (v === "debita" && !exception.unidadInventario) updateExcepcionProperty(stepId, eid, "unidadInventario", "emisora");
+                else if (v === "acredita" && !exception.unidadInventario) updateExcepcionProperty(stepId, eid, "unidadInventario", "receptora");
               }} />
-              {exception.eventoContable !== "ninguno" && (
-                <Select options={UNIDADES_EVENTO} value={exception.unidadEvento ?? ""} onChange={(v: string) => updateExcepcionProperty(stepId, eid, "unidadEvento", v)} />
+              {exception.inventario !== "ninguno" && (
+                <Select options={UNIDADES_INVENTARIO} value={exception.unidadInventario ?? ""} onChange={(v: string) => updateExcepcionProperty(stepId, eid, "unidadInventario", v)} />
               )}
             </div>
           )}
+        </div>
+
+        <div>
+          <p className={labelClass}>Evento Contable</p>
+          <div className="text-[13px] px-2.5 py-1.5 rounded-corner-m bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] border border-dashed border-[var(--color-neutro-300)]">
+            Disponible en módulo de Contabilidad
+          </div>
         </div>
 
         <div>
@@ -1954,7 +2148,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
   );
 
   return (
-    <Modal open={open} onClose={onClose} title="Administrar Grupos" size="md">
+    <Modal open={open} onClose={onClose} title="Administrar Naturaleza" size="md">
       <div className="space-y-4">
         {/* Existing groups */}
         <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -2026,7 +2220,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
             );
           })}
           {gruposOperaciones.length === 0 && (
-            <p className="text-[13px] text-[var(--color-neutro-400)] text-center py-6">No hay grupos creados</p>
+            <p className="text-[13px] text-[var(--color-neutro-400)] text-center py-6">No hay naturalezas creadas</p>
           )}
         </div>
 
@@ -2037,7 +2231,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
             onClick={() => { setEditId("__new"); setEditNombre(""); setEditColor(GROUP_COLORS[0]); setEditOpIds([]); }}
           >
             <Plus className="w-4 h-4" />
-            Nuevo Grupo
+            Nueva Naturaleza
           </button>
         )}
 
@@ -2070,7 +2264,7 @@ function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button size="sm" variant="outline" onClick={() => setEditId(null)}>Cancelar</Button>
-              <Button size="sm" onClick={handleSave}>Crear Grupo</Button>
+              <Button size="sm" onClick={handleSave}>Crear Naturaleza</Button>
             </div>
           </div>
         )}
@@ -2099,6 +2293,187 @@ function DivisaSelector({ ids, onChange }: { ids: string[]; onChange: (ids: stri
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Contabilidad Tab ── */
+interface CuentaContable {
+  id: string;
+  codigo: string;
+  nombre: string;
+  tipo: "deudora" | "acreedora" | "orden";
+  descripcion: string;
+}
+
+const CUENTAS_MOCK: CuentaContable[] = [
+  { id: "c1", codigo: "1.1.01.001", nombre: "Efectivo en Bóveda", tipo: "deudora", descripcion: "Disponibilidades en bóveda central" },
+  { id: "c2", codigo: "1.1.01.002", nombre: "Efectivo en ATM", tipo: "deudora", descripcion: "Efectivo cargado en cajeros automáticos" },
+  { id: "c3", codigo: "1.1.01.003", nombre: "Efectivo en Tránsito", tipo: "deudora", descripcion: "Remesas en tránsito entre agencias" },
+  { id: "c4", codigo: "1.1.02.001", nombre: "Depósitos en Banco Central", tipo: "deudora", descripcion: "Depósitos de reserva en Banco Central" },
+  { id: "c5", codigo: "1.2.01.001", nombre: "Inversiones en Valores", tipo: "deudora", descripcion: "Inversiones en títulos valores" },
+  { id: "c6", codigo: "1.3.01.001", nombre: "Cuentas por Cobrar", tipo: "deudora", descripcion: "Operaciones por cobrar a clientes" },
+  { id: "c7", codigo: "2.1.01.001", nombre: "Depósitos de Clientes", tipo: "acreedora", descripcion: "Obligaciones por depósitos recibidos" },
+  { id: "c8", codigo: "2.1.01.002", nombre: "Remesas por Liquidar", tipo: "acreedora", descripcion: "Remesas pendientes de liquidación" },
+  { id: "c9", codigo: "2.2.01.001", nombre: "Proveedores Varios", tipo: "acreedora", descripcion: "Obligaciones con proveedores" },
+  { id: "c10", codigo: "3.1.01.001", nombre: "Capital Social", tipo: "acreedora", descripcion: "Capital suscrito y pagado" },
+  { id: "c11", codigo: "4.1.01.001", nombre: "Ingresos por Comisiones", tipo: "acreedora", descripcion: "Comisiones cobradas por servicios" },
+  { id: "c12", codigo: "4.1.02.001", nombre: "Diferencial Cambiario", tipo: "acreedora", descripcion: "Ganancia por diferencia en tipo de cambio" },
+  { id: "c13", codigo: "5.1.01.001", nombre: "Gastos por Servicios", tipo: "deudora", descripcion: "Gastos operativos y de servicios" },
+  { id: "c14", codigo: "5.1.02.001", nombre: "Pérdida Cambiaria", tipo: "deudora", descripcion: "Pérdida por diferencia en tipo de cambio" },
+  { id: "c15", codigo: "5.2.01.001", nombre: "Gastos de Transporte", tipo: "deudora", descripcion: "Gastos por servicio de transporte de valores" },
+  { id: "c16", codigo: "8.1.01.001", nombre: "Valores Custodiados (Deudora)", tipo: "orden", descripcion: "Control de valores recibidos en custodia" },
+  { id: "c17", codigo: "8.1.01.002", nombre: "Valores Custodiados (Acreedora)", tipo: "orden", descripcion: "Contrapartida de valores en custodia" },
+  { id: "c18", codigo: "8.2.01.001", nombre: "Garantías Recibidas (Deudora)", tipo: "orden", descripcion: "Garantías recibidas de clientes" },
+  { id: "c19", codigo: "8.2.01.002", nombre: "Garantías Recibidas (Acreedora)", tipo: "orden", descripcion: "Contrapartida de garantías recibidas" },
+  { id: "c20", codigo: "8.3.01.001", nombre: "Bienes en Comodato (Deudora)", tipo: "orden", descripcion: "Bienes recibidos en comodato" },
+  { id: "c21", codigo: "8.3.01.002", nombre: "Bienes en Comodato (Acreedora)", tipo: "orden", descripcion: "Contrapartida de bienes en comodato" },
+];
+
+function ContabilidadTab() {
+  const [cuentas, setCuentas] = useState<CuentaContable[]>(CUENTAS_MOCK);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState<CuentaContable>({ id: "", codigo: "", nombre: "", tipo: "deudora", descripcion: "" });
+  const [showForm, setShowForm] = useState(false);
+  const cuentasFiltradas = cuentas;
+
+  function handleSave() {
+    if (!form.codigo || !form.nombre) return;
+    if (editId) {
+      setCuentas(cuentas.map((c) => c.id === editId ? { ...form, id: editId } : c));
+    } else {
+      setCuentas([...cuentas, { ...form, id: `c${Date.now()}` }]);
+    }
+    setForm({ id: "", codigo: "", nombre: "", tipo: "deudora", descripcion: "" });
+    setEditId(null);
+    setShowForm(false);
+  }
+
+  function handleEdit(c: CuentaContable) {
+    setForm(c);
+    setEditId(c.id);
+    setShowForm(true);
+  }
+
+  function handleDelete(id: string) {
+    setCuentas(cuentas.filter((c) => c.id !== id));
+  }
+
+  const labelClass = "text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1";
+
+  const badgeClass = (tipo: string) => {
+    if (tipo === "deudora") return "bg-red-100 text-red-700";
+    if (tipo === "acreedora") return "bg-green-100 text-green-700";
+    return "bg-purple-100 text-purple-700";
+  };
+
+  return (
+    <div className="flex-1 flex gap-4 min-h-0">
+      <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-neutro-200)]">
+          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Catálogo de Cuentas Contables</p>
+          <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setShowForm(true); setEditId(null); setForm({ id: "", codigo: "", nombre: "", tipo: "deudora", descripcion: "" }); }}>
+            Agregar Cuenta
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--color-neutro-200)]">
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Código</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Tipo</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Descripción</th>
+                <th className="w-20 px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {cuentasFiltradas.map((c) => (
+                <tr key={c.id} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
+                  <td className="px-3 py-2.5 font-mono text-[12px] text-[var(--color-neutro-700)]">{c.codigo}</td>
+                  <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{c.nombre}</td>
+                  <td className="px-3 py-2.5">
+                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-corner-m ${badgeClass(c.tipo)}`}>
+                      {c.tipo === "deudora" ? "Deudora" : c.tipo === "acreedora" ? "Acreedora" : "Orden"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5 text-[var(--color-neutro-500)]">{c.descripcion}</td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1">
+                      <button className="p-1 rounded hover:bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] hover:text-blue-500 transition-colors cursor-pointer" title="Editar" onClick={() => handleEdit(c)}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button className="p-1 rounded hover:bg-red-50 text-[var(--color-neutro-400)] hover:text-red-500 transition-colors cursor-pointer" title="Eliminar" onClick={() => handleDelete(c.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {cuentasFiltradas.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
+              <p className="text-[13px] text-[var(--color-neutro-400)]">No hay cuentas contables registradas</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="w-[380px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-neutro-200)]">
+            <p className="flex-1 text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
+              {editId ? "Editar Cuenta" : "Nueva Cuenta"}
+            </p>
+            <button className="p-1 rounded hover:bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] hover:text-[var(--color-neutro-600)] transition-colors cursor-pointer" onClick={() => { setShowForm(false); setEditId(null); }}>
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-4 space-y-4 overflow-y-auto flex-1">
+            <div>
+              <p className={labelClass}>Código</p>
+              <input value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })}
+                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white font-mono"
+                placeholder="Ej: 1.1.01.001" />
+            </div>
+            <div>
+              <p className={labelClass}>Nombre</p>
+              <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                placeholder="Nombre de la cuenta" />
+            </div>
+            <div>
+              <p className={labelClass}>Tipo</p>
+              <div className="flex gap-2">
+                <button className={`flex-1 px-3 py-1.5 rounded-corner-m text-[13px] font-medium border transition-colors cursor-pointer ${form.tipo === "deudora" ? "bg-red-100 text-red-700 border-red-200" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)]"}`}
+                  onClick={() => setForm({ ...form, tipo: "deudora" })}>
+                  Deudora
+                </button>
+                <button className={`flex-1 px-3 py-1.5 rounded-corner-m text-[13px] font-medium border transition-colors cursor-pointer ${form.tipo === "acreedora" ? "bg-green-100 text-green-700 border-green-200" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)]"}`}
+                  onClick={() => setForm({ ...form, tipo: "acreedora" })}>
+                  Acreedora
+                </button>
+                <button className={`flex-1 px-3 py-1.5 rounded-corner-m text-[13px] font-medium border transition-colors cursor-pointer ${form.tipo === "orden" ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)]"}`}
+                  onClick={() => setForm({ ...form, tipo: "orden" })}>
+                  Orden
+                </button>
+              </div>
+            </div>
+            <div>
+              <p className={labelClass}>Descripción</p>
+              <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white resize-none"
+                rows={3} placeholder="Descripción opcional" />
+            </div>
+          </div>
+          <div className="p-4 border-t border-[var(--color-neutro-200)]">
+            <Button className="w-full !justify-center !bg-[var(--color-verde-100)] !text-white" size="sm" onClick={handleSave}>
+              {editId ? "Guardar Cambios" : "Agregar Cuenta"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
