@@ -730,7 +730,7 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
           <p className="text-[14px] font-semibold text-[var(--color-neutro-900)]">Seleccione una operación</p>
           <Button variant="outline" size="sm" onClick={onCancel}>Cancelar</Button>
         </div>
-        <div className="overflow-y-auto max-h-[60vh] space-y-8 outline-none" tabIndex={-1}>
+        <div className="overflow-y-auto max-h-[60vh] space-y-8 outline-none p-[5px]" tabIndex={-1}>
           {gruposOperaciones.map((grupo) => {
             const ops = grupo.operacionIds
               .map((oid) => templates.find((t) => t.id === oid))
@@ -756,11 +756,12 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
                       <button key={t.id}
                         ref={(el) => { cardRefs.current[fi ?? -1] = el; }}
                         tabIndex={-1}
-                        className={`rounded-xl overflow-hidden text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm group ${isFocused ? "ring-2 ring-white ring-offset-2" : ""}`}
-                        style={{ backgroundColor: color, ringOffsetColor: color }}
+                        className={`rounded-xl text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm group ${isFocused ? "ring-[3px] ring-offset-[4px]" : ""}`}
+                        style={{ backgroundColor: color, "--tw-ring-color": color, "--tw-ring-offset-color": "white" } as any}
                         onClick={() => onSelectTemplate(t.id)}
                         onMouseEnter={() => focusCard(t.id)}
                       >
+                        <div className="overflow-hidden rounded-xl">
                         <div className="p-4 space-y-2.5 relative">
                           <div className="absolute inset-0 bg-gradient-to-b from-white/0 to-black/10 pointer-events-none" />
                           <div className="relative">
@@ -786,6 +787,7 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
                             </div>
                           </div>
                         </div>
+                        </div>
                       </button>
                     );
                   })}
@@ -807,11 +809,12 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
                     <button key={t.id}
                       ref={(el) => { cardRefs.current[fi ?? -1] = el; }}
                       tabIndex={-1}
-                      className={`rounded-xl overflow-hidden text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm group ${isFocused ? "ring-2 ring-white ring-offset-2" : ""}`}
-                      style={{ backgroundColor: "var(--color-neutro-400)", ringOffsetColor: "var(--color-neutro-400)" }}
+                      className={`rounded-xl text-left hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer shadow-sm group ${isFocused ? "ring-[3px] ring-offset-[4px]" : ""}`}
+                      style={{ backgroundColor: "var(--color-neutro-400)", "--tw-ring-color": "var(--color-neutro-400)", "--tw-ring-offset-color": "white" } as any}
                       onClick={() => onSelectTemplate(t.id)}
                       onMouseEnter={() => focusCard(t.id)}
                     >
+                      <div className="overflow-hidden rounded-xl">
                       <div className="p-4 space-y-2.5 relative">
                         <div className="absolute inset-0 bg-gradient-to-b from-white/0 to-black/10 pointer-events-none" />
                         <div className="relative">
@@ -831,6 +834,7 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
                             <span className="text-[10px] text-white/60">{t.steps.length} {t.steps.length === 1 ? 'estado' : 'estados'}</span>
                           </div>
                         </div>
+                      </div>
                       </div>
                     </button>
                   );
