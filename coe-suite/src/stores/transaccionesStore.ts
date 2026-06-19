@@ -49,6 +49,13 @@ export interface TransaccionStep {
   esTerminal?: boolean;
 }
 
+export interface GrupoOperacion {
+  id: string;
+  nombre: string;
+  color: string;
+  operacionIds: string[];
+}
+
 export interface ProcesoTransaccional {
   id: string;
   nombre: string;
@@ -71,6 +78,7 @@ export interface ProcesoTransaccional {
 interface TransaccionesState {
   proceso: ProcesoTransaccional;
   procesosFinalizados: ProcesoTransaccional[];
+  gruposOperaciones: GrupoOperacion[];
   activeStepId: string | null;
   activeExceptionId: { stepId: string; exId: string } | null;
 
@@ -112,6 +120,13 @@ interface TransaccionesState {
   cargarProceso: (id: string) => void;
   eliminarProceso: (id: string) => void;
   reordenarProcesos: (fromIndex: number, toIndex: number) => void;
+
+  addGrupo: (nombre: string, color: string) => void;
+  updateGrupo: (id: string, updates: Partial<Pick<GrupoOperacion, "nombre" | "color">>) => void;
+  removeGrupo: (id: string) => void;
+  reordenarGrupos: (fromIndex: number, toIndex: number) => void;
+  reordenarOperacionesEnGrupo: (groupId: string, fromIndex: number, toIndex: number) => void;
+  moveOperacionToGrupo: (operacionId: string, fromGroupId: string | null, toGroupId: string | null, toIndex: number) => void;
 }
 
 let idCounter = 100;
@@ -137,8 +152,8 @@ function resetProceso(): ProcesoTransaccional {
     codigoEnvioFormato: "ENV-{YYYYMMDD}-{NNNNNN}",
     activo: true,
     steps: [
-      { id: makeId(), nombre: "Inicial", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
-      { id: makeId(), nombre: "Terminal", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
+      { id: makeId(), nombre: "Inicial", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
+      { id: makeId(), nombre: "Terminal", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: null, transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: [] },
     ],
   };
 }
@@ -227,6 +242,137 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         {
           id: "bc-s-2", nombre: "Confirmado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 0, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso"], serviciosCategorias: [] },
       ],
+    },
+    {
+      id: "demo-bov-atm",
+      nombre: "Pase de Bóveda a ATM",
+      tipoCarga: "valores",
+      modoIngreso: "fajos",
+      origenTipo: "Bóveda",
+      destinoTipo: "Cajero",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "ba-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, atm_destino", timeoutMinutos: 120, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "ba-s-2", nombre: "Despachado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases"], serviciosCategorias: [] },
+        { id: "ba-s-3", nombre: "Confirmado", orden: 3, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-arqueo",
+      nombre: "Arqueo",
+      tipoCarga: "valores",
+      modoIngreso: "piezas",
+      origenTipo: "Caja",
+      destinoTipo: "Caja",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "ar-s-1", nombre: "Iniciado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["caja-numero", "caja-responsable", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "ar-s-2", nombre: "Conteo", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "denominaciones, total", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-denominaciones"], serviciosCategorias: ["Conteo"] },
+        { id: "ar-s-3", nombre: "Confirmado", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-mesa-cambios",
+      nombre: "Mesa de Cambios",
+      tipoCarga: "remesas",
+      modoIngreso: "piezas",
+      origenTipo: "Caja",
+      destinoTipo: "Caja",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "mc-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_origen, divisa_origen, divisa_destino", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones"], serviciosCategorias: [] },
+        { id: "mc-s-2", nombre: "Aprobado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "tasa_cambio, monto_final", timeoutMinutos: 30, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+        { id: "mc-s-3", nombre: "Confirmado", orden: 3, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-remesa-banco",
+      nombre: "Remesa Banco Central",
+      tipoCarga: "remesas",
+      modoIngreso: "fajos",
+      origenTipo: "Bóveda",
+      destinoTipo: "Banco",
+      ambito: "externa",
+      usaTransportista: true,
+      transportistasPermitidos: ["prov-1", "prov-6", "prov-7"],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: true,
+      usaCodigoEnvio: true,
+      codigoRemesaFormato: "REM-BC-{YYYYMMDD}-{NNNNNN}",
+      codigoEnvioFormato: "ENV-BC-{YYYYMMDD}-{NNNNNN}",
+      activo: true,
+      steps: [
+        { id: "rbc-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 1440, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "rbc-s-2", nombre: "Despachado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases", "cam-placa", "cam-conductor"], serviciosCategorias: ["Traslado", "Manipulación"] },
+        { id: "rbc-s-3", nombre: "En Tránsito", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 240, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Custodia"] },
+        { id: "rbc-s-4", nombre: "Recibido", orden: 4, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Manipulación"] },
+        { id: "rbc-s-5", nombre: "Confirmado", orden: 5, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+    {
+      id: "demo-efectivo-cliente",
+      nombre: "Efectivo Cliente",
+      tipoCarga: "remesas",
+      modoIngreso: "piezas",
+      origenTipo: "Taquilla",
+      destinoTipo: "Caja",
+      ambito: "interna",
+      usaTransportista: false,
+      transportistasPermitidos: [],
+      divisasPermitidas: ["div-2", "div-1"],
+      usaCodigoRemesa: false,
+      usaCodigoEnvio: false,
+      codigoRemesaFormato: "",
+      codigoEnvioFormato: "",
+      activo: true,
+      steps: [
+        { id: "ec-s-1", nombre: "Recibido", orden: 1, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, cliente, denominaciones", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+        { id: "ec-s-2", nombre: "Confirmado", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+      ],
+    },
+  ],
+  gruposOperaciones: [
+    {
+      id: "grupo-remesas",
+      nombre: "Remesas",
+      color: "#2563EB",
+      operacionIds: ["demo-remesa-agencia", "demo-remesa-banco", "demo-efectivo-cliente"],
+    },
+    {
+      id: "grupo-valores",
+      nombre: "Valores",
+      color: "#7C3AED",
+      operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"],
+    },
+    {
+      id: "grupo-cambios",
+      nombre: "Cambios",
+      color: "#F59E0B",
+      operacionIds: ["demo-mesa-cambios"],
     },
   ],
   activeStepId: null,
@@ -528,8 +674,54 @@ export const useTransaccionesStore = create<TransaccionesState>()(
       list.splice(toIndex, 0, moved);
       return { procesosFinalizados: list };
     }),
+
+  addGrupo: (nombre, color) =>
+    set((s) => ({
+      gruposOperaciones: [...s.gruposOperaciones, { id: makeId(), nombre, color, operacionIds: [] }],
+    })),
+  updateGrupo: (id, updates) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.map((g) =>
+        g.id === id ? { ...g, ...updates } : g
+      ),
+    })),
+  removeGrupo: (id) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.filter((g) => g.id !== id),
+    })),
+  reordenarGrupos: (fromIndex, toIndex) =>
+    set((s) => {
+      const list = [...s.gruposOperaciones];
+      const [moved] = list.splice(fromIndex, 1);
+      list.splice(toIndex, 0, moved);
+      return { gruposOperaciones: list };
+    }),
+  reordenarOperacionesEnGrupo: (groupId, fromIndex, toIndex) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.map((g) => {
+        if (g.id !== groupId) return g;
+        const ids = [...g.operacionIds];
+        const [moved] = ids.splice(fromIndex, 1);
+        ids.splice(toIndex, 0, moved);
+        return { ...g, operacionIds: ids };
+      }),
+    })),
+  moveOperacionToGrupo: (operacionId, fromGroupId, toGroupId, toIndex) =>
+    set((s) => ({
+      gruposOperaciones: s.gruposOperaciones.map((g) => {
+        if (fromGroupId && g.id === fromGroupId) {
+          return { ...g, operacionIds: g.operacionIds.filter((id) => id !== operacionId) };
+        }
+        if (toGroupId && g.id === toGroupId) {
+          const ids = [...g.operacionIds];
+          ids.splice(toIndex, 0, operacionId);
+          return { ...g, operacionIds: ids };
+        }
+        return g;
+      }),
+    })),
 }),
-    { name: "transacciones-store", version: 10, migrate: (persisted: unknown, version: number) => {
+    { name: "transacciones-store", version: 12, migrate: (persisted: unknown, version: number) => {
     const state = persisted as Record<string, unknown>;
     if (version < 1) {
       const templates = (state as any)?.procesosFinalizados as any[];
@@ -692,8 +884,84 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         }) as any;
       }
     }
+    if (version < 12) {
+      // v12: inject 5 new demo operations + new Cambios group
+      const templates = (state as any)?.procesosFinalizados as any[];
+      if (templates) {
+        const existingIds = new Set(templates.map((t: any) => t.id));
+        const nuevos: any[] = [];
+        if (!existingIds.has("demo-bov-atm")) {
+          nuevos.push({
+            id: "demo-bov-atm", nombre: "Pase de Bóveda a ATM", tipoCarga: "valores", modoIngreso: "fajos", origenTipo: "Bóveda", destinoTipo: "Cajero", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "ba-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, atm_destino", timeoutMinutos: 120, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "ba-s-2", nombre: "Despachado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto, peso", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases"], serviciosCategorias: [] },
+              { id: "ba-s-3", nombre: "Confirmado", orden: 3, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-arqueo")) {
+          nuevos.push({
+            id: "demo-arqueo", nombre: "Arqueo", tipoCarga: "valores", modoIngreso: "piezas", origenTipo: "Caja", destinoTipo: "Caja", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "ar-s-1", nombre: "Iniciado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["caja-numero", "caja-responsable", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "ar-s-2", nombre: "Conteo", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "denominaciones, total", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-denominaciones"], serviciosCategorias: ["Conteo"] },
+              { id: "ar-s-3", nombre: "Confirmado", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-mesa-cambios")) {
+          nuevos.push({
+            id: "demo-mesa-cambios", nombre: "Mesa de Cambios", tipoCarga: "remesas", modoIngreso: "piezas", origenTipo: "Caja", destinoTipo: "Caja", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "mc-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_origen, divisa_origen, divisa_destino", timeoutMinutos: 60, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones"], serviciosCategorias: [] },
+              { id: "mc-s-2", nombre: "Aprobado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "tasa_cambio, monto_final", timeoutMinutos: 30, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+              { id: "mc-s-3", nombre: "Confirmado", orden: 3, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-remesa-banco")) {
+          nuevos.push({
+            id: "demo-remesa-banco", nombre: "Remesa Banco Central", tipoCarga: "remesas", modoIngreso: "fajos", origenTipo: "Bóveda", destinoTipo: "Banco", ambito: "externa", usaTransportista: true, transportistasPermitidos: ["prov-1", "prov-6", "prov-7"], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: true, usaCodigoEnvio: true, codigoRemesaFormato: "REM-BC-{YYYYMMDD}-{NNNNNN}", codigoEnvioFormato: "ENV-BC-{YYYYMMDD}-{NNNNNN}", activo: true,
+            steps: [
+              { id: "rbc-s-1", nombre: "Solicitado", orden: 1, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto_remesa", timeoutMinutos: 1440, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "rbc-s-2", nombre: "Despachado", orden: 2, eventoContable: "descuenta", unidadEvento: "emisora", unidadResponsableId: "agencia", transferenciaCarga: "entrega", requiereAprobacion: true, tipoAprobacion: "agencia", requiereVariables: true, variables: "precinto, peso, envases", timeoutMinutos: 120, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-precinto", "bov-peso", "cam-envases", "cam-placa", "cam-conductor"], serviciosCategorias: ["Traslado", "Manipulación"] },
+              { id: "rbc-s-3", nombre: "En Tránsito", orden: 3, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "transportista", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 240, bloqueoSaldo: false, excepciones: [], camposSeleccionados: [], serviciosCategorias: ["Custodia"] },
+              { id: "rbc-s-4", nombre: "Recibido", orden: 4, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "precinto_recibido, peso_recibido", timeoutMinutos: 0, bloqueoSaldo: false, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: ["Manipulación"] },
+              { id: "rbc-s-5", nombre: "Confirmado", orden: 5, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (!existingIds.has("demo-efectivo-cliente")) {
+          nuevos.push({
+            id: "demo-efectivo-cliente", nombre: "Efectivo Cliente", tipoCarga: "remesas", modoIngreso: "piezas", origenTipo: "Taquilla", destinoTipo: "Caja", ambito: "interna", usaTransportista: false, transportistasPermitidos: [], divisasPermitidas: ["div-2", "div-1"], usaCodigoRemesa: false, usaCodigoEnvio: false, codigoRemesaFormato: "", codigoEnvioFormato: "", activo: true,
+            steps: [
+              { id: "ec-s-1", nombre: "Recibido", orden: 1, eventoContable: "suma", unidadEvento: "receptora", unidadResponsableId: "agencia", transferenciaCarga: "recepcion", requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: true, variables: "monto, cliente, denominaciones", timeoutMinutos: 60, bloqueoSaldo: true, excepciones: [], camposSeleccionados: ["bov-monto", "bov-denominaciones", "gral-observaciones"], serviciosCategorias: [] },
+              { id: "ec-s-2", nombre: "Confirmado", orden: 2, eventoContable: "ninguno", unidadEvento: null, unidadResponsableId: "agencia", transferenciaCarga: null, requiereAprobacion: false, tipoAprobacion: "ninguno", requiereVariables: false, variables: "", timeoutMinutos: 0, bloqueoSaldo: false, esTerminal: true, excepciones: [], camposSeleccionados: ["gral-observaciones"], serviciosCategorias: [] },
+            ],
+          });
+        }
+        if (nuevos.length > 0) {
+          (state as any).procesosFinalizados = [...templates, ...nuevos];
+        }
+        // Update grupos
+        (state as any).gruposOperaciones = [
+          { id: "grupo-remesas", nombre: "Remesas", color: "#2563EB", operacionIds: ["demo-remesa-agencia", "demo-remesa-banco", "demo-efectivo-cliente"] },
+          { id: "grupo-valores", nombre: "Valores", color: "#7C3AED", operacionIds: ["demo-boveda-caja", "demo-bov-atm", "demo-arqueo"] },
+          { id: "grupo-cambios", nombre: "Cambios", color: "#F59E0B", operacionIds: ["demo-mesa-cambios"] },
+        ];
+      }
+    }
+    if (version < 11) {
+      if (!(state as any).gruposOperaciones) {
+        (state as any).gruposOperaciones = [
+          { id: "grupo-remesas", nombre: "Remesas", color: "#2563EB", operacionIds: ["demo-remesa-agencia"] },
+          { id: "grupo-valores", nombre: "Valores", color: "#7C3AED", operacionIds: ["demo-boveda-caja"] },
+        ];
+      }
+    }
     if (version < 10) {
-      // v10: reconfigure "demo-remesa-agencia" steps — simplified Solicitado, Aprobado with detalle, En Tránsito with campos, Recibido bloquea saldo, Confirmado esTerminal
+      // v10: reconfigure "demo-remesa-agencia" steps
       const templates = (state as any)?.procesosFinalizados as any[];
       if (templates) {
         state.procesosFinalizados = templates.map((t: any) => {
@@ -714,7 +982,7 @@ export const useTransaccionesStore = create<TransaccionesState>()(
         }) as any;
       }
     }
-    return state as TransaccionesState;
+    return state as unknown as TransaccionesState;
   } }
 )
 );

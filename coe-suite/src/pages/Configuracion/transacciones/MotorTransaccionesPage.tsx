@@ -6,6 +6,8 @@ import {
   useTransaccionesStore,
   type TransaccionStep,
   type Excepcion,
+  type GrupoOperacion,
+  type ProcesoTransaccional,
   CAMPOS_PREDEFINIDOS,
   TIPOS_CARGA,
   TIPOS_UNIDAD,
@@ -57,10 +59,10 @@ export function MotorTransaccionesPage() {
   const [showNewDialog, setShowNewDialog] = useState(false);
 
   useEffect(() => {
-    if (proceso.nombre === "" && !selectedSavedId && store.procesosFinalizados.length > 0) {
+    if (!selectedSavedId && store.procesosFinalizados.length > 0) {
       setSelectedSavedId(store.procesosFinalizados[0].id);
     }
-  }, []);
+  }, [store.procesosFinalizados.length]);
 
   const savedProceso = selectedSavedId
     ? store.procesosFinalizados.find((p) => p.id === selectedSavedId) ?? null
@@ -166,7 +168,7 @@ function OperacionesTab({
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       {/* Left: saved operations */}
-      <div className="w-[260px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="w-[312px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
         <div className="p-3 border-b border-[var(--color-neutro-200)]">
           <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
             Operaciones ({store.procesosFinalizados.length})
@@ -504,7 +506,7 @@ function EstadosTab({
 
       <div className="flex-1 flex gap-4 min-h-0">
         {/* Left: step list */}
-      <div className="w-[320px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="w-[480px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-neutro-100)]">
           <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">
             Estados ({displaySteps.length})
@@ -558,11 +560,9 @@ function EstadosTab({
       </div>
 
       {/* Right: property inspector */}
-      <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-y-auto">
-        <div className="p-3 border-b border-[var(--color-neutro-200)]">
-          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
-            Inspector de Propiedades
-          </p>
+      <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 select-none" style={{ backgroundColor: 'var(--color-verde-100)' }}>
+          <p className="flex-1 text-[12px] font-semibold text-white uppercase tracking-wide">Inspector de Propiedades</p>
         </div>
         {activeException ? (
           <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} />
@@ -613,21 +613,133 @@ function FusionadoTab({
     : null;
 
   const [collapseDetalles, setCollapseDetalles] = useState(false);
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [editGroupId, setEditGroupId] = useState<string | null>(null);
+  const [dragSrc, setDragSrc] = useState<{ groupId: string | null; idx: number } | null>(null);
+  const [dragOver, setDragOver] = useState<{ groupId: string | null; idx: number } | null>(null);
 
   // Auto-collapse detalles when a step/exception is selected
   useEffect(() => {
     if (activeStepId || activeExceptionId) setCollapseDetalles(true);
   }, [activeStepId, activeExceptionId]);
 
+  const grupoActivo = store.gruposOperaciones.find((g) => g.operacionIds.includes(displayProceso.id));
+  const grupoColorActivo = grupoActivo?.color ?? null;
+
   if (!hasActiveOperation) {
+    const ungrouped = store.procesosFinalizados.filter(
+      (p) => !store.gruposOperaciones.some((g) => g.operacionIds.includes(p.id))
+    );
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <Layers className="w-12 h-12 text-[var(--color-neutro-300)] mx-auto mb-3" />
-          <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-2">No hay operación seleccionada</h3>
-          <p className="text-[13px] text-[var(--color-neutro-500)] mb-4">Seleccione una operación de la lista o cree una nueva</p>
-          <Button onClick={onNewOperation}>Crear Nueva Operación</Button>
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-[18px] font-bold text-[var(--color-neutro-900)]">Operaciones</h2>
+            <p className="text-[13px] text-[var(--color-neutro-500)]">Seleccione una operación para ver sus detalles</p>
+          </div>
+          <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>Nueva Operación</Button>
         </div>
+        {store.gruposOperaciones.map((grupo) => {
+          const ops = grupo.operacionIds
+            .map((oid) => store.procesosFinalizados.find((p) => p.id === oid))
+            .filter((p): p is ProcesoTransaccional => p != null);
+          if (ops.length === 0) return null;
+          return (
+            <div key={grupo.id} className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: grupo.color }} />
+                <h3 className="text-[14px] font-bold text-[var(--color-neutro-800)]">{grupo.nombre}</h3>
+                <span className="text-[11px] text-[var(--color-neutro-400)]">({ops.length})</span>
+              </div>
+              <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+                {ops.map((p) => (
+                  <div key={p.id}
+                    className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => onSelectSaved(p.id)}
+                  >
+                    <div className="h-1.5" style={{ backgroundColor: grupo.color }} />
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[13px] font-bold text-[var(--color-neutro-900)] leading-tight">{p.nombre}</p>
+                        <span className="shrink-0 px-2 py-0.5 text-[10px] font-medium rounded-full" style={{ backgroundColor: `${grupo.color}18`, color: grupo.color }}>
+                          {grupo.nombre}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-[var(--color-neutro-500)]">
+                        <span className="px-1.5 py-0.5 bg-[var(--color-neutro-100)] rounded-corner-m">{p.tipoCarga}</span>
+                        <span>{p.steps.length} estados</span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <span className={`px-2 py-0.5 text-[11px] font-medium rounded-corner-m ${p.modoIngreso === "fajos" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
+                          {p.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
+                        </span>
+                        <div className="flex gap-1">
+                          <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)] hover:text-[var(--color-neutro-700)] transition-colors" title="Editar" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]" title="Duplicar" onClick={(e) => { e.stopPropagation(); store.duplicarProceso(p.id); }}>
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                          <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); } }}>
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {ungrouped.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-[14px] font-bold text-[var(--color-neutro-800)] mb-3">Sin grupo</h3>
+            <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+              {ungrouped.map((p) => (
+                <div key={p.id}
+                  className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => onSelectSaved(p.id)}
+                >
+                  <div className="h-1.5 bg-[var(--color-neutro-200)]" />
+                  <div className="p-3 space-y-2">
+                    <p className="text-[13px] font-bold text-[var(--color-neutro-900)] leading-tight">{p.nombre}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-[var(--color-neutro-500)]">
+                      <span className="px-1.5 py-0.5 bg-[var(--color-neutro-100)] rounded-corner-m">{p.tipoCarga}</span>
+                      <span>{p.steps.length} estados</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <span className={`px-2 py-0.5 text-[11px] font-medium rounded-corner-m ${p.modoIngreso === "fajos" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
+                        {p.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
+                      </span>
+                      <div className="flex gap-1">
+                        <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)] hover:text-[var(--color-neutro-700)] transition-colors" title="Editar" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]" title="Duplicar" onClick={(e) => { e.stopPropagation(); store.duplicarProceso(p.id); }}>
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); } }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {store.procesosFinalizados.length === 0 && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Layers className="w-12 h-12 text-[var(--color-neutro-300)] mx-auto mb-3" />
+              <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-2">No hay operaciones</h3>
+              <p className="text-[13px] text-[var(--color-neutro-500)] mb-4">Cree su primera operación para comenzar</p>
+              <Button onClick={onNewOperation}>Crear Nueva Operación</Button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -635,74 +747,145 @@ function FusionadoTab({
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       {/* Left: saved operations */}
-      <div className="w-[260px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-        <div className="p-3 border-b border-[var(--color-neutro-200)]">
+      <div className="w-[312px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-neutro-200)]">
           <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
             Operaciones ({store.procesosFinalizados.length})
           </p>
+          <button
+            className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)] rounded-corner-m transition-colors cursor-pointer"
+            onClick={() => { setEditGroupId(null); setShowGroupDialog(true); }}
+            title="Administrar grupos"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Grupos
+          </button>
         </div>
         <div className="p-3 border-b border-[var(--color-neutro-200)]">
           <Button className="w-full !justify-center" size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>
             Crear Nueva Operación
           </Button>
         </div>
-        <div className="p-2 space-y-1 flex-1 overflow-y-auto">
-          {store.procesosFinalizados.map((p) => (
-            <div
-              key={p.id}
-              className={`flex items-center gap-2 px-3 py-2 rounded-corner-m text-left text-[13px] transition-colors cursor-pointer ${
-                selectedSavedId === p.id
-                  ? "bg-[var(--color-verde-100)] text-white"
-                  : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
-              } ${p.activo === false ? "opacity-50" : ""}`}
-              onClick={() => onSelectSaved(p.id)}
-            >
-              <FolderOpen className="w-4 h-4 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
-                <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
-                  {p.tipoCarga} · {p.steps.length} estados{p.activo === false ? " · Inactivo" : ""}
-                </p>
+        <div className="p-2 space-y-2 flex-1 overflow-y-auto">
+          {store.gruposOperaciones.map((grupo) => {
+            const ops = grupo.operacionIds
+              .map((oid) => store.procesosFinalizados.find((p) => p.id === oid))
+              .filter((p): p is ProcesoTransaccional => p != null);
+            if (ops.length === 0) return null;
+            return (
+              <div key={grupo.id}>
+                <div className="flex items-center gap-1.5 px-2 py-1">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: grupo.color }} />
+                  <span className="text-[10px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">{grupo.nombre}</span>
+                  <span className="text-[10px] text-[var(--color-neutro-400)]">({ops.length})</span>
+                </div>
+                {ops.map((p, idx) => (
+                  <div key={p.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-corner-m text-left text-[13px] transition-colors cursor-pointer ${
+                      selectedSavedId === p.id
+                        ? "text-white"
+                        : "text-[var(--color-neutro-700)] hover:bg-[var(--group-color)]/[0.12]"
+                    } ${p.activo === false ? "opacity-50" : ""} ${dragOver?.groupId === grupo.id && dragOver?.idx === idx ? "ring-2 ring-[var(--color-verde-100)]" : ""}`}
+                    style={{ borderLeft: `3px solid ${grupo.color}`, '--group-color': grupo.color, ...(selectedSavedId === p.id ? { backgroundColor: grupo.color } : {}) } as React.CSSProperties}
+                    onClick={() => onSelectSaved(p.id)}
+                    draggable
+                    onDragStart={() => setDragSrc({ groupId: grupo.id, idx })}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver({ groupId: grupo.id, idx }); }}
+                    onDragEnd={() => {
+                      if (dragSrc && dragOver && dragSrc.groupId === dragOver.groupId && dragSrc.idx !== dragOver.idx) {
+                        store.reordenarOperacionesEnGrupo(dragSrc.groupId, dragSrc.idx, dragOver.idx);
+                      }
+                      setDragSrc(null);
+                      setDragOver(null);
+                    }}
+                  >
+                    <GripHorizontal className="w-3 h-3 shrink-0 text-[var(--color-neutro-400)] cursor-grab active:cursor-grabbing" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
+                      <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
+                        {p.tipoCarga} · {p.steps.length} estados{p.activo === false ? " · Inactivo" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`} title="Editar operación" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`} title="Eliminar operación" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <button
-                  className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`}
-                  title="Editar operación"
-                  onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`}
-                  title="Duplicar operación"
-                  onClick={(e) => { e.stopPropagation(); store.duplicarProceso(p.id); }}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white/70 hover:text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`}
-                  title="Eliminar operación"
-                  onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"? Esta acción no se puede deshacer.`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+            );
+          })}
+          {(() => {
+            const ungrouped = store.procesosFinalizados.filter(
+              (p) => !store.gruposOperaciones.some((g) => g.operacionIds.includes(p.id))
+            );
+            if (ungrouped.length === 0) return null;
+            return (
+              <div>
+                <div className="flex items-center gap-1.5 px-2 py-1">
+                  <span className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Sin grupo</span>
+                  <span className="text-[10px] text-[var(--color-neutro-400)]">({ungrouped.length})</span>
+                </div>
+                {ungrouped.map((p, idx) => (
+                  <div key={p.id}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-corner-m text-left text-[13px] transition-colors cursor-pointer ${
+                      selectedSavedId === p.id
+                        ? "bg-[var(--color-verde-100)] text-white"
+                        : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
+                    } ${p.activo === false ? "opacity-50" : ""}`}
+                    onClick={() => onSelectSaved(p.id)}
+                  >
+                    <FolderOpen className="w-4 h-4 shrink-0 text-[var(--color-neutro-400)]" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
+                      <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
+                        {p.tipoCarga} · {p.steps.length} estados{p.activo === false ? " · Inactivo" : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`} title="Editar operación" onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white/70 hover:text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`} title="Eliminar operación" onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${p.nombre}"?`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) onSelectSaved(p.id); } }}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            );
+          })()}
           {store.procesosFinalizados.length === 0 && (
             <p className="text-[13px] text-[var(--color-neutro-400)] text-center py-6">No hay operaciones guardadas</p>
           )}
         </div>
       </div>
 
+      {/* Group management dialog */}
+      <GroupDialog
+        open={showGroupDialog}
+        editGroupId={editGroupId}
+        procesosFinalizados={store.procesosFinalizados}
+        gruposOperaciones={store.gruposOperaciones}
+        onAddGrupo={(nombre, color) => store.addGrupo(nombre, color)}
+        onUpdateGrupo={(id, updates) => store.updateGrupo(id, updates)}
+        onRemoveGrupo={(id) => store.removeGrupo(id)}
+        onMoveOperacion={(opId, fromGId, toGId, toIdx) => store.moveOperacionToGrupo(opId, fromGId, toGId, toIdx)}
+        onClose={() => { setShowGroupDialog(false); setEditGroupId(null); }}
+      />
+
       {/* Center: form fields + inspector */}
       <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto">
         {/* Detalles de la Operación — unificado */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)] cursor-pointer select-none" onClick={() => setCollapseDetalles(!collapseDetalles)}>
-            <Package className="w-4 h-4 text-[var(--color-verde-100)]" />
-            <p className="flex-1 text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Detalles de la Operación</p>
-            <ChevronDown className={`w-4 h-4 text-[var(--color-neutro-400)] transition-transform ${collapseDetalles ? "-rotate-90" : ""}`} />
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 cursor-pointer select-none transition-colors" style={{ backgroundColor: grupoColorActivo ?? 'var(--color-verde-100)' }} onClick={() => setCollapseDetalles(!collapseDetalles)}>
+            <Package className="w-4 h-4 text-white" />
+            <p className="flex-1 text-[11px] font-bold text-white uppercase tracking-wide">Detalles de la Operación</p>
+            <ChevronDown className={`w-4 h-4 text-white/70 transition-transform ${collapseDetalles ? "-rotate-90" : ""}`} />
           </div>
           {!collapseDetalles && (
           <div className="p-4 space-y-4">
@@ -919,9 +1102,9 @@ function FusionadoTab({
         </div>
 
         {/* Property inspector */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-y-auto min-h-[200px]">
-          <div className="p-3 border-b border-[var(--color-neutro-200)]">
-            <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Inspector de Propiedades</p>
+        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden min-h-[200px]">
+          <div className="flex items-center gap-2 px-4 py-3 select-none" style={{ backgroundColor: 'var(--color-verde-100)' }}>
+            <p className="flex-1 text-[12px] font-semibold text-white uppercase tracking-wide">Inspector de Propiedades</p>
           </div>
           {activeException ? (
             <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} />
@@ -945,7 +1128,7 @@ function FusionadoTab({
       </div>
 
       {/* Right: steps list */}
-      <div className="w-[320px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="w-[480px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-neutro-100)]">
           <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Estados ({displaySteps.length})</p>
           <div className="flex items-center gap-1">
@@ -1708,6 +1891,192 @@ function NewOperationDialog({ open, onClose, onCreate }: { open: boolean; onClos
             <button className={`flex-1 px-3 py-2 rounded-corner-m text-[13px] font-medium border transition-colors cursor-pointer ${modoIngreso === "fajos" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)]"}`} onClick={() => setModoIngreso("fajos")}>Fajos</button>
             <button className={`flex-1 px-3 py-2 rounded-corner-m text-[13px] font-medium border transition-colors cursor-pointer ${modoIngreso === "piezas" ? "bg-amber-600 text-white border-amber-600" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)]"}`} onClick={() => setModoIngreso("piezas")}>Piezas</button>
           </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Group Dialog ── */
+const GROUP_COLORS = ["#2563EB", "#7C3AED", "#DC2626", "#EA580C", "#D97706", "#65A30D", "#059669", "#0891B2", "#4F46E5", "#DB2777", "#78716C", "#A8A29E"];
+
+function GroupDialog({ open, editGroupId, procesosFinalizados, gruposOperaciones, onAddGrupo, onUpdateGrupo, onRemoveGrupo, onMoveOperacion, onClose }: {
+  open: boolean;
+  editGroupId: string | null;
+  procesosFinalizados: ProcesoTransaccional[];
+  gruposOperaciones: GrupoOperacion[];
+  onAddGrupo: (nombre: string, color: string) => void;
+  onUpdateGrupo: (id: string, updates: Partial<Pick<GrupoOperacion, "nombre" | "color">>) => void;
+  onRemoveGrupo: (id: string) => void;
+  onMoveOperacion: (operacionId: string, fromGroupId: string | null, toGroupId: string | null, toIndex: number) => void;
+  onClose: () => void;
+}) {
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editColor, setEditColor] = useState(GROUP_COLORS[0]);
+  const [editOpIds, setEditOpIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!open) { setEditId(null); return; }
+    if (editGroupId) {
+      const g = gruposOperaciones.find((x) => x.id === editGroupId);
+      if (g) { setEditId(g.id); setEditNombre(g.nombre); setEditColor(g.color); setEditOpIds([...g.operacionIds]); }
+    }
+  }, [open, editGroupId, gruposOperaciones]);
+
+  function handleSave() {
+    if (!editNombre.trim()) return;
+    if (editId) {
+      onUpdateGrupo(editId, { nombre: editNombre.trim(), color: editColor });
+      // Sync operation assignments
+      const current = gruposOperaciones.find((g) => g.id === editId);
+      const oldIds = current?.operacionIds ?? [];
+      const removed = oldIds.filter((id) => !editOpIds.includes(id));
+      const added = editOpIds.filter((id) => !oldIds.includes(id));
+      for (const opId of removed) onMoveOperacion(opId, editId, null, 0);
+      for (const opId of added) onMoveOperacion(opId, null, editId, 999);
+    } else {
+      onAddGrupo(editNombre.trim(), editColor);
+    }
+    setEditId(null);
+    setEditNombre("");
+    setEditColor(GROUP_COLORS[0]);
+    setEditOpIds([]);
+  }
+
+  function startEdit(id: string) {
+    const g = gruposOperaciones.find((x) => x.id === id);
+    if (g) { setEditId(id); setEditNombre(g.nombre); setEditColor(g.color); setEditOpIds([...g.operacionIds]); }
+  }
+
+  const unassignedOps = procesosFinalizados.filter(
+    (p) => !gruposOperaciones.some((g) => g.operacionIds.includes(p.id))
+  );
+
+  return (
+    <Modal open={open} onClose={onClose} title="Administrar Grupos" size="md">
+      <div className="space-y-4">
+        {/* Existing groups */}
+        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          {gruposOperaciones.map((g) => {
+            const isEditing = editId === g.id;
+            return (
+              <div key={g.id} className="border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
+                {isEditing ? (
+                  <div className="p-3 space-y-3">
+                    <Input value={editNombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditNombre(e.target.value)} placeholder="Nombre del grupo" />
+                    <div className="flex flex-wrap gap-1.5">
+                      {GROUP_COLORS.map((c) => (
+                        <button key={c}
+                          className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${editColor === c ? "border-[var(--color-neutro-900)] scale-110" : "border-transparent"}`}
+                          style={{ backgroundColor: c }}
+                          onClick={() => setEditColor(c)}
+                        />
+                      ))}
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] mb-1">Operaciones en este grupo</p>
+                      <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                        {procesosFinalizados.filter((p) => editOpIds.includes(p.id)).map((p) => (
+                          <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--color-neutro-50)] cursor-pointer">
+                            <Checkbox
+                              checked={editOpIds.includes(p.id)}
+                              onChange={() => setEditOpIds(editOpIds.filter((id) => id !== p.id))}
+                            />
+                            <span className="text-[13px]">{p.nombre}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    {unassignedOps.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] mb-1">Agregar operación</p>
+                        <div className="space-y-1 max-h-[120px] overflow-y-auto">
+                          {unassignedOps.map((p) => (
+                            <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--color-neutro-50)] cursor-pointer">
+                              <Checkbox
+                                checked={editOpIds.includes(p.id)}
+                                onChange={() => setEditOpIds([...editOpIds, p.id])}
+                              />
+                              <span className="text-[13px]">{p.nombre}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex justify-end gap-2 pt-2">
+                      <Button size="sm" variant="outline" onClick={() => { setEditId(null); setEditNombre(""); setEditColor(GROUP_COLORS[0]); setEditOpIds([]); }}>Cancelar</Button>
+                      <Button size="sm" onClick={handleSave}>Guardar</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: g.color }} />
+                    <span className="flex-1 text-[13px] font-medium text-[var(--color-neutro-900)]">{g.nombre}</span>
+                    <span className="text-[11px] text-[var(--color-neutro-400)]">{g.operacionIds.length} ops</span>
+                    <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)] hover:text-blue-600 transition-colors cursor-pointer" title="Editar" onClick={() => startEdit(g.id)}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button className="p-1 rounded text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer" title="Eliminar" onClick={() => { if (window.confirm(`¿Eliminar el grupo "${g.nombre}"? Las operaciones no se eliminarán.`)) { onRemoveGrupo(g.id); } }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {gruposOperaciones.length === 0 && (
+            <p className="text-[13px] text-[var(--color-neutro-400)] text-center py-6">No hay grupos creados</p>
+          )}
+        </div>
+
+        {/* Add new group button */}
+        {!editId && (
+          <button
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-[var(--color-neutro-200)] rounded-corner-m text-[13px] font-medium text-[var(--color-neutro-500)] hover:border-[var(--color-verde-100)] hover:text-[var(--color-verde-100)] transition-colors cursor-pointer"
+            onClick={() => { setEditId("__new"); setEditNombre(""); setEditColor(GROUP_COLORS[0]); setEditOpIds([]); }}
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Grupo
+          </button>
+        )}
+
+        {/* New group form */}
+        {editId === "__new" && (
+          <div className="border border-[var(--color-neutro-200)] rounded-corner-m p-3 space-y-3">
+            <Input value={editNombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditNombre(e.target.value)} placeholder="Nombre del grupo" autoFocus />
+            <div className="flex flex-wrap gap-1.5">
+              {GROUP_COLORS.map((c) => (
+                <button key={c}
+                  className={`w-6 h-6 rounded-full border-2 transition-all cursor-pointer ${editColor === c ? "border-[var(--color-neutro-900)] scale-110" : "border-transparent"}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setEditColor(c)}
+                />
+              ))}
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] mb-1">Asignar operaciones</p>
+              <div className="space-y-1 max-h-[150px] overflow-y-auto">
+                {procesosFinalizados.map((p) => (
+                  <label key={p.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[var(--color-neutro-50)] cursor-pointer">
+                    <Checkbox
+                      checked={editOpIds.includes(p.id)}
+                      onChange={() => setEditOpIds(editOpIds.includes(p.id) ? editOpIds.filter((id) => id !== p.id) : [...editOpIds, p.id])}
+                    />
+                    <span className="text-[13px]">{p.nombre}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button size="sm" variant="outline" onClick={() => setEditId(null)}>Cancelar</Button>
+              <Button size="sm" onClick={handleSave}>Crear Grupo</Button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end pt-2 border-t border-[var(--color-neutro-200)]">
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
         </div>
       </div>
     </Modal>
