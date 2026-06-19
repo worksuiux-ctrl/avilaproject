@@ -780,119 +780,29 @@ function EventosContablesTab() {
 
 /* ── Productos Tab ── */
 function ProductosTab() {
-  const [productos, setProductos] = useState(PRODUCTOS.map((p, i) => ({ ...p, id: `p${i}`, descripcion: "" })));
-  const [editId, setEditId] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ id: "", value: "", label: "", descripcion: "" });
-
-  function handleSave() {
-    if (!form.value || !form.label) return;
-    if (editId) {
-      setProductos(productos.map((p) => p.id === editId ? { ...form, id: editId } : p));
-    } else {
-      setProductos([...productos, { ...form, id: `p${Date.now()}` }]);
-    }
-    setForm({ id: "", value: "", label: "", descripcion: "" });
-    setEditId(null);
-    setShowForm(false);
-  }
-
-  function handleEdit(p: typeof productos[0]) {
-    setForm(p);
-    setEditId(p.id);
-    setShowForm(true);
-  }
-
-  function handleDelete(id: string) {
-    setProductos(productos.filter((p) => p.id !== id));
-  }
-
-  const labelClass = "text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1";
-
   return (
-    <div className="flex-1 flex gap-4 min-h-0">
-      <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-neutro-200)]">
-          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Catálogo de Productos</p>
-          <Button size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={() => { setShowForm(true); setEditId(null); setForm({ id: "", value: "", label: "", descripcion: "" }); }}>
-            Agregar Producto
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-[var(--color-neutro-200)]">
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Valor</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Descripción</th>
-                <th className="w-20 px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {productos.map((p) => (
-                <tr key={p.id} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
-                  <td className="px-3 py-2.5 font-mono text-[12px] text-[var(--color-neutro-700)]">{p.value}</td>
-                  <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{p.label}</td>
-                  <td className="px-3 py-2.5 text-[var(--color-neutro-500)]">{p.descripcion || "—"}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-1">
-                      <button className="p-1 rounded hover:bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] hover:text-blue-500 transition-colors cursor-pointer" title="Editar" onClick={() => handleEdit(p)}>
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="p-1 rounded hover:bg-red-50 text-[var(--color-neutro-400)] hover:text-red-500 transition-colors cursor-pointer" title="Eliminar" onClick={() => handleDelete(p.id)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {productos.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
-              <p className="text-[13px] text-[var(--color-neutro-400)]">No hay productos registrados</p>
-            </div>
-          )}
-        </div>
+    <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
+      <div className="px-4 py-3 border-b border-[var(--color-neutro-200)]">
+        <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">Productos</p>
       </div>
-
-      {showForm && (
-        <div className="w-[380px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--color-neutro-200)]">
-            <p className="flex-1 text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
-              {editId ? "Editar Producto" : "Nuevo Producto"}
-            </p>
-            <button className="p-1 rounded hover:bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] hover:text-[var(--color-neutro-600)] transition-colors cursor-pointer" onClick={() => { setShowForm(false); setEditId(null); }}>
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="p-4 space-y-4 overflow-y-auto flex-1">
-            <div>
-              <p className={labelClass}>Valor</p>
-              <input value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })}
-                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white font-mono"
-                placeholder="Ej: mesa-cambio" />
-            </div>
-            <div>
-              <p className={labelClass}>Nombre</p>
-              <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
-                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
-                placeholder="Ej: Mesa de Cambio" />
-            </div>
-            <div>
-              <p className={labelClass}>Descripción</p>
-              <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                className="w-full text-[13px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white resize-none"
-                rows={3} placeholder="Descripción opcional" />
-            </div>
-          </div>
-          <div className="p-4 border-t border-[var(--color-neutro-200)]">
-            <Button className="w-full !justify-center !bg-[var(--color-verde-100)] !text-white" size="sm" onClick={handleSave}>
-              {editId ? "Guardar Cambios" : "Agregar Producto"}
-            </Button>
-          </div>
-        </div>
-      )}
+      <div className="flex-1 overflow-y-auto p-4">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="border-b border-[var(--color-neutro-200)]">
+              <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Valor</th>
+              <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+            {PRODUCTOS.map((p) => (
+              <tr key={p.value} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
+                <td className="px-3 py-2.5 font-mono text-[12px] text-[var(--color-neutro-700)]">{p.value}</td>
+                <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{p.label}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
