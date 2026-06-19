@@ -30,6 +30,9 @@ import {
   HiOutlineClipboardDocumentCheck,
   HiOutlineServerStack,
   HiOutlineCalendarDays,
+  HiOutlineArrowsRightLeft,
+  HiOutlineTableCells,
+  HiOutlineArchiveBox,
 } from "react-icons/hi2";
 import type { IconType } from "react-icons";
 
@@ -74,6 +77,10 @@ const itemIcons: Record<string, IconType> = {
   QuestionMarkCircle: HiOutlineQuestionMarkCircle,
   ServerStack: HiOutlineServerStack,
   CalendarDays: HiOutlineCalendarDays,
+  ListTree: HiOutlineListBullet,
+  ArrowsRightLeft: HiOutlineArrowsRightLeft,
+  TableCells: HiOutlineTableCells,
+  ArchiveBox: HiOutlineArchiveBox,
 };
 
 function ModuleGroup({ module, activeRoute, onNavigate, collapsed, onModuleClick }: {

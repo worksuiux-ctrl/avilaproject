@@ -14,7 +14,7 @@ export const ENTITY_TYPES: EntityType[] = [
     subtipos: ["Zona", "Ciudad", "Estado", "Municipio", "Continente", "País", "Flota"],
     hijosPermitidos: ["Central Administrativa", "Oficinas", "Depósitos", "Vehículos", "Proveedores", "Clientes", "Grupos"],
     color: "var(--color-verde-100)",
-    icono: "FolderTree",
+    icono: "ListTree",
   },
   {
     nivel: "Central Administrativa",

@@ -21,6 +21,7 @@ export const MODULES: Module[] = [
     description: "Monitoreo diario, análisis y control",
     items: [
       { id: "dashboard-main", label: "Panel General", icon: "ChartLine", route: "/dashboard" },
+      { id: "inventario", label: "Inventario", icon: "ArchiveBox", route: "/inventario" },
       { id: "war-room", label: "War Room · Tesorería", icon: "TowerObservation", route: "/war-room" },
       { id: "kpi-gerencial", label: "KPIs Estratégicos", icon: "ChartPie", route: "/kpi-gerencial" },
       { id: "kpi-operativo", label: "KPIs Operativos", icon: "Gauge", route: "/kpi-operativo" },
@@ -33,7 +34,7 @@ export const MODULES: Module[] = [
     description: "Gestión por perfil — Banco, BCV, Transportista, Corporativo, Negocios",
     items: [
       { id: "operaciones-main", label: "Panel de Operaciones", icon: "Briefcase", route: "/operaciones" },
-      { id: "operaciones-conteo", label: "Mesa de Conteo", icon: "Package", route: "/operaciones/conteo" },
+      { id: "operaciones-conteo", label: "Mesa de Conteo", icon: "TableCells", route: "/operaciones/conteo" },
     ],
   },
   {
@@ -74,7 +75,7 @@ export const MODULES: Module[] = [
       { id: "config-divisas", label: "Divisas", icon: "Cash", route: "/config/divisas" },
       { id: "config-proveedores", label: "Proveedores", icon: "Truck", route: "/config/proveedores" },
       { id: "config-clientes", label: "Clientes", icon: "Users", route: "/config/clientes" },
-      { id: "config-grupos", label: "Grupos", icon: "FolderTree", route: "/config/grupos" },
+      { id: "config-grupos", label: "Grupos", icon: "ListTree", route: "/config/grupos" },
       { id: "config-motor-transacciones", label: "Motor Transacciones", icon: "Settings", route: "/config/motor-transacciones" },
       { id: "config-calendario-financiero", label: "Calendario Financiero", icon: "CalendarDays", route: "/config/calendario-financiero" },
     ],
@@ -96,7 +97,7 @@ export const MODULES: Module[] = [
     description: "Conexiones con sistemas externos",
     items: [
       { id: "integrations", label: "Panel de Integraciones", icon: "ServerStack", route: "/integrations" },
-      { id: "interfaces", label: "Interfaces", icon: "Network", route: "/interfaces" },
+      { id: "interfaces", label: "Interfaces", icon: "ArrowsRightLeft", route: "/interfaces" },
     ],
   },
   {
