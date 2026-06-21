@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2, Lock, CheckCircle, GripHorizontal, BookOpen, FileText, Tag } from "lucide-react";
 import { Button, Input, Select, Switch, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import {
   useTransaccionesStore,
+  type TransaccionesState,
   type TransaccionStep,
   type Excepcion,
   type GrupoOperacion,
@@ -20,7 +21,7 @@ import {
 } from "@stores/transaccionesStore";
 import { useDivisasStore } from "@stores/divisasStore";
 import { useProveedoresStore } from "@stores/proveedoresStore";
-import { CATEGORIAS_SERVICIO } from "@stores/proveedoresStore";
+
 
 const UNIDADES_POR_AMBITO: Record<string, { value: string; label: string }[]> = {
   interna: [
@@ -51,7 +52,7 @@ const UNIDADES_POR_AMBITO: Record<string, { value: string; label: string }[]> = 
 };
 
 export function MotorTransaccionesPage() {
-  const store = useTransaccionesStore();
+  const store: any = useTransaccionesStore();
   const { proceso } = store;
   const [activeTab, setActiveTab] = useState<"operaciones-y-estados" | "cuentas-contables" | "eventos-contables" | "productos">("operaciones-y-estados");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -163,449 +164,18 @@ export function MotorTransaccionesPage() {
   );
 }
 
-/* â”€â”€ Operaciones Tab â”€â”€ */
-function OperacionesTab({
-  store, proceso, selectedSavedId, savedProceso, isViewingSaved, displayProceso,
-  onSelectSaved, onEditSaved, onNewOperation,
-}: {
-  store: ReturnType<typeof useTransaccionesStore>;
-  proceso: ReturnType<typeof useTransaccionesStore>["proceso"];
-  selectedSavedId: string | null;
-  savedProceso: ReturnType<typeof useTransaccionesStore>["procesosFinalizados"][0] | null;
-  isViewingSaved: boolean;
-  displayProceso: ReturnType<typeof useTransaccionesStore>["proceso"] | NonNullable<typeof savedProceso>;
-  onSelectSaved: (id: string) => void;
-  onEditSaved: (id: string, name: string) => void;
-  onNewOperation: () => void;
-}) {
-  return (
-    <div className="flex-1 flex gap-4 min-h-0">
-      {/* Left: saved operations */}
-      <div className="w-[312px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m overflow-y-auto shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-        <div className="p-3 border-b border-[var(--color-neutro-200)]">
-          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
-            Operaciones ({store.procesosFinalizados.length})
-          </p>
-        </div>
-        <div className="p-3 border-b border-[var(--color-neutro-200)]">
-          <Button className="w-full !justify-center" size="sm" iconLeft={<Plus className="w-4 h-4" />} onClick={onNewOperation}>
-            Crear Nueva OperaciÃ³n
-          </Button>
-        </div>
-        <div className="p-2 space-y-1 flex-1 overflow-y-auto">
-          {store.procesosFinalizados.map((p, idx) => (
-            <div
-              key={p.id}
-              draggable
-              onDragStart={() => setDragIndex(idx)}
-              onDragOver={(e) => { e.preventDefault(); setDragOverIndex(idx); }}
-              onDragEnd={() => {
-                if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
-                  store.reordenarProcesos(dragIndex, dragOverIndex);
-                }
-                setDragIndex(null);
-                setDragOverIndex(null);
-              }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-corner-m text-left text-[13px] transition-colors cursor-pointer ${
-                selectedSavedId === p.id
-                  ? "bg-[var(--color-verde-100)] text-white"
-                  : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
-              } ${dragOverIndex === idx ? "ring-2 ring-[var(--color-verde-100)]" : ""}`}
-              onClick={() => onSelectSaved(p.id)}
-            >
-              <GripHorizontal className="w-3.5 h-3.5 shrink-0 text-[var(--color-neutro-400)] cursor-grab active:cursor-grabbing" />
-              <FolderOpen className="w-4 h-4 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{p.nombre || "Sin nombre"}</p>
-                <p className={`text-[11px] truncate ${selectedSavedId === p.id ? "text-white/70" : "text-[var(--color-neutro-400)]"}`}>
-                  {p.tipoCarga} Â· {p.steps.length} estados
-                </p>
-              </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <button
-                  className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-[var(--color-neutro-100)]"}`}
-                  title="Editar operaciÃ³n"
-                  onClick={(e) => { e.stopPropagation(); onEditSaved(p.id, p.nombre || "Sin nombre"); }}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  className={`p-1 rounded transition-colors ${selectedSavedId === p.id ? "text-white/70 hover:text-white hover:bg-white/20" : "text-[var(--color-neutro-400)] hover:bg-red-50 hover:text-red-500"}`}
-                  title="Eliminar operaciÃ³n"
-                  onClick={(e) => { e.stopPropagation(); if (window.confirm(`Â¿Eliminar "${p.nombre}"? Esta acciÃ³n no se puede deshacer.`)) { store.eliminarProceso(p.id); if (selectedSavedId === p.id) setSelectedSavedId(null); } }}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
-          {store.procesosFinalizados.length === 0 && (
-            <p className="text-[13px] text-[var(--color-neutro-400)] text-center py-6">No hay operaciones guardadas</p>
-          )}
-        </div>
-      </div>
-
-      {/* Right: operation form */}
-      <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto">
-        {/* Card 1: Nombre */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)]">
-            <span className="w-2 h-2 rounded-full bg-[var(--color-verde-100)]" />
-            <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Nombre de la OperaciÃ³n</p>
-          </div>
-          <div className="p-4">
-            {isViewingSaved ? (
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <p className="text-[16px] font-bold text-[var(--color-neutro-900)]">{displayProceso.nombre || "Sin nombre"}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="px-2 py-0.5 text-[11px] font-medium bg-[var(--color-neutro-100)] text-[var(--color-neutro-600)] rounded-corner-m">{displayProceso.tipoCarga}</span>
-                    <span className={`flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-corner-m ${displayProceso.modoIngreso === "fajos" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        {displayProceso.modoIngreso === "fajos"
-                          ? <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                          : <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        }
-                      </svg>
-                      {displayProceso.modoIngreso === "fajos" ? "Fajos" : "Piezas"}
-                    </span>
-                  </div>
-                </div>
-                <Button size="sm" iconLeft={<Pencil className="w-4 h-4" />} onClick={() => onEditSaved(displayProceso.id, displayProceso.nombre || "Sin nombre")}>
-                  Editar
-                </Button>
-              </div>
-            ) : (
-              <>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <Input value={proceso.nombre} onChange={(e: React.ChangeEvent<HTMLInputElement>) => store.setNombre(e.target.value)} placeholder="Ej: Pase de Caja a ATM..." />
-                </div>
-                <div className="w-[200px]">
-                  <Select options={TIPOS_CARGA} value={proceso.tipoCarga} onChange={(v: string) => store.setTipoCarga(v)} />
-                </div>
-              </div>
-              <div className="flex items-center gap-4 pt-2">
-                <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide">Modo de ingreso</p>
-                <div className="flex bg-[var(--color-neutro-100)] rounded-corner-m p-0.5">
-                  <button
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-medium rounded-corner-m transition-all cursor-pointer ${proceso.modoIngreso === "fajos" ? "bg-white text-[var(--color-neutro-900)] shadow-sm ring-1 ring-[var(--color-neutro-200)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"}`}
-                    onClick={() => store.setModoIngreso("fajos")}
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    Fajos
-                  </button>
-                  <button
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-medium rounded-corner-m transition-all cursor-pointer ${proceso.modoIngreso === "piezas" ? "bg-white text-[var(--color-neutro-900)] shadow-sm ring-1 ring-[var(--color-neutro-200)]" : "text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"}`}
-                    onClick={() => store.setModoIngreso("piezas")}
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    Piezas
-                  </button>
-                </div>
-              </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Card 2: Origen - Destino */}
-        <div className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] shrink-0">
-          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[var(--color-neutro-100)]">
-            <span className="w-2 h-2 rounded-full bg-blue-500" />
-            <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">Origen - Destino</p>
-          </div>
-          <div className="p-4">
-            {isViewingSaved ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Origen</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.origenTipo ?? "â€”"}</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-[var(--color-neutro-300)] mt-5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Destino</p>
-                    <p className="text-[14px] font-medium text-[var(--color-neutro-900)]">{displayProceso.destinoTipo ?? "â€”"}</p>
-                  </div>
-                </div>
-                {displayProceso.ambito && (
-                  <p className="text-[12px] text-blue-600 font-medium">
-                    {AMBITOS.find((a) => a.value === displayProceso.ambito)?.label ?? displayProceso.ambito}
-                  </p>
-                )}
-                {displayProceso.usaTransportista && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[12px] text-[var(--color-neutro-500)]">Transportista:</span>
-                    {displayProceso.transportistasPermitidos.map((tId) => {
-                      const t = useProveedoresStore.getState().proveedores.find((p) => p.id === tId && p.tipo === "Transportista de Valores");
-                      return t ? <span key={t.id} className="px-2.5 py-0.5 rounded-corner-m text-[12px] bg-blue-500 text-white font-medium">{t.nombre}</span> : null;
-                    })}
-                  </div>
-                )}
-                {(displayProceso.divisasPermitidas ?? []).length > 0 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[12px] text-[var(--color-neutro-500)]">Divisas:</span>
-                    {(displayProceso.divisasPermitidas ?? []).map((dId) => {
-                      const d = useDivisasStore.getState().divisas.find((dv) => dv.id === dId);
-                      return d ? <span key={d.id} className="px-2.5 py-0.5 rounded-corner-m text-[12px] bg-emerald-600 text-white font-medium">{d.simbolo} {d.codigoISO}</span> : null;
-                    })}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Tipo de origen</p>
-                    <Select options={TIPOS_UNIDAD} value={proceso.origenTipo ?? ""} onChange={(v: string) => store.setOrigenTipo(v || null)} placeholder="Seleccionar tipo..." />
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-[var(--color-neutro-300)] mt-6 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Tipo de destino</p>
-                    <Select options={TIPOS_UNIDAD} value={proceso.destinoTipo ?? ""} onChange={(v: string) => store.setDestinoTipo(v || null)} placeholder="Seleccionar tipo..." />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Ãmbito</p>
-                  <Select options={AMBITOS} value={proceso.ambito} onChange={(v: string) => store.setAmbito(v as "interna" | "entre-agencias" | "externa")} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-[var(--color-neutro-500)] uppercase tracking-wide mb-0.5">Divisas permitidas</p>
-                  <DivisaSelector ids={proceso.divisasPermitidas ?? []} onChange={(ids) => store.setDivisasPermitidas(ids)} />
-                </div>
-                <hr className="border-[var(--color-neutro-100)]" />
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Switch checked={proceso.usaTransportista} onChange={proceso.ambito === "interna" ? undefined : store.setUsaTransportista} />
-                    <span className={`text-[13px] ${proceso.ambito === "interna" ? "text-[var(--color-neutro-400)]" : "text-[var(--color-neutro-700)]"}`}>Usa transportista de valores</span>
-                  </label>
-                  {proceso.ambito === "interna" && <p className="text-[11px] text-[var(--color-neutro-400)] ml-7">No aplica para operaciones internas</p>}
-                </div>
-                {proceso.usaTransportista && (
-                  <div className="flex flex-wrap gap-2">
-                    {useProveedoresStore.getState().proveedores.filter((p) => p.tipo === "Transportista de Valores").map((t) => {
-                      const selected = proceso.transportistasPermitidos.includes(t.id);
-                      return (
-                        <button key={t.id} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors cursor-pointer ${selected ? "bg-blue-500 text-white border-blue-500" : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:border-blue-300"}`} onClick={() => store.toggleTransportistaPermitido(t.id)}>
-                          {selected && <CheckCheck className="w-3 h-3" />}
-                          {t.nombre}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Save button */}
-        {!isViewingSaved && (
-          <div className="shrink-0">
-            <Button className="w-full !justify-center !bg-[var(--color-verde-100)] !text-white" size="sm" iconLeft={<Save className="w-4 h-4" />} onClick={store.finalizeProceso}>
-              Guardar OperaciÃ³n
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* â”€â”€ Estados Tab â”€â”€ */
-function EstadosTab({
-  store, isViewingSaved, displayProceso, hasActiveOperation, dragIndex, dragOverIndex,
-  setDragIndex, setDragOverIndex, onSwitchTab,
-}: {
-  store: ReturnType<typeof useTransaccionesStore>;
-  isViewingSaved: boolean;
-  displayProceso: ReturnType<typeof useTransaccionesStore>["proceso"] | NonNullable<ReturnType<typeof useTransaccionesStore>["procesosFinalizados"][0]>;
-  hasActiveOperation: boolean;
-  dragIndex: number | null;
-  dragOverIndex: number | null;
-  setDragIndex: (v: number | null) => void;
-  setDragOverIndex: (v: number | null) => void;
-  onSwitchTab: () => void;
-}) {
-  const { proceso } = store;
-  const activeStepId = store.activeStepId;
-  const activeExceptionId = store.activeExceptionId;
-
-  const displaySteps = isViewingSaved ? displayProceso.steps : proceso.steps;
-  const activeStep = displaySteps.find((s) => s.id === activeStepId) ?? null;
-  const activeException = activeExceptionId
-    ? displaySteps.find((s) => s.id === activeExceptionId.stepId)
-        ?.excepciones.find((e) => e.id === activeExceptionId.exId) ?? null
-    : null;
-
-  if (!hasActiveOperation) {
-    return (
-      <>
-        {/* Operation header */}
-        <div className="flex items-center gap-3 p-3 mb-3 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <Package className="w-5 h-5 text-[var(--color-verde-100)] shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-[var(--color-neutro-900)] truncate">Sin operaciÃ³n seleccionada</p>
-            <div className="flex items-center gap-2 text-[11px] text-[var(--color-neutro-500)]">
-              <span>Seleccione una operaciÃ³n para ver sus estados</span>
-            </div>
-          </div>
-          <div className="w-[240px]">
-            <Select
-              options={[
-                { value: "", label: "Seleccionar operaciÃ³n..." },
-                ...store.procesosFinalizados.map((p) => ({ value: p.id, label: p.nombre })),
-              ]}
-              value=""
-              onChange={(v: string) => { if (v) store.cargarProceso(v); }}
-            />
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Layers className="w-12 h-12 text-[var(--color-neutro-300)] mx-auto mb-3" />
-            <h3 className="text-[16px] font-bold text-[var(--color-neutro-900)] mb-2">No hay operaciÃ³n seleccionada</h3>
-            <p className="text-[13px] text-[var(--color-neutro-500)] mb-4">
-              Seleccione una operaciÃ³n en el selector superior o vaya a la pestaÃ±a Operaciones
-            </p>
-            <Button onClick={onSwitchTab}>
-              Ir a Operaciones
-            </Button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <>
-      {/* Operation header */}
-      <div className="flex items-center gap-3 p-3 mb-3 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-        <Package className="w-5 h-5 text-[var(--color-verde-100)] shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-[var(--color-neutro-900)] truncate">{displayProceso.nombre || "Sin nombre"}</p>
-          <div className="flex items-center gap-2 text-[11px] text-[var(--color-neutro-500)]">
-            <span>{displayProceso.tipoCarga}</span>
-            {displayProceso.origenTipo && (
-              <><span>Â·</span><span>{displayProceso.origenTipo} <ArrowRight className="w-3 h-3 inline" /> {displayProceso.destinoTipo ?? "?"}</span></>
-            )}
-            <span>Â·</span>
-            <span>{displaySteps.length} estados</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-[200px]">
-            <Select
-              options={[
-                { value: "", label: "Seleccionar operaciÃ³n..." },
-                ...store.procesosFinalizados.map((p) => ({ value: p.id, label: p.nombre })),
-              ]}
-              value={isViewingSaved ? displayProceso.id : proceso.id}
-              onChange={(v: string) => { if (v) store.cargarProceso(v); }}
-            />
-          </div>
-          {isViewingSaved && (
-            <Button size="sm" iconLeft={<Pencil className="w-4 h-4" />} onClick={() => {
-              if (window.confirm(`Â¿EstÃ¡ seguro de editar "${displayProceso.nombre}"? Esta operaciÃ³n podrÃ­a estar en uso en transacciones activas.`)) {
-                store.cargarProceso(displayProceso.id);
-              }
-            }}>
-              Editar
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 flex gap-4 min-h-0">
-        {/* Left: step list */}
-      <div className="w-[480px] shrink-0 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--color-neutro-100)]">
-          <p className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide">
-            Estados ({displaySteps.length})
-          </p>
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-[var(--color-neutro-400)]">Inicial</span>
-            <span className="w-3 h-3 rounded-full bg-green-400" />
-            <span className="mx-1 text-[var(--color-neutro-300)]">Â·Â·Â·</span>
-            <span className="w-3 h-3 rounded-full bg-red-400" />
-            <span className="text-[10px] text-[var(--color-neutro-400)]">Terminal</span>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {displaySteps.map((step, idx) => {
-            const isFirst = idx === 0;
-            const isLast = idx === displaySteps.length - 1;
-            return (
-              <EstadoCard
-                key={step.id}
-                step={step}
-                index={idx}
-                isActive={activeStepId === step.id}
-                isFirst={isFirst}
-                isLast={isLast}
-                readOnly={isViewingSaved}
-                isDragging={dragIndex === idx}
-                showDropBefore={dragIndex !== null && dragIndex !== idx && dragOverIndex === idx}
-                onSelect={() => store.setActiveStep(step.id)}
-                onRemove={isViewingSaved ? undefined : () => store.removeStep(step.id)}
-                onAddExcepcion={isViewingSaved ? undefined : () => store.addExcepcion(step.id)}
-                onRemoveExcepcion={isViewingSaved ? undefined : (exId) => store.removeExcepcion(step.id, exId)}
-                onToggleExcepcionTerminal={isViewingSaved ? undefined : (exId, v) => store.setExcepcionTerminal(step.id, exId, v)}
-                onSelectExcepcion={(exId) => store.setActiveException(step.id, exId)}
-                activeExceptionId={activeExceptionId ? `${activeExceptionId.stepId}:${activeExceptionId.exId}` : null}
-                total={displaySteps.length}
-                onDragStart={isViewingSaved ? undefined : () => { setDragIndex(idx); setDragOverIndex(idx); }}
-                onDragEnter={isViewingSaved ? undefined : () => { if (dragIndex !== null && dragIndex !== idx) setDragOverIndex(idx); }}
-                onDragEnd={isViewingSaved ? undefined : () => { setDragIndex(null); setDragOverIndex(null); }}
-                onDrop={isViewingSaved ? undefined : () => { if (dragIndex !== null && dragIndex !== idx) { store.moveStep(dragIndex, idx); } setDragIndex(null); setDragOverIndex(null); }}
-              />
-            );
-          })}
-        </div>
-        {!isViewingSaved && (
-          <div className="p-2 border-t border-[var(--color-neutro-100)]">
-            <Button className="w-full !justify-center" size="sm" iconLeft={<Plus className="w-3.5 h-3.5" />} onClick={() => store.addStep()}>
-              Agregar Estado
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Right: property inspector */}
-      <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="flex items-center gap-2 px-4 py-3 select-none" style={{ backgroundColor: 'var(--color-verde-100)' }}>
-          <p className="flex-1 text-[12px] font-semibold text-white uppercase tracking-wide">Inspector de Propiedades</p>
-        </div>
-        {activeException ? (
-          <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} />
-        ) : activeStep ? (
-          <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} usaTransportista={displayProceso.usaTransportista} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
-            <p className="text-[13px] text-[var(--color-neutro-400)]">
-              Seleccione un estado o excepciÃ³n para ver sus propiedades
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-    </>
-  );
-}
-
 /* â”€â”€ Fusionado Tab â”€â”€ */
 function FusionadoTab({
   store, proceso, selectedSavedId, savedProceso, isViewingSaved, displayProceso,
   hasActiveOperation, dragIndex, dragOverIndex, setDragIndex, setDragOverIndex,
   onSelectSaved, onEditSaved, onNewOperation,
 }: {
-  store: ReturnType<typeof useTransaccionesStore>;
-  proceso: ReturnType<typeof useTransaccionesStore>["proceso"];
+  store: TransaccionesState;
+  proceso: TransaccionesState["proceso"];
   selectedSavedId: string | null;
-  savedProceso: ReturnType<typeof useTransaccionesStore>["procesosFinalizados"][0] | null;
+  savedProceso: TransaccionesState["procesosFinalizados"][0] | null;
   isViewingSaved: boolean;
-  displayProceso: ReturnType<typeof useTransaccionesStore>["proceso"] | NonNullable<typeof savedProceso>;
+  displayProceso: TransaccionesState["proceso"] | NonNullable<typeof savedProceso>;
   hasActiveOperation: boolean;
   dragIndex: number | null;
   dragOverIndex: number | null;
@@ -838,7 +408,7 @@ function FusionadoTab({
                   <span className="text-[10px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide">Sin grupo</span>
                   <span className="text-[10px] text-[var(--color-neutro-400)]">({ungrouped.length})</span>
                 </div>
-                {ungrouped.map((p, idx) => (
+                {ungrouped.map((p, _idx) => (
                   <div key={p.id}
                     className={`flex items-center gap-2 px-3 py-2 rounded-corner-m text-left text-[13px] transition-colors cursor-pointer ${
                       selectedSavedId === p.id

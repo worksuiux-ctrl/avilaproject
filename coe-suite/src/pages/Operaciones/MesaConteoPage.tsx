@@ -4,26 +4,17 @@ import {
   Search,
   Package,
   CheckCircle,
-  AlertTriangle,
-  OctagonX,
-  Clock,
   ArrowRight,
   ChevronDown,
   ChevronRight,
   List,
   LayoutGrid,
   FileText,
-  Shield,
-  Plus,
-  X,
   CheckCheck,
-  AlertCircle,
 } from "lucide-react";
 import { Button, Badge } from "@coe/design-system";
 import { useConteoStore, type ConteoRemesa, type ConteoBolsa, type ResultadoConteo } from "@stores/conteoStore";
 import { useInstanciasStore } from "@stores/instanciasStore";
-import { useDivisasStore } from "@stores/divisasStore";
-
 const RESULTADO_LABEL: Record<string, string> = {
   pendiente: "Pendiente",
   confirmado: "Confirmado",
@@ -32,16 +23,6 @@ const RESULTADO_LABEL: Record<string, string> = {
   sobrante: "Sobrante",
   inconsistente: "Inconsistente",
   en_proceso: "En Proceso",
-};
-
-const RESULTADO_ICON: Record<string, typeof CheckCircle> = {
-  pendiente: Clock,
-  confirmado: CheckCircle,
-  incompleto: AlertTriangle,
-  faltante: OctagonX,
-  sobrante: AlertCircle,
-  inconsistente: OctagonX,
-  en_proceso: Clock,
 };
 
 const RESULTADO_COLOR: Record<string, string> = {
@@ -58,8 +39,6 @@ export function MesaConteoPage() {
   const navigate = useNavigate();
   const { remesas, initializeConteo, actualizarBolsa, confirmarBolsa, cerrarRemesa } = useConteoStore();
   const { instancias, avanzarEstado } = useInstanciasStore();
-  const divisasStore = useDivisasStore();
-  const clasificaciones = divisasStore.clasificaciones;
 
   const [selectedRemesaId, setSelectedRemesaId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Dialog, Text, Card, Tabs } from "@coe/design-system";
-import type { WrProduct, WrCurrencyDetail } from "@data/warRoomData";
+import type { WrCurrencyDetail } from "@data/warRoomData";
 import { WR_PROD, WR_USD_DENOMS, WR_EUR_DENOMS } from "@data/warRoomData";
 import { WarRoomDenomRow } from "./WarRoomDenomRow";
 

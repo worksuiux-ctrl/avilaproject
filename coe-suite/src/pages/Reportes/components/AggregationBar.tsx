@@ -1,5 +1,5 @@
 import { Select } from "@coe/design-system";
-import { Sigma } from "lucide-react";
+
 import type { ReporteColumn, ColumnAggregation, GroupByConfig, AggregationType } from "../data/reportesTypes";
 
 interface AggregationBarProps {

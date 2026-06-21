@@ -125,9 +125,6 @@ export function FolderModal({ open, onClose }: FolderModalProps) {
   const plantillas = useMemo(() => REPORTS_MOCK.filter((r) => r.categoria === "plantilla"), []);
   const regulatorios = useMemo(() => REPORTS_MOCK.filter((r) => r.categoria === "regulatorio"), []);
 
-  const reportesCount = savedReports.filter((r) => r.tipo === "reporte").length;
-  const dashboardsCount = savedReports.filter((r) => r.tipo === "dashboard").length;
-
   const subfolders = useMemo(() => folders.filter((f) => f.parentId === "mis-reportes"), [folders]);
 
   return (

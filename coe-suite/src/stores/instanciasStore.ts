@@ -136,7 +136,7 @@ export const useInstanciasStore = create<InstanciasState>()(
       const requiereDesbloqueo = currentStep?.bloqueoSaldo && retrocedeA != null;
       const excKey = `${stepId}:exc`;
       const nuevoEstado = retrocedeA ? retrocedeA : (esTerminal ? `${excKey}:terminal` : excKey);
-      const accion = esTerminal ? "excepcion" : (retrocedeA ? "avanzada" : "avanzada");
+      const _accion = esTerminal ? "excepcion" : (retrocedeA ? "avanzada" : "avanzada");
       const unlockEvent = requiereDesbloqueo ? [{
         stepId: `${excKey}:desbloqueo`,
         stepName: `${stepName} → Desbloqueo de saldo`,

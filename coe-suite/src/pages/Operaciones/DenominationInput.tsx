@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, DollarSign } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 interface DenominationRow {
   id: string;

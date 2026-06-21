@@ -7,7 +7,7 @@ import {
   useProveedoresStore, TIPOS_PROVEEDOR, calcularPrecio,
 } from "@stores/proveedoresStore";
 import { useTransaccionesStore } from "@stores/transaccionesStore";
-import type { VariableTarifaria, UnidadTransporte } from "@stores/proveedoresStore";
+import type { VariableTarifaria } from "@stores/proveedoresStore";
 import { DeleteDialog } from "@components/shared/DeleteDialog";
 import { Modal } from "@components/ui/Modal";
 
@@ -544,17 +544,6 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
   const [rutaDestino, setRutaDestino] = useState("");
   const [rutaSugerida, setRutaSugerida] = useState("");
 
-  const procesoStore = useTransaccionesStore();
-  const todosLosEstados = useMemo(() => {
-    const list: { id: string; nombre: string; proceso: string }[] = [];
-    for (const proc of procesoStore.procesosFinalizados) {
-      for (const st of proc.steps) {
-        list.push({ id: st.id, nombre: st.nombre, proceso: proc.nombre });
-      }
-    }
-    return list;
-  }, [procesoStore.procesosFinalizados]);
-
   const proveedorSel = store.proveedores.find((p) => p.id === proveedorId) ?? null;
   const categoriasDisponibles = proveedorSel ? store.getCategoriasByTipoProveedor(proveedorSel.tipo) : [];
   const variablesDefecto = store.getVariablesPorDefecto(categoria);
@@ -900,7 +889,6 @@ function ServicioDetailModal({ servicioId, onClose }: { servicioId: string | nul
   const sv = servicioId ? store.servicios.find((s) => s.id === servicioId) : null;
   const prov = sv ? store.getProveedorById(sv.proveedorId) : null;
   const asigns = sv ? store.getUnidadesByServicio(sv.id) : [];
-  const unidades = sv ? asigns.map((a) => store.unidades.find((u) => u.id === a.unidadId)).filter(Boolean) : [];
 
   const [valores, setValores] = useState<Record<string, number>>({});
 

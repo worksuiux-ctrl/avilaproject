@@ -34,7 +34,7 @@ const GROUP_REGION_MAP: Record<string, string> = {
 };
 
 const COE_GREEN = "#22c55e";
-const COE_HOVER = "#16a34a";
+// const COE_HOVER = "#16a34a";
 const COE_BG = "#ffffff";
 const COE_BORDER = "#e2e8f0";
 

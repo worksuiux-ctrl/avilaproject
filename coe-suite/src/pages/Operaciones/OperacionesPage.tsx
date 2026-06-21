@@ -1,17 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type React from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight, ChevronDown, ChevronRight, FileText, Plus, Package, FolderOpen, LayoutGrid, List, Calendar, CheckCheck } from "lucide-react";
-import { Button, Badge, Select, Input } from "@coe/design-system";
+import { Search, CheckCircle, Circle, AlertTriangle, OctagonX, Clock, ArrowRight, ChevronDown, ChevronRight, FileText, Plus, Package, LayoutGrid, List, Calendar, CheckCheck } from "lucide-react";
+import { Button, Badge } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
 import { SearchableSelect } from "@components/ui/SearchableSelect";
-import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, TIPOS_INVENTARIO, TIPOS_APROBACION, TIPOS_UNIDAD, type ProcesoTransaccional, type TransaccionStep, type GrupoOperacion } from "@stores/transaccionesStore";
+import { useTransaccionesStore, CAMPOS_PREDEFINIDOS, PERFILES_RESPONSABLE, TIPOS_INVENTARIO, type ProcesoTransaccional, type TransaccionStep, type GrupoOperacion } from "@stores/transaccionesStore";
 import { useInstanciasStore, type TransaccionInstancia } from "@stores/instanciasStore";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { useDivisasStore } from "@stores/divisasStore";
 import { useProveedoresStore } from "@stores/proveedoresStore";
 import { DenominationInput } from "./DenominationInput";
-import { EnvasesInput, type ClasificacionBatch } from "./EnvasesInput";
+import { EnvasesInput, type ClasificacionBatch, type ClasificacionBatchItem } from "./EnvasesInput";
 import { CartaPorteEnvasesInput } from "./CartaPorteEnvasesInput";
 
 export function OperacionesPage() {
@@ -117,7 +117,7 @@ export function OperacionesPage() {
           <p className="text-[13px] text-[var(--color-neutro-500)]">{inst.instancias.length} transacciones activas</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-2 py-1 text-[10px] font-mono text-red-500 border border-red-200 rounded-corner-m hover:bg-red-50 cursor-pointer" title="Limpiar instancias y recargar" onClick={() => { localStorage.removeItem("instancias-store"); location.reload(); }}>
+          <button className="px-2 py-1 text-[10px] font-mono text-red-500 border border-red-200 rounded-corner-m hover:bg-red-50 cursor-pointer" title="Limpiar instancias y recargar" onClick={() => { localStorage.removeItem("instancias-store"); window.location.reload(); }}>
             🗑 Reset
           </button>
           <div className="flex items-center border border-[var(--color-neutro-200)] rounded-corner-m overflow-hidden">
@@ -287,7 +287,7 @@ export function OperacionesPage() {
             gruposOperaciones={gruposOperaciones}
             onSelect={(inst) => setDetailInst(inst)}
             onAdvanceNoData={(instId, stepId, stepName) => {
-              inst.avanzarEstado(instId, stepId, stepName, "agencia", {}, false);
+              inst.avanzarEstado(instId, stepId, stepName, "agencia", {}, false, false);
               setSuccessOverlay(`Avanzada → ${stepName}`);
               setTimeout(() => setSuccessOverlay(""), 2000);
             }}
@@ -528,14 +528,14 @@ function InstanciaCard({ instancia, templateName, onClick, parentSubtipo, barCol
 }) {
   const entities = useEntitiesStore.getState().entities;
   const divisas = useDivisasStore.getState().divisas;
-  const origen = getRootEntity(instancia.origenId, entities);
-  const destino = getRootEntity(instancia.destinoId, entities);
+  const _origen = getRootEntity(instancia.origenId, entities);
+  const _destino = getRootEntity(instancia.destinoId, entities);
   const origenLeaf = entities.find((e) => e.id === instancia.origenId);
   const destinoLeaf = entities.find((e) => e.id === instancia.destinoId);
   const origenParent = parentSubtipo ? findEntityInPath(instancia.origenId, entities, parentSubtipo) : null;
   const destinoParent = parentSubtipo ? findEntityInPath(instancia.destinoId, entities, parentSubtipo) : null;
-  const origenPath = getEntityPath(instancia.origenId, entities);
-  const destinoPath = getEntityPath(instancia.destinoId, entities);
+  const _origenPath = getEntityPath(instancia.origenId, entities);
+  const _destinoPath = getEntityPath(instancia.destinoId, entities);
   const divisa = divisas.find((d) => d.id === instancia.divisaId);
   const lastAction = instancia.historial[instancia.historial.length - 1];
   const isComplete = lastAction?.accion === "completada" || lastAction?.accion === "excepcion";
@@ -589,7 +589,7 @@ function InstanciaCard({ instancia, templateName, onClick, parentSubtipo, barCol
 }
 
 /* ── Table View ── */
-function ListaTabla({ filtered, grupos, procesosFinalizados, templateName, onSelect }: {
+function ListaTabla({ filtered, grupos: _grupos, procesosFinalizados, templateName, onSelect }: {
   filtered: TransaccionInstancia[];
   grupos: Record<string, TransaccionInstancia[]>;
   procesosFinalizados: ProcesoTransaccional[];
@@ -866,7 +866,7 @@ function CreateFlow({ templates, selectedId, editInstId, onSelectTemplate, onCom
 
 /* ── Code Generator ── */
 let _codigoCounter = Date.now();
-function generarCodigo(formato: string): string {
+function _generarCodigo(formato: string): string {
   const now = new Date();
   const pad = (n: number, d: number) => String(n).padStart(d, "0");
   let codigo = formato
@@ -894,7 +894,7 @@ function generarCodigo(formato: string): string {
 }
 
 /* ── Helpers ── */
-function mapTipoUnidadToSubtipo(tipo: string): string[] {
+function _mapTipoUnidadToSubtipo(tipo: string): string[] {
   const map: Record<string, string[]> = {
     "Agencia": ["Agencia"],
     "Bóveda": ["Bóveda", "Caja Fuerte"],
@@ -913,7 +913,7 @@ function getRootEntity(entityId: string | undefined, entities: import("@stores/e
   let current = entities.find((e) => e.id === entityId);
   if (!current) return undefined;
   while (current.padreId) {
-    const parent = entities.find((e) => e.id === current.padreId);
+    const parent = entities.find((e) => e.id === current!.padreId);
     if (!parent) break;
     current = parent;
   }
@@ -928,7 +928,7 @@ function getEntityPath(entityId: string | undefined, entities: import("@stores/e
   let current = entities.find((e) => e.id === entityId);
   while (current) {
     path.unshift(current);
-    current = current.padreId ? entities.find((e) => e.id === current.padreId) : undefined;
+    current = current.padreId ? entities.find((e) => e.id === current!.padreId) : undefined;
   }
   return path;
 }
@@ -937,7 +937,7 @@ function findEntityInPath(entityId: string, entities: import("@stores/entitiesSt
   let current = entities.find((e) => e.id === entityId);
   while (current) {
     if (current.subtipo === targetSubtipo) return current;
-    current = current.padreId ? entities.find((e) => e.id === current.padreId) : undefined;
+    current = current.padreId ? entities.find((e) => e.id === current!.padreId) : undefined;
   }
   return undefined;
 }
@@ -956,7 +956,7 @@ function getSubtipoChain(tipo: string | null): string[][] {
   return tipo ? (map[tipo] ?? []) : [];
 }
 
-function getEntityExcludeIds(entityId: string, tipo: string | null): string[] {
+function _getEntityExcludeIds(entityId: string, tipo: string | null): string[] {
   const entities = useEntitiesStore.getState().entities;
   const chain = getSubtipoChain(tipo);
   const firstSubtipos = chain[0];
@@ -975,7 +975,7 @@ const WIZARD_STEPS = [
   { id: "resumen", label: "Resumen" },
 ];
 
-function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: {
+function CreationWizard({ template, editInstId, onComplete, onBack: _onBack, onCancel }: {
   template: ProcesoTransaccional;
   editInstId?: string | null;
   onComplete: (instancia: TransaccionInstancia) => void;
@@ -984,7 +984,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
 }) {
   const { crearInstancia, updateInstancia, instancias } = useInstanciasStore();
   const divisasStore = useDivisasStore();
-  const { divisas, clasificaciones, getDenominacionesByDivisa, getFajosByDenominacion, fajos } = divisasStore;
+  const { divisas, clasificaciones, getDenominacionesByDivisa, getFajosByDenominacion: _getFajosByDenominacion, fajos } = divisasStore;
   const firstStep = template.steps[0];
   const editInst = editInstId ? instancias.find((i) => i.id === editInstId) : null;
   const rawDenom = editInst?.dataPorEstado?.[firstStep?.id ?? ""]?.["_denominaciones"];
@@ -1009,7 +1009,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
   const [usaAcuerdo, setUsaAcuerdo] = useState(editInst?.dataPorEstado?.[firstStep?.id ?? ""]?.["_usaAcuerdo"] === "true");
   const [costoEnvio, setCostoEnvio] = useState(Number(editInst?.dataPorEstado?.[firstStep?.id ?? ""]?.["_costoEnvio"] ?? 0));
   const [costoManual, setCostoManual] = useState(Number(editInst?.dataPorEstado?.[firstStep?.id ?? ""]?.["_costoManual"] ?? 0));
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [formData, _setFormData] = useState<Record<string, string>>({});
   const [batchExpanded, setBatchExpanded] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
@@ -1024,7 +1024,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
     let cur = entitiesList.find((e) => e.id === origenId);
     while (cur) {
       if (cur.subtipo === "Agencia") return cur.id;
-      cur = cur.padreId ? entitiesList.find((e) => e.id === cur.padreId) ?? null : null;
+      cur = cur.padreId ? entitiesList.find((e) => e.id === cur!.padreId) ?? null : null;
     }
     return null;
   }, [template.ambito, template.origenTipo, origenId]);
@@ -1140,7 +1140,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                 </div>
                   {batches.map((batch, bIdx) => {
                     const activeFajos = fajos.filter((f) => f.activo);
-                    const fajosConDen = denomList.map((den) => ({
+                    const _fajosConDen = denomList.map((den) => ({
                       den,
                       fajos: activeFajos.filter((f) => f.denominacionId === den.id),
                     })).filter((g) => g.fajos.length > 0);
@@ -1204,7 +1204,7 @@ function CreationWizard({ template, editInstId, onComplete, onBack, onCancel }: 
                               const addedDenIds = template.modoIngreso === "piezas"
                                 ? Object.keys(batch.individual)
                                 : [...new Set([...activeFajos.filter((f) => f.id in batch.fajos).map((f) => f.denominacionId), ...Object.keys(batch.individual)])];
-                              const availableDenIds = denomList.filter((d) => !denomHasAny(d.id));
+                              const _availableDenIds = denomList.filter((d) => !denomHasAny(d.id));
 
                               return (
                                 <>
@@ -1969,14 +1969,14 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
   const { avanzarEstado, activarExcepcion } = useInstanciasStore();
   const entities = useEntitiesStore.getState().entities;
   const divisas = useDivisasStore.getState().divisas;
-  const { clasificaciones, fajos } = useDivisasStore();
+  const { clasificaciones, fajos: _fajos2 } = useDivisasStore();
   const divisaStore = useDivisasStore();
   const denominacionesActivas = divisaStore.denominaciones.filter((d) => d.activo);
   const template = templates.find((t) => t.id === instancia.templateId) ?? null;
-  const origen = getRootEntity(instancia.origenId, entities);
-  const destino = getRootEntity(instancia.destinoId, entities);
-  const origenPath = getEntityPath(instancia.origenId, entities);
-  const destinoPath = getEntityPath(instancia.destinoId, entities);
+  const _origen2 = getRootEntity(instancia.origenId, entities);
+  const _destino2 = getRootEntity(instancia.destinoId, entities);
+  const _origenPath2 = getEntityPath(instancia.origenId, entities);
+  const _destinoPath2 = getEntityPath(instancia.destinoId, entities);
   const origenLeaf = entities.find((e) => e.id === instancia.origenId);
   const destinoLeaf = entities.find((e) => e.id === instancia.destinoId);
   const origenParent = template?.origenTipo ? findEntityInPath(instancia.origenId, entities, template.origenTipo) : null;
@@ -2171,13 +2171,13 @@ function InstanciaDetailContent({ instancia, templates, onClose, onStateChange, 
     });
   }
 
-  function handleException(excId: string, excName: string, esTerminal: boolean, retrocedeA?: string | null) {
+  function handleException(_excId: string, excName: string, esTerminal: boolean, retrocedeA?: string | null) {
     if (!currentStep) return;
     setConfirmAction({
       message: `¿Activar excepción "${excName}"?`,
       label: excName,
       onConfirm: () => {
-        activarExcepcion(instancia.id, currentStep.id, currentStep.nombre, excName, advanceData, esTerminal, retrocedeA);
+        (activarExcepcion as any)(instancia.id, currentStep.id, currentStep.nombre, excName, advanceData, esTerminal, retrocedeA);
         setShowExceptions(false);
         setAdvanceData({});
         setConfirmAction(null);

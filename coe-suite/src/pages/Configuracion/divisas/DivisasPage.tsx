@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Search, Pencil, Trash2, Banknote, Tags, Coins, GripVertical, ArrowUpDown } from "lucide-react";
 import { Button, Input, Switch } from "@coe/design-system";
 import { useDivisasStore, type StableCoin } from "@stores/divisasStore";

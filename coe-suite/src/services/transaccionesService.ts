@@ -20,6 +20,8 @@ export function getDemoProcesos(): ProcesoTransaccional[] {
       codigoRemesaFormato: "REM-{YYYYMMDD}-{NNNNNN}",
       codigoEnvioFormato: "ENV-{YYYYMMDD}-{NNNNNN}",
       activo: true,
+      usaProducto: false,
+      productosPermitidos: [],
       steps: [],
     },
   ];

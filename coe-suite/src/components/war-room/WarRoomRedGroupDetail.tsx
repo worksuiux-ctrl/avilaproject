@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Dialog, Text, Badge, Card } from "@coe/design-system";
 import { Building2, Warehouse, Banknote } from "lucide-react";
-import type { WrRedGroup } from "@data/warRoomData";
 import { WR_RED, WR_VES_DENOMS } from "@data/warRoomData";
 import { WarRoomDenomRow } from "./WarRoomDenomRow";
 
@@ -10,7 +9,7 @@ interface WarRoomRedGroupDetailProps {
   onClose: () => void;
 }
 
-const GROUP_ICONS: Record<string, React.ReactNode> = {
+const _GROUP_ICONS: Record<string, React.ReactNode> = {
   agencias: <Building2 className="w-5 h-5" />,
   acopios: <Warehouse className="w-5 h-5" />,
   atms: <Banknote className="w-5 h-5" />,
@@ -39,7 +38,6 @@ export function WarRoomRedGroupDetail({ groupKey, onClose }: WarRoomRedGroupDeta
     return { total, pct };
   }, [group]);
 
-  const icon = groupKey ? GROUP_ICONS[groupKey] : null;
   const label = groupKey ? GROUP_LABELS[groupKey] || groupKey : "";
 
   return (

@@ -71,7 +71,7 @@ function LinePreview({ data, w, h }: { data: number[]; w: number; h: number }) {
   );
 }
 
-function PiePreview({ data, labels, w, h }: { data: number[]; labels: string[]; w: number; h: number }) {
+function PiePreview({ data, labels: _labels, w, h }: { data: number[]; labels: string[]; w: number; h: number }) {
   const total = data.reduce((a, b) => a + b, 0) || 1;
   const colors = ["#16a34a", "#22c55e", "#4ade80", "#86efac", "#bbf7d0", "#dcfce7", "#14532d", "#166534", "#15803d", "#5eead4"];
   const cx = w / 2, cy = h / 2, r = Math.min(cx, cy) - 4;

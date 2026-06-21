@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Plus, Search, Globe, Calculator, ChevronRight, MapPin, Pencil, Trash2, X, Users, Package, Truck } from "lucide-react";
 import { Button, Select, Input, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
@@ -107,7 +107,6 @@ export function Grupos() {
   const store = useGruposStore();
   const grupos = store.grupos;
   const selectedId = store.selectedId;
-  const selectGrupo = store.selectGrupo;
 
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);

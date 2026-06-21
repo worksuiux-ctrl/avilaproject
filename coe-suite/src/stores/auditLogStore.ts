@@ -56,12 +56,6 @@ function randomItem<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function ago(minutes: number): string {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - minutes);
-  return d.toLocaleString("es-VE");
-}
-
 function generarMockEventos(): AuditEvento[] {
   const eventos: AuditEvento[] = [];
   const now = Date.now();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, Text, Badge, ProgressBar, Divider } from "@coe/design-system";
+import { Card, Text, Badge } from "@coe/design-system";
 import { ChevronRight } from "lucide-react";
 import type { WrDenomEntry } from "@data/warRoomData";
 
@@ -11,7 +11,7 @@ export interface WarRoomDenomRowProps {
   uid: string;
 }
 
-export function WarRoomDenomRow({ label, denom, moneda, symbol, uid }: WarRoomDenomRowProps) {
+export function WarRoomDenomRow({ label, denom, moneda, symbol, uid: _uid }: WarRoomDenomRowProps) {
   const [open, setOpen] = useState(false);
   const total = denom.pzAp + denom.pzNo;
   const pct = total > 0 ? Math.round((denom.pzAp / total) * 100) : 100;

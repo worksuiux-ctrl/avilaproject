@@ -4,8 +4,6 @@ import { FileSpreadsheet } from "lucide-react";
 import type { WrCompromiso, Moneda } from "@data/warRoomData";
 import { WR_COMMITMENTS, formatCurrency } from "@data/warRoomData";
 
-type FilterTipo = "Todos" | "Depósitos" | "Retiros" | "Pendientes" | "Aprobados";
-
 const FILTER_TABS = [
   { id: "Todos", label: "Todos" },
   { id: "Depósitos", label: "Depósitos" },

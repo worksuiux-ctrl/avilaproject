@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, Shield, AlertTriangle, Info, X,
   RotateCcw, Download, ChevronDown, ChevronUp, ChevronRight,
@@ -36,12 +36,6 @@ const PERFIL_COLOR: Record<string, string> = {
 };
 
 const ITEMS_PER_PAGE = 20;
-
-/* ── Helpers ── */
-function formatCell(val: unknown): string {
-  if (val == null) return "";
-  return String(val);
-}
 
 function dateFromLocaleString(str: string): Date {
   const d = new Date(str);
@@ -252,8 +246,6 @@ export function AuditLog() {
     setTipoFiltro("");
     setPagina(0);
   };
-
-  const hasFilters = search || dateFrom || dateTo || nivelesFiltro.length > 0 || tipoFiltro;
 
   const hasActiveFilters = search.trim() !== "" || dateFrom !== "" || dateTo !== "" || nivelesFiltro.length > 0 || tipoFiltro !== "";
 

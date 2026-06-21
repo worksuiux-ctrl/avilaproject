@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
-  Plus, Search, Pencil, Trash2, Shield, Users, UserCheck, BadgeCheck,
-  Eye, EyeOff, Lock, Unlock, Building2, ChevronRight, UserPlus, Mail, LogIn,
+  Plus, Search, Pencil, Shield, Users, UserCheck,
+  Eye, Lock, Unlock, ChevronRight, UserPlus, Mail, LogIn,
   Landmark, Truck, Building, GitCompare
 } from "lucide-react";
 import { Button, Select, Input } from "@coe/design-system";
@@ -101,12 +101,12 @@ const ACCESO_ICON: Record<AccessLevel, typeof Unlock> = {
   Escritura: Unlock, Lectura: Eye, Denegado: Lock,
 };
 
-const actorColorBg: Record<ActorKey, string> = {
+const _actorColorBg: Record<ActorKey, string> = {
   banco: "var(--color-verde-100)", cit: "rgba(251,191,36,.15)",
   corp: "rgba(168,85,247,.12)", bcv: "rgba(20,184,166,.12)",
 };
 
-const actorColorText: Record<ActorKey, string> = {
+const _actorColorText: Record<ActorKey, string> = {
   banco: "var(--color-verde-700)", cit: "#b45309",
   corp: "#7c3aed", bcv: "#0d9488",
 };
@@ -241,7 +241,7 @@ function RoleDetailModal({ role, actor, onClose }: { role: RoleDef; actor: Actor
 /* ════════════════════════════════════════════
    Simple generic form modal
    ════════════════════════════════════════════ */
-function FormModal({ title, actor, children, onClose }: { title: string; actor: ActorKey; children?: React.ReactNode; onClose: () => void }) {
+function FormModal({ title, actor: _actor, children, onClose }: { title: string; actor: ActorKey; children?: React.ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="bg-white rounded-corner-m shadow-xl w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
@@ -266,7 +266,7 @@ function FormModal({ title, actor, children, onClose }: { title: string; actor: 
 /* ════════════════════════════════════════════
    Role Comparator
    ════════════════════════════════════════════ */
-function RoleComparator({ roles, selectedActor, onClose }: { roles: RoleDef[]; selectedActor: ActorKey; onClose: () => void }) {
+function RoleComparator({ roles, selectedActor: _selectedActor, onClose }: { roles: RoleDef[]; selectedActor: ActorKey; onClose: () => void }) {
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggleRole = (name: string) => {
@@ -341,7 +341,7 @@ function RoleComparator({ roles, selectedActor, onClose }: { roles: RoleDef[]; s
                           <td className="px-3 py-2 text-[12px] text-[var(--color-neutro-600)] pl-6">{sec.name}</td>
                           {compareRoles.map((r) => {
                             const acceso = PERMISO_PRESETS[r.rol]?.[sec.id] ?? "Denegado";
-                            const AccIcon = ACCESO_ICON[acceso];
+                      const _AccIcon = ACCESO_ICON[acceso];
                             return (
                               <td key={r.rol} className="px-3 py-2 text-center">
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-corner-m ${ACCESO_CLASS[acceso]}`}>
@@ -377,7 +377,7 @@ export function RolesPermisos() {
   const [selectedRole, setSelectedRole] = useState<RoleDef | null>(null);
   const [modalType, setModalType] = useState<"none" | "invitar" | "nuevo-rol" | "editar-usuario" | "comparar">("none");
   const [editingUser, setEditingUser] = useState<LegacyUser | null>(null);
-  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const [_compareSelection, setCompareSelection] = useState<string[]>([]);
 
   const users = USERS_DEMO.filter((u) => u.actor === actor);
   const roles = ROLES_DEMO[actor];
@@ -386,7 +386,7 @@ export function RolesPermisos() {
     ? users.filter((u) => u.nombre.toLowerCase().includes(userSearch.toLowerCase()) || u.rol.toLowerCase().includes(userSearch.toLowerCase()) || u.unidadNombre.toLowerCase().includes(userSearch.toLowerCase()))
     : users;
 
-  const onColor = ACTORS.find((a) => a.key === actor)!;
+  const _onColor = ACTORS.find((a) => a.key === actor)!;
 
   return (
     <div className="p-6 h-full flex flex-col">
