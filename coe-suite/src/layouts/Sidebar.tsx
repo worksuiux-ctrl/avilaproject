@@ -44,6 +44,7 @@ const moduleIcons: Record<string, IconType> = {
   HelpCircle: HiOutlineQuestionMarkCircle,
   Puzzle: HiOutlinePuzzlePiece,
   Shield: HiOutlineShieldCheck,
+  ShieldCheck: HiOutlineShieldCheck,
   Report: HiOutlineDocumentText,
   ListCheck: HiOutlineListBullet,
   MapPin: HiOutlineMapPin,
@@ -73,6 +74,7 @@ const itemIcons: Record<string, IconType> = {
   HelpCircle: HiOutlineQuestionMarkCircle,
   Puzzle: HiOutlinePuzzlePiece,
   Shield: HiOutlineShieldCheck,
+  ShieldCheck: HiOutlineShieldCheck,
   Ticket: HiOutlineClipboardDocumentCheck,
   QuestionMarkCircle: HiOutlineQuestionMarkCircle,
   ServerStack: HiOutlineServerStack,
@@ -115,7 +117,11 @@ function ModuleGroup({ module, activeRoute, onNavigate, collapsed, onModuleClick
   return (
     <div>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next && module.items.length > 0) onNavigate(module.items[0].route);
+        }}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-corner-m border-none cursor-pointer text-left transition-all duration-200
           ${isActive
             ? "text-[var(--color-verde-100)] bg-[var(--color-verde-100)]/5"

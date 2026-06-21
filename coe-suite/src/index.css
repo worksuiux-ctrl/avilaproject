@@ -9,6 +9,22 @@ html, body { height: 100%; overflow: hidden; }
 ::-webkit-scrollbar-thumb { background: var(--color-neutro-300); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-neutro-500); }
 
+@theme {
+  --animate-rotate-45: rotate-steps 5.2s ease-in-out infinite;
+}
+
+@keyframes rotate-steps {
+  0% { transform: rotate(0deg); }
+  19.23% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  44.23% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  69.23% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  94.23% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @keyframes fi {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }

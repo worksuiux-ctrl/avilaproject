@@ -117,7 +117,7 @@ export function CoenginePanel() {
               ) : (
                 <div className="flex items-end gap-2 flex-row">
                   <div className="flex-shrink-0">
-                    <img src={`${import.meta.env.BASE_URL}Icono%20coe.png`} alt="COE" className="w-6 h-6" />
+                    <img src={`${import.meta.env.BASE_URL}Logo_coengine.svg`} alt="COE" className="w-6 h-6" />
                   </div>
                   <div className="flex flex-col max-w-[70%] items-start">
                     <span className="text-xs text-[var(--color-text-grey)] mb-1">COENGINE</span>

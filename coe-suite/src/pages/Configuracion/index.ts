@@ -1,3 +1,4 @@
+export { Organizacion } from "./Organizacion";
 export { Unidades } from "./Unidades";
 export { DivisasPage as Divisas } from "./divisas";
 export { Proveedores } from "./Proveedores";

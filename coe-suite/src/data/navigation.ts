@@ -67,10 +67,11 @@ export const MODULES: Module[] = [
   },
   {
     id: "configuracion",
-    label: "Configuración y Parametrización",
+    label: "Configuración de Infraestructura",
     icon: "Cog",
     description: "Parámetros del sistema, bóvedas, divisas, ATMs",
     items: [
+      { id: "config-organizacion", label: "Mi Organización", icon: "Building2", route: "/config/organizacion" },
       { id: "config-unidades", label: "Unidades", icon: "Building2", route: "/config/unidades" },
       { id: "config-divisas", label: "Divisas", icon: "Cash", route: "/config/divisas" },
       { id: "config-proveedores", label: "Proveedores", icon: "Truck", route: "/config/proveedores" },
@@ -107,6 +108,15 @@ export const MODULES: Module[] = [
     description: "Logs de auditoría, roles y permisos",
     items: [
       { id: "audit", label: "Log de Auditoría", icon: "Shield", route: "/audit" },
+    ],
+  },
+  {
+    id: "roles-permisos",
+    label: "Roles y Permisos",
+    icon: "ShieldCheck",
+    description: "Perfilamiento de usuarios, grupos y control de acceso",
+    items: [
+      { id: "roles-main", label: "Gestión de Roles", icon: "ShieldCheck", route: "/roles-permisos" },
     ],
   },
 ];

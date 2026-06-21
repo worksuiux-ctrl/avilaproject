@@ -6,7 +6,7 @@ import { ConfigEngine } from "./pages/ConfigEngine/ConfigEngine";
 import { CoengineActivity } from "./pages/CoengineActivity/CoengineActivity";
 import { WarRoom } from "./pages/WarRoom/WarRoom";
 import { KpiEstrategico } from "./pages/KpiEstrategico/KpiEstrategico";
-import { Unidades, Divisas, Proveedores, Clientes, Grupos, MotorTransacciones, CalendarioFinanciero } from "./pages/Configuracion";
+import { Unidades, Divisas, Proveedores, Clientes, Grupos, MotorTransacciones, CalendarioFinanciero, Organizacion } from "./pages/Configuracion";
 import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { Inventario } from "./pages/Inicio/Inventario";
 import { SoporteTicket } from "./pages/SoporteTicket/SoporteTicket";
@@ -17,10 +17,12 @@ import { PanelIntegraciones } from "./pages/Integraciones/PanelIntegraciones/Pan
 import { MapaInteractivo } from "./pages/Georreferenciacion/MapaInteractivo";
 import { Login } from "./pages/Login/Login";
 import { OperacionesPage, MesaConteoPage } from "./pages/Operaciones";
+import { RolesPermisos } from "./pages/RolesPermisos";
+import { AuditLog } from "./pages/AuditLog";
 
 const PENDING_ROUTES = [
   "kpi-operativo", "op-reports",
-  "reg-reports", "audit",
+  "reg-reports",
 ];
 
 function App() {
@@ -43,7 +45,8 @@ function App() {
             <Route path="/interfaces" element={<Interfaces />} />
             <Route path="/integrations" element={<PanelIntegraciones />} />
             <Route path="/georef" element={<MapaInteractivo />} />
-            <Route path="/config" element={<Navigate to="/config/unidades" replace />} />
+            <Route path="/config" element={<Navigate to="/config/organizacion" replace />} />
+            <Route path="/config/organizacion" element={<Organizacion />} />
             <Route path="/config/unidades" element={<Unidades />} />
             <Route path="/config/divisas" element={<Divisas />} />
             <Route path="/config/proveedores" element={<Proveedores />} />
@@ -53,6 +56,8 @@ function App() {
             <Route path="/config/calendario-financiero" element={<CalendarioFinanciero />} />
             <Route path="/operaciones" element={<OperacionesPage />} />
             <Route path="/operaciones/conteo" element={<MesaConteoPage />} />
+            <Route path="/roles-permisos" element={<RolesPermisos />} />
+            <Route path="/audit" element={<AuditLog />} />
             {PENDING_ROUTES.map((v) => (
               <Route key={v} path={`/${v}`} element={<ComingSoon view={v} />} />
             ))}
