@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Info, TreePine, Workflow } from "lucide-react";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { EntityTree, EntityForm, EntityDetail, EntityDiagram } from "@components/entities";
 import { DeleteDialog } from "@components/shared/DeleteDialog";
 
 export function Unidades() {
-  const { selectedId, selectEntity, removeEntity } = useEntitiesStore();
+  const { selectedId, selectEntity, removeEntity, entities } = useEntitiesStore();
+
+  useEffect(() => {
+    if (!selectedId) {
+      const first = entities.find((e) => e.padreId === null);
+      if (first) selectEntity(first.id);
+    }
+  }, []);
   const [formOpen, setFormOpen] = useState(false);
   const [formParentId, setFormParentId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
