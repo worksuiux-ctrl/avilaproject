@@ -7,12 +7,12 @@ export default defineConfig({
   base: process.env.NODE_ENV === 'development' ? '/' : '/prototipotesting2026/',
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      '@components': resolve(__dirname, 'src/components'),
-      '@data': resolve(__dirname, 'src/data'),
-      '@stores': resolve(__dirname, 'src/stores'),
-      '@services': resolve(__dirname, 'src/services'),
-      '@integrations': resolve(__dirname, 'src/integrations'),
-    },
+    alias: [
+      { find: '@components', replacement: resolve(__dirname, 'src/components') },
+      { find: '@data', replacement: resolve(__dirname, 'src/data') },
+      { find: '@stores', replacement: resolve(__dirname, 'src/stores') },
+      { find: '@services', replacement: resolve(__dirname, 'src/services') },
+      { find: '@integrations', replacement: resolve(__dirname, 'src/integrations') },
+    ],
   },
 })
