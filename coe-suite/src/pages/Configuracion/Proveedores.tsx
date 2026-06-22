@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import {
-  Plus, Search, Building2, Package, FileText, Pencil, Trash2, Truck, DollarSign, MapPin, Warehouse, Eye, X, Map, User, ShieldCheck, ChevronLeft,
+  Plus, Search, Building2, Package, FileText, Pencil, Trash2, Truck, DollarSign, MapPin, Warehouse, Eye, X, Map, User, ShieldCheck, ChevronLeft, Cpu,
 } from "lucide-react";
 import { Button, Checkbox, Select, Input, Textarea } from "@coe/design-system";
 import {
   useProveedoresStore, TIPOS_PROVEEDOR, calcularPrecio,
 } from "@stores/proveedoresStore";
 import { useTransaccionesStore } from "@stores/transaccionesStore";
+import { useDispositivosStore } from "@stores/dispositivosStore";
 import type { VariableTarifaria } from "@stores/proveedoresStore";
 import { DeleteDialog } from "@components/shared/DeleteDialog";
 import { Modal } from "@components/ui/Modal";
@@ -35,6 +36,7 @@ const CATEGORIA_COLORS: Record<string, string> = {
   "Mantenimiento Preventivo": "bg-lime-100 text-lime-700",
   "Mantenimiento Correctivo": "bg-rose-100 text-rose-700",
   "Servicio General": "bg-gray-100 text-gray-700",
+  "Proveedor de Dispositivos": "bg-violet-100 text-violet-700",
 };
 
 const TIPOS_RUTA = ["Agencia", "ATM", "Bóveda", "Caja", "Banco", "Cliente", "Sucursal Cliente", "Centro de Acopio", "Taquilla"];
@@ -46,6 +48,7 @@ const INFRA_SECCIONES_POR_TIPO: Record<string, { sucursales: boolean; unidades: 
   Tecnología: { sucursales: true, unidades: false, depositos: false, centrosAcopio: false, personal: true, personalLabel: "Técnicos" },
   Mantenimiento: { sucursales: true, unidades: false, depositos: false, centrosAcopio: false, personal: true, personalLabel: "Técnicos de Mantenimiento" },
   Servicios: { sucursales: true, unidades: false, depositos: false, centrosAcopio: false, personal: false, personalLabel: "" },
+  Dispositivos: { sucursales: true, unidades: false, depositos: true, centrosAcopio: false, personal: true, personalLabel: "Técnicos" },
 };
 
 const estadoColor: Record<string, string> = {
@@ -543,6 +546,9 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
   const [rutaOrigen, setRutaOrigen] = useState("");
   const [rutaDestino, setRutaDestino] = useState("");
   const [rutaSugerida, setRutaSugerida] = useState("");
+  const [tiposDispositivoIds, setTiposDispositivoIds] = useState<string[]>([]);
+  const [marcasIds, setMarcasIds] = useState<string[]>([]);
+  const dispStore = useDispositivosStore();
 
   const proveedorSel = store.proveedores.find((p) => p.id === proveedorId) ?? null;
   const categoriasDisponibles = proveedorSel ? store.getCategoriasByTipoProveedor(proveedorSel.tipo) : [];
@@ -566,6 +572,8 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
       setDiasPreaviso(existing.diasPreaviso);
       setEstadosAplicables(existing.estadosAplicables ?? []);
       setRutas(existing.rutas ?? []);
+      setTiposDispositivoIds(existing.tiposDispositivoIds ?? []);
+      setMarcasIds(existing.marcasIds ?? []);
 
       const vals: Record<string, number> = {};
       existing.variables.forEach((v) => {
@@ -599,6 +607,8 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
       setRutaOrigen("");
       setRutaDestino("");
       setRutaSugerida("");
+      setTiposDispositivoIds([]);
+      setMarcasIds([]);
     }
   }, [existing, open]);
 
@@ -643,6 +653,7 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
         codigo, proveedorId, categoria, nombre, descripcion, precio, activo,
         fechaInicio, fechaVencimiento, accionVencimiento, diasPreaviso,
         variables: updatedVars, estadosAplicables, rutas,
+        tiposDispositivoIds, marcasIds,
       });
       asignacionesExistentes.forEach((a) => store.desasignarUnidad(a.id));
       unidadesAsignadas.forEach((uid) => {
@@ -657,6 +668,7 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
         proveedorId, categoria, nombre, descripcion, precio,
         variables, activo, estadosAplicables, rutas,
         fechaInicio, fechaVencimiento, accionVencimiento, diasPreaviso, ultimaRenovacion: fechaInicio,
+        tiposDispositivoIds, marcasIds,
       });
       setTimeout(() => {
         const svs = store.servicios.filter((s) => s.proveedorId === proveedorId && s.nombre === nombre);
@@ -782,6 +794,70 @@ function ServicioFormModal({ open, onClose, editId }: { open: boolean; onClose: 
           </div>
         )}
 
+        {/* ── Dispositivos que cubre (solo Proveedor de Dispositivos) ── */}
+        {categoria === "Proveedor de Dispositivos" && (
+          <div className="border border-[var(--color-neutro-200)] rounded-corner-m p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[var(--color-neutro-500)]" />
+              <span className="text-[13px] font-semibold text-[var(--color-neutro-700)]">Dispositivos que cubre este servicio</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">Tipos de Dispositivo</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {dispStore.tiposDispositivo.filter((t) => t.activo).map((t) => {
+                    const active = tiposDispositivoIds.includes(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className={`px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors ${
+                          active
+                            ? "bg-amber-100 text-amber-700 border-amber-200"
+                            : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:bg-[var(--color-neutro-100)]"
+                        }`}
+                        onClick={() =>
+                          setTiposDispositivoIds((prev) =>
+                            active ? prev.filter((id) => id !== t.id) : [...prev, t.id]
+                          )
+                        }
+                      >
+                        {t.nombre}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[13px] font-medium text-[var(--color-neutro-700)] mb-1">Marcas</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {dispStore.marcas.filter((m) => m.activo).map((m) => {
+                    const active = marcasIds.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className={`px-2.5 py-1 rounded-corner-m text-[12px] font-medium border transition-colors ${
+                          active
+                            ? "bg-indigo-100 text-indigo-700 border-indigo-200"
+                            : "bg-white text-[var(--color-neutro-600)] border-[var(--color-neutro-200)] hover:bg-[var(--color-neutro-100)]"
+                        }`}
+                        onClick={() =>
+                          setMarcasIds((prev) =>
+                            active ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                          )
+                        }
+                      >
+                        {m.nombre}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Variables Tarifarias ── */}
         {categoria && (
           <div className="border border-[var(--color-neutro-200)] rounded-corner-m p-4 space-y-3">
@@ -886,6 +962,7 @@ function VariableInput({ variable, value, onChange }: { variable: Omit<VariableT
 /* ── Servicio Detail Modal ── */
 function ServicioDetailModal({ servicioId, onClose }: { servicioId: string | null; onClose: () => void }) {
   const store = useProveedoresStore();
+  const dispStore = useDispositivosStore();
   const sv = servicioId ? store.servicios.find((s) => s.id === servicioId) : null;
   const prov = sv ? store.getProveedorById(sv.proveedorId) : null;
   const asigns = sv ? store.getUnidadesByServicio(sv.id) : [];
@@ -1014,6 +1091,29 @@ function ServicioDetailModal({ servicioId, onClose }: { servicioId: string | nul
                   {sv.rutas.map((r) => (
                     <span key={r} className="text-[10px] font-medium px-2 py-0.5 rounded-corner-m bg-[var(--color-verde-100)]/10 text-[var(--color-verde-100)]">{r}</span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dispositivos relacionados */}
+            {sv.tiposDispositivoIds && sv.tiposDispositivoIds.length > 0 && (
+              <div>
+                <p className="text-[11px] text-[var(--color-neutro-400)] font-semibold uppercase mb-2">Dispositivos que cubre</p>
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {sv.tiposDispositivoIds.map((tid) => {
+                      const t = dispStore.tiposDispositivo.find((x) => x.id === tid);
+                      return t ? (
+                        <span key={tid} className="text-[11px] font-semibold px-2 py-0.5 rounded-corner-m bg-amber-100 text-amber-700">{t.nombre}</span>
+                      ) : null;
+                    })}
+                    {sv.marcasIds?.map((mid) => {
+                      const m = dispStore.marcas.find((x) => x.id === mid);
+                      return m ? (
+                        <span key={mid} className="text-[11px] font-semibold px-2 py-0.5 rounded-corner-m bg-indigo-100 text-indigo-700">{m.nombre}</span>
+                      ) : null;
+                    })}
+                  </div>
                 </div>
               </div>
             )}

@@ -35,7 +35,7 @@ export const ENTITY_TYPES: EntityType[] = [
   {
     nivel: "Dispositivos",
     etiqueta: "Dispositivos",
-    subtipos: ["ATM", "Reciclador", "Terminal Punto de Venta", "Caja Registradora", "Caja"],
+    subtipos: ["ATM", "Caja", "Terminal Punto de Venta", "Máquina Contadora de Billetes", "Lector de Huellas", "Reciclador", "Caja Registradora"],
     hijosPermitidos: ["Depósitos"],
     color: "#6366f1",
     icono: "CreditCard",

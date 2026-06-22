@@ -6,7 +6,7 @@ import { ConfigEngine } from "./pages/ConfigEngine/ConfigEngine";
 import { CoengineActivity } from "./pages/CoengineActivity/CoengineActivity";
 import { WarRoom } from "./pages/WarRoom/WarRoom";
 import { KpiEstrategico } from "./pages/KpiEstrategico/KpiEstrategico";
-import { Unidades, Divisas, Proveedores, Clientes, Grupos, MotorTransacciones, CalendarioFinanciero, Organizacion } from "./pages/Configuracion";
+import { Unidades, Dispositivos, Divisas, Proveedores, Clientes, Grupos, MotorTransacciones, CalendarioFinanciero, Organizacion } from "./pages/Configuracion";
 import { ComingSoon } from "./pages/ComingSoon/ComingSoon";
 import { Inventario } from "./pages/Inicio/Inventario";
 import { SoporteTicket } from "./pages/SoporteTicket/SoporteTicket";
@@ -48,6 +48,7 @@ function App() {
             <Route path="/config" element={<Navigate to="/config/organizacion" replace />} />
             <Route path="/config/organizacion" element={<Organizacion />} />
             <Route path="/config/unidades" element={<Unidades />} />
+            <Route path="/config/dispositivos" element={<Dispositivos />} />
             <Route path="/config/divisas" element={<Divisas />} />
             <Route path="/config/proveedores" element={<Proveedores />} />
             <Route path="/config/clientes" element={<Clientes />} />

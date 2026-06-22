@@ -21,8 +21,7 @@ const GIROS_NEGOCIO = [
   "Transporte", "Logística", "Seguros", "Telecomunicaciones", "Otro",
 ];
 
-const MODELOS_ATM = ["NCR", "Diebold", "Wincor", "Hyosung", "Genmega", "Otro"];
-const MODELOS_POS = ["Ingenico", "Verifone", "PAX", "BBPOS", "Otro"];
+const TIPOS_DISPOSITIVO = ["ATM", "Caja", "Terminal Punto de Venta", "Máquina Contadora de Billetes", "Lector de Huellas", "Reciclador", "Caja Registradora"];
 const MATERIALES_CONTENEDOR = ["Plástico", "Cartón", "Metal", "Madera", "Vidrio", "Mixto"];
 const PERFILES_OPERACION = ["Solo Retiros", "Solo Depósitos", "Mixto", "Solo Consulta"];
 const TIPOS_CIERRE = ["Sello", "Ziplock", "Termosellado", "Bisagra", "Broche"];
@@ -75,20 +74,14 @@ export const ENTITY_SCHEMAS: EntitySchema[] = [
   {
     nivel: "Dispositivos",
     fields: [
-      { key: "modeloFabricante", label: "Modelo/Fabricante", type: "select", options: [...MODELOS_ATM, ...MODELOS_POS], section: "propiedades" },
+      { key: "marca", label: "Marca", type: "select", options: TIPOS_DISPOSITIVO, section: "propiedades", required: true },
+      { key: "modelo", label: "Modelo", type: "select", options: TIPOS_DISPOSITIVO, section: "propiedades", required: true },
       { key: "modoInstalacion", label: "Modo de Instalación", type: "select", options: ["Empotrado", "Stand-alone", "Móvil"], section: "propiedades" },
       { key: "identificadorRed", label: "Identificador de Red", type: "text", placeholder: "IP o ID de red", section: "propiedades" },
       { key: "monedaMin", label: "Monto Mínimo por Operación", type: "number", section: "parametros" },
       { key: "monedaMax", label: "Monto Máximo por Operación", type: "number", section: "parametros" },
-      { key: "maxItems", label: "Cantidad Máxima de Ítems", type: "number", section: "parametros" },
       { key: "perfilOperacion", label: "Perfil de Operación", type: "select", options: PERFILES_OPERACION, section: "parametros" },
-      { key: "monedasAceptadas", label: "Monedas/Denominaciones", type: "multiSelect", options: ["USD", "EUR", "VES", "COP", "MXN"], section: "parametros" },
-      { key: "umbralAlerta", label: "Umbral de Alerta (Max)", type: "number", section: "parametros" },
-      { key: "capacidadNominal", label: "Capacidad Nominal", type: "number", section: "parametros" },
-      { key: "umbralMinimo", label: "Umbral de Reabastecimiento (Min)", type: "number", section: "parametros" },
       { key: "estadoSub", label: "Estado Operativo", type: "select", options: ["Operativo", "Fuera de Servicio", "Mantenimiento"], section: "parametros" },
-      { key: "responsableAsignado", label: "Responsable Asignado", type: "text", placeholder: "ID del cajero o proveedor de custodia", section: "parametros" },
-      { key: "parametrosSeguridad", label: "Parámetros de Seguridad", type: "textarea", placeholder: "Claves, temporizadores, restricciones de acceso", section: "parametros" },
     ],
   },
 

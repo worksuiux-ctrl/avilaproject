@@ -341,7 +341,7 @@ function RoleComparator({ roles, selectedActor: _selectedActor, onClose }: { rol
                           <td className="px-3 py-2 text-[12px] text-[var(--color-neutro-600)] pl-6">{sec.name}</td>
                           {compareRoles.map((r) => {
                             const acceso = PERMISO_PRESETS[r.rol]?.[sec.id] ?? "Denegado";
-                      const _AccIcon = ACCESO_ICON[acceso];
+                            const AccIcon = ACCESO_ICON[acceso];
                             return (
                               <td key={r.rol} className="px-3 py-2 text-center">
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-corner-m ${ACCESO_CLASS[acceso]}`}>

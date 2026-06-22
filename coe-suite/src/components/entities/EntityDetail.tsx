@@ -10,7 +10,7 @@ const LABEL_MAP: Record<string, string> = {
   monedas: "Monedas Permitidas", limiteHijos: "Límite de Hijos",
   horarioApertura: "Apertura", horarioCierre: "Cierre",
   estadoOperativo: "Estado", etiquetaGlobal: "Uso",
-  tipoDispositivo: "Dispositivo", modeloFabricante: "Modelo",
+  tipoDispositivo: "Dispositivo", modeloFabricante: "Modelo", marca: "Marca", modelo: "Modelo",
   modoInstalacion: "Instalación", identificadorRed: "Red",
   perfilOperacion: "Perfil", responsableAsignado: "Responsable",
   tipoDeposito: "Tipo Depósito", materialConstruccion: "Material",

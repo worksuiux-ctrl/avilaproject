@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useDispositivosStore } from "./dispositivosStore";
 
 export interface Entity {
   id: string;
@@ -122,7 +123,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-1",
     activo: true,
-    metadata: { coordenadas: { lat: 10.4850, lng: -66.9000 } },
+    metadata: { tipoDispositivoId: "tpd-1a", marca: "NCR", modelo: "NCR 5587", cantidad: 1, coordenadas: { lat: 10.4850, lng: -66.9000 } },
     createdAt: "2026-01-01",
     updatedAt: "2026-01-01",
   },
@@ -394,7 +395,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-5",
     activo: true,
-    metadata: { coordenadas: { lat: 10.4950, lng: -66.8980 } },
+    metadata: { tipoDispositivoId: "tpd-1b", marca: "NCR", modelo: "NCR SelfServ 22", cantidad: 1, coordenadas: { lat: 10.4950, lng: -66.8980 } },
     createdAt: "2026-01-20",
     updatedAt: "2026-01-20",
   },
@@ -406,7 +407,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-5",
     activo: true,
-    metadata: { coordenadas: { lat: 10.4960, lng: -66.9020 } },
+    metadata: { tipoDispositivoId: "tpd-1a", marca: "Diebold Nixdorf", modelo: "Diebold 460", cantidad: 1, coordenadas: { lat: 10.4960, lng: -66.9020 } },
     createdAt: "2026-01-20",
     updatedAt: "2026-01-20",
   },
@@ -418,7 +419,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-6",
     activo: true,
-    metadata: { coordenadas: { lat: 10.2550, lng: -66.4480 } },
+    metadata: { tipoDispositivoId: "tpd-1b", marca: "NCR", modelo: "NCR SelfServ 32", cantidad: 1, coordenadas: { lat: 10.2550, lng: -66.4480 } },
     createdAt: "2026-02-05",
     updatedAt: "2026-02-05",
   },
@@ -430,7 +431,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-7",
     activo: true,
-    metadata: { coordenadas: { lat: 10.1680, lng: -67.9990 } },
+    metadata: { tipoDispositivoId: "tpd-1d", marca: "Hyosung", modelo: "Hyosung NH 2500", cantidad: 1, coordenadas: { lat: 10.1680, lng: -67.9990 } },
     createdAt: "2026-02-15",
     updatedAt: "2026-02-15",
   },
@@ -442,7 +443,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-8",
     activo: true,
-    metadata: { coordenadas: { lat: 10.6330, lng: -71.6380 } },
+    metadata: { tipoDispositivoId: "tpd-1b", marca: "Diebold Nixdorf", modelo: "Diebold 560", cantidad: 1, coordenadas: { lat: 10.6330, lng: -71.6380 } },
     createdAt: "2026-03-05",
     updatedAt: "2026-03-05",
   },
@@ -454,7 +455,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "ATM",
     padreId: "demo-5",
     activo: true,
-    metadata: { coordenadas: { lat: 10.4980, lng: -66.9080 } },
+    metadata: { tipoDispositivoId: "tpd-1d", marca: "Hyosung", modelo: "Hyosung MX 5300", cantidad: 1, coordenadas: { lat: 10.4980, lng: -66.9080 } },
     createdAt: "2026-04-01",
     updatedAt: "2026-04-01",
   },
@@ -467,7 +468,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-1",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "NCR", modelo: "Caja Premium NCR", cantidad: 1 },
     createdAt: "2026-01-01",
     updatedAt: "2026-01-01",
   },
@@ -479,7 +480,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-1",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "Epson", modelo: "Caja Estándar Epson", cantidad: 1 },
     createdAt: "2026-01-01",
     updatedAt: "2026-01-01",
   },
@@ -491,7 +492,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-5",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "NCR", modelo: "Caja Premium NCR", cantidad: 1 },
     createdAt: "2026-01-20",
     updatedAt: "2026-01-20",
   },
@@ -503,7 +504,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-5",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "Oki", modelo: "Caja Básica Oki", cantidad: 1 },
     createdAt: "2026-01-20",
     updatedAt: "2026-01-20",
   },
@@ -527,7 +528,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-6",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "Epson", modelo: "Caja Estándar Epson", cantidad: 1 },
     createdAt: "2026-02-05",
     updatedAt: "2026-02-05",
   },
@@ -551,7 +552,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-7",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "NCR", modelo: "Caja Premium NCR", cantidad: 1 },
     createdAt: "2026-02-15",
     updatedAt: "2026-02-15",
   },
@@ -563,7 +564,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-7",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "Oki", modelo: "Caja Básica Oki", cantidad: 1 },
     createdAt: "2026-02-15",
     updatedAt: "2026-02-15",
   },
@@ -587,7 +588,7 @@ const DEFAULT_ENTITIES: Entity[] = [
     subtipo: "Caja",
     padreId: "demo-8",
     activo: true,
-    metadata: {},
+    metadata: { tipoDispositivoId: "tpd-2", marca: "Epson", modelo: "Caja Estándar Epson", cantidad: 1 },
     createdAt: "2026-03-05",
     updatedAt: "2026-03-05",
   },
@@ -636,19 +637,19 @@ const DEFAULT_ENTITIES: Entity[] = [
     createdAt: "2026-03-01", updatedAt: "2026-03-01",
   },
   /* Cajas nuevas */
-  { id: "demo-41", codigo: "BCO-CAJ-MRQ2-01", nombre: "Caja Principal Maracaibo Occ", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-8", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-42", codigo: "BCO-CAJ-MER-01", nombre: "Caja Principal Mérida", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-36", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-43", codigo: "BCO-CAJ-APU-01", nombre: "Caja Principal Apure", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-37", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-44", codigo: "BCO-CAJ-NES-01", nombre: "Caja Principal Nueva Esparta", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-38", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-45", codigo: "BCO-CAJ-MON-01", nombre: "Caja Principal Monagas", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-39", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-46", codigo: "BCO-CAJ-BOL-01", nombre: "Caja Principal Bolívar", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-40", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-41", codigo: "BCO-CAJ-MRQ2-01", nombre: "Caja Principal Maracaibo Occ", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-8", activo: true, metadata: { tipoDispositivoId: "tpd-2", marca: "NCR", modelo: "Caja Premium NCR", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-42", codigo: "BCO-CAJ-MER-01", nombre: "Caja Principal Mérida", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-36", activo: true, metadata: { tipoDispositivoId: "tpd-2", marca: "Oki", modelo: "Caja Básica Oki", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-43", codigo: "BCO-CAJ-APU-01", nombre: "Caja Principal Apure", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-37", activo: true, metadata: { tipoDispositivoId: "tpd-2", marca: "Epson", modelo: "Caja Estándar Epson", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-44", codigo: "BCO-CAJ-NES-01", nombre: "Caja Principal Nueva Esparta", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-38", activo: true, metadata: { tipoDispositivoId: "tpd-2", marca: "NCR", modelo: "Caja Premium NCR", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-45", codigo: "BCO-CAJ-MON-01", nombre: "Caja Principal Monagas", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-39", activo: true, metadata: { tipoDispositivoId: "tpd-2", marca: "Oki", modelo: "Caja Básica Oki", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-46", codigo: "BCO-CAJ-BOL-01", nombre: "Caja Principal Bolívar", nivel: "Dispositivos", subtipo: "Caja", padreId: "demo-40", activo: true, metadata: { tipoDispositivoId: "tpd-2", marca: "Epson", modelo: "Caja Estándar Epson", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
   /* ATMs nuevos */
-  { id: "demo-47", codigo: "BCO-ATM-MRQ02", nombre: "ATM Maracaibo Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-8", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-48", codigo: "BCO-ATM-MER01", nombre: "ATM Mérida Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-36", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-49", codigo: "BCO-ATM-APU01", nombre: "ATM Apure Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-37", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-50", codigo: "BCO-ATM-NES01", nombre: "ATM Nueva Esparta", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-38", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-51", codigo: "BCO-ATM-MON01", nombre: "ATM Monagas Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-39", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
-  { id: "demo-52", codigo: "BCO-ATM-BOL01", nombre: "ATM Bolívar Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-40", activo: true, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-47", codigo: "BCO-ATM-MRQ02", nombre: "ATM Maracaibo Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-8", activo: true, metadata: { tipoDispositivoId: "tpd-1a", marca: "NCR", modelo: "NCR 5587", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-48", codigo: "BCO-ATM-MER01", nombre: "ATM Mérida Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-36", activo: true, metadata: { tipoDispositivoId: "tpd-1b", marca: "Diebold Nixdorf", modelo: "Diebold 560", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-49", codigo: "BCO-ATM-APU01", nombre: "ATM Apure Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-37", activo: true, metadata: { tipoDispositivoId: "tpd-1b", marca: "NCR", modelo: "NCR SelfServ 22", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-50", codigo: "BCO-ATM-NES01", nombre: "ATM Nueva Esparta", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-38", activo: true, metadata: { tipoDispositivoId: "tpd-1a", marca: "NCR", modelo: "NCR 5587", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-51", codigo: "BCO-ATM-MON01", nombre: "ATM Monagas Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-39", activo: true, metadata: { tipoDispositivoId: "tpd-1d", marca: "Hyosung", modelo: "Hyosung MX 5300", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "demo-52", codigo: "BCO-ATM-BOL01", nombre: "ATM Bolívar Centro", nivel: "Dispositivos", subtipo: "ATM", padreId: "demo-40", activo: true, metadata: { tipoDispositivoId: "tpd-1a", marca: "Diebold Nixdorf", modelo: "Diebold 460", cantidad: 1 }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
   /* Bóvedas nuevas */
   { id: "demo-53", codigo: "BCO-BOV-MRQ2-01", nombre: "Bóveda Principal Maracaibo Occ", nivel: "Depósitos", subtipo: "Bóveda", padreId: "demo-8", activo: true, saldo: 500000, metadata: { coordenadas: { lat: 10.6316, lng: -71.6405 } }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
   { id: "demo-54", codigo: "BCO-BOV-MER-01", nombre: "Bóveda Principal Mérida", nivel: "Depósitos", subtipo: "Bóveda", padreId: "demo-36", activo: true, saldo: 350000, metadata: { coordenadas: { lat: 8.5833, lng: -71.1333 } }, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
@@ -671,8 +672,90 @@ const DEFAULT_ENTITIES: Entity[] = [
   { id: "demo-70", codigo: "ANQ-BOL-002", nombre: "Anaquel Efectivo VES Bolívar", nivel: "Anaqueles", subtipo: "Anaquel", padreId: "demo-58", activo: true, saldo: 360000, metadata: {}, createdAt: "2026-03-01", updatedAt: "2026-03-01" },
 ];
 
+/* ── Generar hijos demo (cajetines, cofres) ── */
+function buildDemoEntitiesWithChildren(): Entity[] {
+  const children: Entity[] = [];
+
+  for (const entity of DEFAULT_ENTITIES) {
+    if (entity.nivel === "Dispositivos") {
+      const marcaNombre = entity.metadata?.marca as string | undefined;
+      const modeloNombre = entity.metadata?.modelo as string | undefined;
+      if (!marcaNombre || !modeloNombre) continue;
+
+      const dispStore = useDispositivosStore.getState();
+      const marca = dispStore.marcas.find((m) => m.nombre === marcaNombre);
+      const modelo = marca ? dispStore.modelos.find((m) => m.marcaId === marca.id && m.nombre === modeloNombre) : undefined;
+      const config = modelo?.configuracion;
+      if (!config) continue;
+
+      const cajetines = Array.isArray(config)
+        ? config as Array<{ nombre: string; capacidad: number; moneda: string; denominacion: number }>
+        : config && typeof config === "object" && "cajetines" in config
+          ? (config as { cajetines: Array<{ nombre: string; capacidad: number; moneda: string; denominacion: number }> }).cajetines
+          : undefined;
+
+      if (cajetines && cajetines.length > 0) {
+        cajetines.forEach((cj, i) => {
+          children.push({
+            id: makeId(),
+            codigo: `${entity.codigo}-CAJ${i + 1}`,
+            nombre: cj.nombre || `Cajetín ${i + 1}`,
+            nivel: "Depósitos",
+            subtipo: "Cajetín",
+            padreId: entity.id,
+            activo: true,
+            metadata: { capacidad: cj.capacidad, moneda: cj.moneda, denominacion: cj.denominacion },
+            createdAt: entity.createdAt,
+            updatedAt: entity.updatedAt,
+          });
+        });
+      }
+
+      const depositoMod = config && typeof config === "object" && "deposito" in config
+        ? (config as { deposito: { capacidad: number; aceptaSobres: boolean } }).deposito
+        : undefined;
+
+      if (depositoMod && depositoMod.capacidad > 0) {
+        children.push({
+          id: makeId(),
+          codigo: `${entity.codigo}-DEP`,
+          nombre: `Módulo de Depósito`,
+          nivel: "Depósitos",
+          subtipo: "Módulo Depósito",
+          padreId: entity.id,
+          activo: true,
+          metadata: { capacidad: depositoMod.capacidad, aceptaSobres: depositoMod.aceptaSobres },
+          createdAt: entity.createdAt,
+          updatedAt: entity.updatedAt,
+        });
+      }
+
+      const cofre = config && typeof config === "object" && "capacidad" in config && !("cajetines" in config) && !("deposito" in config)
+        ? config as { capacidad?: number }
+        : undefined;
+
+      if (cofre && cofre.capacidad && cofre.capacidad > 0) {
+        children.push({
+          id: makeId(),
+          codigo: `${entity.codigo}-COFRE`,
+          nombre: `Cofre de ${entity.nombre}`,
+          nivel: "Depósitos",
+          subtipo: "Cofre",
+          padreId: entity.id,
+          activo: true,
+          metadata: { capacidad: cofre.capacidad },
+          createdAt: entity.createdAt,
+          updatedAt: entity.updatedAt,
+        });
+      }
+    }
+  }
+
+  return [...DEFAULT_ENTITIES, ...children];
+}
+
 export const useEntitiesStore = create<EntitiesState>((set, get) => ({
-  entities: DEFAULT_ENTITIES,
+  entities: buildDemoEntitiesWithChildren(),
   selectedId: null,
   expandedIds: new Set<string>(),
 
@@ -682,14 +765,180 @@ export const useEntitiesStore = create<EntitiesState>((set, get) => ({
     const entity: Entity = { ...data, id, metadata: data.metadata ?? {}, createdAt: now, updatedAt: now };
     set((s) => {
       const children: Entity[] = [];
-      if (data.subtipo === "Caja" && data.nivel === "Dispositivos") {
-        children.push({
-          id: makeId(), codigo: `${data.codigo}-COFRE`, nombre: `Cofre de ${data.nombre}`,
-          nivel: "Depósitos", subtipo: "Cofre", padreId: id,
-          activo: true, metadata: { capacidad: 0 }, createdAt: now, updatedAt: now,
-        });
+      const entitiesToAdd: Entity[] = [entity];
+
+      /* ── Múltiples ATMs ── */
+      const cantidad = (data.metadata?.cantidad as number) ?? 1;
+      if (data.nivel === "Dispositivos" && data.subtipo === "ATM" && cantidad > 1) {
+        const base = entitiesToAdd[0];
+        entitiesToAdd.length = 0;
+        for (let i = 0; i < cantidad; i++) {
+          const newId = makeId();
+          entitiesToAdd.push({
+            ...base,
+            id: newId,
+            codigo: i === 0 ? base.codigo : `${base.codigo}-${i + 1}`,
+            nombre: i === 0 ? base.nombre : `${base.nombre} #${i + 1}`,
+            metadata: { ...base.metadata, cantidad: 1 },
+          });
+        }
       }
-      return { entities: [...s.entities, entity, ...children] };
+
+      /* ── Auto-crear hijos del modelo ── */
+      if (data.nivel === "Dispositivos") {
+        const dispStore = useDispositivosStore.getState();
+        const marcaNombre = data.metadata?.marca as string | undefined;
+        const modeloNombre = data.metadata?.modelo as string | undefined;
+
+        if (marcaNombre && modeloNombre) {
+          const marca = dispStore.marcas.find((m) => m.nombre === marcaNombre);
+          const modelo = marca ? dispStore.modelos.find((m) => m.marcaId === marca.id && m.nombre === modeloNombre) : undefined;
+          const config = modelo?.configuracion;
+
+          /* ── Cajetines (ATM de Retiro, Multimoneda, Remoto, Multifuncional) ── */
+          const cajetines = Array.isArray(config)
+            ? config as Array<{ nombre: string; capacidad: number; moneda: string; denominacion: number }>
+            : config && typeof config === "object" && "cajetines" in config
+              ? (config as { cajetines: Array<{ nombre: string; capacidad: number; moneda: string; denominacion: number }> }).cajetines
+              : undefined;
+
+          if (cajetines && cajetines.length > 0) {
+            entitiesToAdd.forEach((e) => {
+              cajetines!.forEach((cj, i) => {
+                children.push({
+                  id: makeId(),
+                  codigo: `${e.codigo}-CAJ${i + 1}`,
+                  nombre: cj.nombre || `Cajetín ${i + 1}`,
+                  nivel: "Depósitos",
+                  subtipo: "Cajetín",
+                  padreId: e.id,
+                  activo: true,
+                  metadata: { capacidad: cj.capacidad, moneda: cj.moneda, denominacion: cj.denominacion },
+                  createdAt: now,
+                  updatedAt: now,
+                });
+              });
+            });
+          }
+
+          /* ── Módulo de Depósito (ATM Multifuncional / Depósito) ── */
+          const depositoMod = config && typeof config === "object" && "deposito" in config
+            ? (config as { deposito: { capacidad: number; aceptaSobres: boolean } }).deposito
+            : undefined;
+
+          if (depositoMod && depositoMod.capacidad > 0) {
+            entitiesToAdd.forEach((e) => {
+              children.push({
+                id: makeId(),
+                codigo: `${e.codigo}-DEP`,
+                nombre: `Módulo de Depósito`,
+                nivel: "Depósitos",
+                subtipo: "Módulo Depósito",
+                padreId: e.id,
+                activo: true,
+                metadata: { capacidad: depositoMod.capacidad, aceptaSobres: depositoMod.aceptaSobres },
+                createdAt: now,
+                updatedAt: now,
+              });
+            });
+          }
+
+          /* ── Cofre (Caja) ── */
+          const cofre = config && typeof config === "object" && "capacidad" in config && !("cajetines" in config) && !("deposito" in config)
+            ? config as { capacidad?: number }
+            : undefined;
+
+          if (cofre && cofre.capacidad && cofre.capacidad > 0) {
+            entitiesToAdd.forEach((e) => {
+              children.push({
+                id: makeId(),
+                codigo: `${e.codigo}-COFRE`,
+                nombre: `Cofre de ${e.nombre}`,
+                nivel: "Depósitos",
+                subtipo: "Cofre",
+                padreId: e.id,
+                activo: true,
+                metadata: { capacidad: cofre.capacidad },
+                createdAt: now,
+                updatedAt: now,
+              });
+            });
+          }
+        }
+
+        /* Fallback: auto-crear cofre si es Caja sin modelo */
+        if (data.subtipo === "Caja" && (!marcaNombre || !modeloNombre)) {
+          entitiesToAdd.forEach((e) => {
+            children.push({
+              id: makeId(), codigo: `${e.codigo}-COFRE`, nombre: `Cofre de ${e.nombre}`,
+              nivel: "Depósitos", subtipo: "Cofre", padreId: e.id,
+              activo: true, metadata: { capacidad: 0 }, createdAt: now, updatedAt: now,
+            });
+          });
+        }
+
+        /* ── Contadora para Caja ── */
+        const incluyeContadora = data.metadata?.incluyeContadora as boolean | undefined;
+        const modeloContadoraId = data.metadata?.modeloContadoraId as string | undefined;
+        const marcaContadoraId = data.metadata?.marcaContadoraId as string | undefined;
+
+        if (incluyeContadora && modeloContadoraId && marcaContadoraId) {
+          const modeloCont = dispStore.getModeloById(modeloContadoraId);
+          const marcaCont = dispStore.marcas.find(m => m.id === marcaContadoraId);
+          const tipoCont = modeloCont ? dispStore.tiposDispositivo.find(t => t.id === modeloCont.tipoDispositivoId) : undefined;
+          entitiesToAdd.forEach((e) => {
+            children.push({
+              id: makeId(),
+              codigo: `${e.codigo}-CONT`,
+              nombre: `Contadora de ${e.nombre}`,
+              nivel: "Dispositivos",
+              subtipo: "Máquina Contadora de Billetes",
+              padreId: e.id,
+              activo: true,
+              metadata: {
+                tipoDispositivoId: modeloCont?.tipoDispositivoId ?? "",
+                marca: marcaCont?.nombre ?? "",
+                modelo: modeloCont?.nombre ?? "",
+              },
+              createdAt: now,
+              updatedAt: now,
+            });
+          });
+        }
+
+      }
+
+      /* ── Contadoras para Bóveda (cuando el form es nivel Depósitos) ── */
+      if (data.nivel === "Depósitos" && data.subtipo === "Bóveda") {
+        const contadorasBoveda = data.metadata?.contadorasBoveda as Array<{ tipoId: string; marcaId: string; modeloId: string }> | undefined;
+        if (contadorasBoveda && contadorasBoveda.length > 0) {
+          const dispStore = useDispositivosStore.getState();
+          contadorasBoveda.forEach((ct, i) => {
+            const modeloCont = ct.modeloId ? dispStore.getModeloById(ct.modeloId) : undefined;
+            const marcaCont = ct.marcaId ? dispStore.marcas.find(m => m.id === ct.marcaId) : undefined;
+            entitiesToAdd.forEach((e) => {
+              children.push({
+                id: makeId(),
+                codigo: `${e.codigo}-CONT${i + 1}`,
+                nombre: `Contadora ${i + 1}`,
+                nivel: "Dispositivos",
+                subtipo: "Máquina Contadora de Billetes",
+                padreId: e.id,
+                activo: true,
+                metadata: {
+                  tipoDispositivoId: ct.tipoId,
+                  marca: marcaCont?.nombre ?? "",
+                  modelo: modeloCont?.nombre ?? "",
+                },
+                createdAt: now,
+                updatedAt: now,
+              });
+            });
+          });
+        }
+      }
+
+      return { entities: [...s.entities, ...entitiesToAdd, ...children] };
     });
   },
 

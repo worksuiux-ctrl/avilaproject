@@ -46,6 +46,8 @@ export interface Servicio {
   ultimaRenovacion: string;
   estadosAplicables: string[];
   rutas: string[];
+  tiposDispositivoIds?: string[];
+  marcasIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -157,6 +159,7 @@ export const CATEGORIAS_POR_TIPO_PROVEEDOR: Record<string, string[]> = {
   "Tecnología": ["Soporte Técnico", "Instalación", "Mantenimiento", "Consumible"],
   "Mantenimiento": ["Mantenimiento Preventivo", "Mantenimiento Correctivo"],
   "Servicios": ["Servicio General"],
+  "Dispositivos": ["Proveedor de Dispositivos"],
 };
 
 export const VARIABLES_POR_CATEGORIA: Record<string, Omit<VariableTarifaria, "id" | "servicioId">[]> = {
@@ -225,6 +228,12 @@ export const VARIABLES_POR_CATEGORIA: Record<string, Omit<VariableTarifaria, "id
   "Servicio General": [
     { nombre: "tiempo", etiqueta: "Horas", tipo: "numero", requerida: true, valorDefecto: 1, factorCalculo: 30 },
     { nombre: "tipoServicio", etiqueta: "Tipo", tipo: "select", opciones: ["Consultoría", "Auditoría", "Capacitación", "Otro"], requerida: true, valorDefecto: "Consultoría", factorCalculo: 1 },
+  ],
+  "Proveedor de Dispositivos": [
+    { nombre: "cantidad", etiqueta: "Cantidad de Dispositivos", tipo: "numero", requerida: true, valorDefecto: 1, factorCalculo: 1 },
+    { nombre: "precioUnitario", etiqueta: "Precio Unitario ($)", tipo: "numero", requerida: true, valorDefecto: 0, factorCalculo: 1 },
+    { nombre: "incluyeInstalacion", etiqueta: "Incluye Instalación", tipo: "select", opciones: ["Sí", "No"], requerida: true, valorDefecto: "Sí", factorCalculo: 1 },
+    { nombre: "garantiaMeses", etiqueta: "Garantía (meses)", tipo: "numero", requerida: false, valorDefecto: 12, factorCalculo: 1 },
   ],
 };
 
@@ -349,6 +358,19 @@ const PROVEEDORES_DEMO: Proveedor[] = [
     createdAt: "2026-03-15",
     updatedAt: "2026-03-15",
   },
+  {
+    id: "prov-8",
+    codigo: "PROV-DIS-001",
+    nombre: "Distribuidora de Equipos Bancarios C.A.",
+    tipo: "Dispositivos",
+    contacto: "Roberto Medina",
+    telefono: "+58 212-555.0808",
+    email: "ventas@equiposbancarios.com",
+    direccion: "Av. Principal, Zona Industrial, Las Adjuntas, Caracas",
+    activo: true,
+    createdAt: "2026-04-01",
+    updatedAt: "2026-04-01",
+  },
 ];
 
 let _servSeq = 0;
@@ -404,6 +426,9 @@ function buildServiciosConVariables(): Servicio[] {
     { id: "serv-25", codigo: nextServCode("Manipulación"), proveedorId: "prov-7", categoria: "Manipulación", nombre: "Manipulación de Efectivo Tranvalor", descripcion: "Recepción, clasificación y empaque de billetes y monedas", precio: 1700, variables: cloneVariables("serv-25", VARIABLES_POR_CATEGORIA.Manipulación), activo: true, ...defVigencia(), createdAt: "2026-03-01", updatedAt: "2026-03-01" },
     { id: "serv-26", codigo: nextServCode("Custodia"), proveedorId: "prov-7", categoria: "Custodia", nombre: "Custodia Temporal Zulia", descripcion: "Almacenamiento temporal seguro en agencias Zulia", precio: 950, variables: cloneVariables("serv-26", VARIABLES_POR_CATEGORIA.Custodia), activo: true, ...defVigencia(), createdAt: "2026-03-01", updatedAt: "2026-03-01" },
     { id: "serv-27", codigo: nextServCode("Conteo"), proveedorId: "prov-7", categoria: "Conteo", nombre: "Conteo Mecanizado Tranvalor", descripcion: "Conteo mecanizado y verificación de autenticidad", precio: 1100, variables: cloneVariables("serv-27", VARIABLES_POR_CATEGORIA.Conteo), activo: true, ...defVigencia(), createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+    // Distribuidora de Equipos Bancarios
+    { id: "serv-28", codigo: nextServCode("Proveedor de Dispositivos"), proveedorId: "prov-8", categoria: "Proveedor de Dispositivos", nombre: "Suministro de ATMs NCR", descripcion: "Proveedor autorizado de cajeros automáticos NCR y Diebold con instalación incluida", precio: 15000, variables: cloneVariables("serv-28", VARIABLES_POR_CATEGORIA["Proveedor de Dispositivos"]), activo: true, ...defVigencia(), createdAt: "2026-04-01", updatedAt: "2026-04-01" },
+    { id: "serv-29", codigo: nextServCode("Proveedor de Dispositivos"), proveedorId: "prov-8", categoria: "Proveedor de Dispositivos", nombre: "Suministro de Puntos de Venta Ingenico", descripcion: "Proveedor de terminales POS Ingenico y Verifone", precio: 350, variables: cloneVariables("serv-29", VARIABLES_POR_CATEGORIA["Proveedor de Dispositivos"]), activo: true, ...defVigencia(), createdAt: "2026-04-01", updatedAt: "2026-04-01" },
   ];
 }
 

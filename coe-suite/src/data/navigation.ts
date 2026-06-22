@@ -73,6 +73,7 @@ export const MODULES: Module[] = [
     items: [
       { id: "config-organizacion", label: "Mi Organización", icon: "Building2", route: "/config/organizacion" },
       { id: "config-unidades", label: "Unidades", icon: "Building2", route: "/config/unidades" },
+      { id: "config-dispositivos", label: "Dispositivos", icon: "Cpu", route: "/config/dispositivos" },
       { id: "config-divisas", label: "Divisas", icon: "Cash", route: "/config/divisas" },
       { id: "config-proveedores", label: "Proveedores", icon: "Truck", route: "/config/proveedores" },
       { id: "config-clientes", label: "Clientes", icon: "Users", route: "/config/clientes" },
