@@ -5,6 +5,7 @@ import { EntityTree } from "@components/entities";
 import { useEntitiesStore } from "@stores/entitiesStore";
 import { useNavStore } from "@stores/navStore";
 import { useDivisasStore } from "@stores/divisasStore";
+import { toast } from "sonner";
 
 interface InventoryItem {
   id: string;
@@ -169,6 +170,8 @@ export function Inventario() {
   const [declaredCantidad, setDeclaredCantidad] = useState<Record<string, number>>({});
   const [customDeclaraciones, setCustomDeclaraciones] = useState<{ id: string; tipoPieza: string; clasificacion: string; denominacion: string; valorUnitario: number }[]>([]);
   const [pendingCustom, setPendingCustom] = useState<{ tipoPieza: string; clasificacion: string; denominacion: string } | null>(null);
+  const [declaredAdjustments, setDeclaredAdjustments] = useState<Record<string, number>>({});
+  const [declaredCustomItems, setDeclaredCustomItems] = useState<InventoryItem[]>([]);
 
   const TIPO_PIEZA_DECLARACION_OPTIONS = [
     { value: "Billete", label: "Billete" },
@@ -216,17 +219,35 @@ export function Inventario() {
     return () => document.removeEventListener("mousedown", handler);
   }, [showPrintMenu]);
 
+  useEffect(() => {
+    setDeclaredAdjustments({});
+    setDeclaredCustomItems([]);
+  }, [selectedId]);
+
   const rawData = useMemo(() => {
     if (!selectedId) return [];
     return generateMockInventory(selectedId);
   }, [selectedId]);
+
+  const adjustedRawData = useMemo(() => {
+    let data = rawData.map((item) => {
+      const key = `${item.divisa}||${item.denominacion}||${item.tipoPieza}||${item.clasificacion}`;
+      const adj = declaredAdjustments[key];
+      if (!adj) return item;
+      const valorUnitario = item.cantidadDisponible > 0 ? Math.round(item.montoDisponible / item.cantidadDisponible) : 0;
+      const newCantidad = Math.max(0, item.cantidadDisponible + adj);
+      return { ...item, cantidadDisponible: newCantidad, montoDisponible: newCantidad * valorUnitario, cantidadTotal: item.cantidadTotal + adj, montoTotal: item.montoTotal + adj * valorUnitario };
+    });
+    if (declaredCustomItems.length > 0) data = [...data, ...declaredCustomItems];
+    return data;
+  }, [rawData, declaredAdjustments, declaredCustomItems]);
 
   function denomValue(d: string): number {
     return parseFloat(d.replace(/^[^\d]+/, "").replace(",", "")) || 0;
   }
 
   const defaultSortedData = useMemo(() => {
-    return [...rawData].sort((a, b) => {
+    return [...adjustedRawData].sort((a, b) => {
       const dPri = (DIVISA_PRIORITY[a.divisa] ?? 99) - (DIVISA_PRIORITY[b.divisa] ?? 99);
       if (dPri !== 0) return dPri;
       const tPri = (a.tipoPieza === "Billete" ? 0 : 1) - (b.tipoPieza === "Billete" ? 0 : 1);
@@ -235,7 +256,7 @@ export function Inventario() {
       if (cPri !== 0) return cPri;
       return denomValue(b.denominacion) - denomValue(a.denominacion);
     });
-  }, [rawData]);
+  }, [adjustedRawData]);
 
   const filtered = useMemo(() => {
     let data = defaultSortedData;
@@ -304,8 +325,11 @@ export function Inventario() {
       groups[key].montoActual += item.montoDisponible;
     });
     return Object.values(groups).sort((a, b) => {
-      if (a.tipoPieza !== b.tipoPieza) return a.tipoPieza === "Billete" ? -1 : 1;
-      return b.valorUnitario - a.valorUnitario;
+      const tPri = (a.tipoPieza === "Billete" ? 0 : 1) - (b.tipoPieza === "Billete" ? 0 : 1);
+      if (tPri !== 0) return tPri;
+      const cPri = (CLASIF_PRIORITY[a.clasificacion] ?? 99) - (CLASIF_PRIORITY[b.clasificacion] ?? 99);
+      if (cPri !== 0) return cPri;
+      return denomValue(b.denominacion) - denomValue(a.denominacion);
     });
   }, [rawData, selectedDivisaForDecl]);
 
@@ -794,7 +818,7 @@ export function Inventario() {
             </div>
             {selectedDivisaForDecl && (
               <div>
-                <div className="overflow-auto max-h-[400px] border border-[var(--color-neutro-200)] rounded-corner-xs">
+                <div className="overflow-auto max-h-[240px] border border-[var(--color-neutro-200)] rounded-corner-xs">
                   <table className="w-full text-[12px]">
                     <thead>
                       <tr className="bg-[var(--color-neutro-100)] border-b border-[var(--color-neutro-200)]">
@@ -810,34 +834,6 @@ export function Inventario() {
                       </tr>
                     </thead>
                     <tbody>
-                      {declaracionRows.map((row) => {
-                        const cantDeclarada = declaredCantidad[`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`] ?? row.cantidadActual;
-                        const diff = cantDeclarada - row.cantidadActual;
-                        return (
-                          <tr key={`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)]">
-                            <td className="px-3 py-2 font-medium">{stripSymbols(row.denominacion)}</td>
-                            <td className="px-3 py-2">{row.clasificacion}</td>
-                            <td className="px-3 py-2">{row.tipoPieza}</td>
-                            <td className="px-3 py-2 text-right">{row.valorUnitario.toLocaleString("es-ES")}</td>
-                            <td className="px-3 py-2 text-right">{row.cantidadActual.toLocaleString("es-ES")}</td>
-                            <td className="px-3 py-2 text-right">
-                              <input
-                                type="number"
-                                min={0}
-                                className="w-24 px-2 py-1 text-right border border-[var(--color-neutro-200)] rounded-corner-xs text-[12px] focus:outline-none focus:border-[var(--color-verde-100)]"
-                                value={cantDeclarada}
-                                onChange={(e) => {
-                                  const v = parseInt(e.target.value, 10);
-                                  setDeclaredCantidad((prev) => ({ ...prev, [`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`]: isNaN(v) ? 0 : v }));
-                                }}
-                              />
-                            </td>
-                            <td className={`px-3 py-2 text-right font-semibold ${diff > 0 ? "text-[var(--color-verde-100)]" : diff < 0 ? "text-[var(--color-ind-rojo)]" : ""}`}>{diff > 0 ? `+${diff}` : diff}</td>
-                            <td className="px-3 py-2 text-right">{row.montoActual.toLocaleString("es-ES")}</td>
-                            <td className="px-3 py-2 text-right">{(cantDeclarada * row.valorUnitario).toLocaleString("es-ES")}</td>
-                          </tr>
-                        );
-                      })}
                       {customDeclaraciones.map((cr) => {
                         const cantDeclarada = declaredCantidad[`custom:${cr.id}`] ?? 0;
                         const diff = cantDeclarada;
@@ -863,6 +859,34 @@ export function Inventario() {
                             <td className="px-3 py-2 text-right font-semibold text-[var(--color-verde-100)]">{diff > 0 ? `+${diff}` : diff}</td>
                             <td className="px-3 py-2 text-right">0</td>
                             <td className="px-3 py-2 text-right">{(cantDeclarada * cr.valorUnitario).toLocaleString("es-ES")}</td>
+                          </tr>
+                        );
+                      })}
+                      {declaracionRows.map((row) => {
+                        const cantDeclarada = declaredCantidad[`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`] ?? row.cantidadActual;
+                        const diff = cantDeclarada - row.cantidadActual;
+                        return (
+                          <tr key={`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)]">
+                            <td className="px-3 py-2 font-medium">{stripSymbols(row.denominacion)}</td>
+                            <td className="px-3 py-2">{row.clasificacion}</td>
+                            <td className="px-3 py-2">{row.tipoPieza}</td>
+                            <td className="px-3 py-2 text-right">{row.valorUnitario.toLocaleString("es-ES")}</td>
+                            <td className="px-3 py-2 text-right">{row.cantidadActual.toLocaleString("es-ES")}</td>
+                            <td className="px-3 py-2 text-right">
+                              <input
+                                type="number"
+                                min={0}
+                                className="w-24 px-2 py-1 text-right border border-[var(--color-neutro-200)] rounded-corner-xs text-[12px] focus:outline-none focus:border-[var(--color-verde-100)]"
+                                value={cantDeclarada}
+                                onChange={(e) => {
+                                  const v = parseInt(e.target.value, 10);
+                                  setDeclaredCantidad((prev) => ({ ...prev, [`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`]: isNaN(v) ? 0 : v }));
+                                }}
+                              />
+                            </td>
+                            <td className={`px-3 py-2 text-right font-semibold ${diff > 0 ? "text-[var(--color-verde-100)]" : diff < 0 ? "text-[var(--color-ind-rojo)]" : ""}`}>{diff > 0 ? `+${diff}` : diff}</td>
+                            <td className="px-3 py-2 text-right">{row.montoActual.toLocaleString("es-ES")}</td>
+                            <td className="px-3 py-2 text-right">{(cantDeclarada * row.valorUnitario).toLocaleString("es-ES")}</td>
                           </tr>
                         );
                       })}
@@ -903,7 +927,7 @@ export function Inventario() {
                       className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-white bg-[var(--color-verde-100)] rounded-corner-xs hover:brightness-90 transition-colors cursor-pointer"
                       onClick={() => {
                         const valorStr = pendingCustom.denominacion.replace(/[^0-9.,]/g, "").replace(",", "");
-                        setCustomDeclaraciones((prev) => [...prev, { id: crypto.randomUUID(), ...pendingCustom, valorUnitario: parseFloat(valorStr) || 1 }]);
+                        const exists = declaracionRows.some((r) => r.denominacion === pendingCustom.denominacion && r.tipoPieza === pendingCustom.tipoPieza && r.clasificacion === pendingCustom.clasificacion) || customDeclaraciones.some((r) => r.denominacion === pendingCustom.denominacion && r.tipoPieza === pendingCustom.tipoPieza && r.clasificacion === pendingCustom.clasificacion); if (exists) { toast.warning("Esta denominación ya existe en el inventario"); return; } setCustomDeclaraciones((prev) => [{ id: crypto.randomUUID(), ...pendingCustom, valorUnitario: parseFloat(valorStr) || 1 }, ...prev]);
                         setPendingCustom(null);
                       }}
                     >
@@ -941,6 +965,20 @@ export function Inventario() {
                     </tr>
                   </thead>
                   <tbody>
+                    {customDeclaraciones.map((cr) => {
+                      const cantDeclarada = declaredCantidad[`custom:${cr.id}`] ?? 0;
+                      if (cantDeclarada === 0) return null;
+                      return (
+                        <tr key={`custom:${cr.id}`} className="border-b border-[var(--color-neutro-100)] bg-[var(--color-ind-azul)]/5">
+                          <td className="px-3 py-2 font-medium">{stripSymbols(cr.denominacion)}</td>
+                          <td className="px-3 py-2 text-center">{cr.clasificacion}</td>
+                          <td className="px-3 py-2 text-center">{cr.tipoPieza}</td>
+                          <td className="px-3 py-2 text-right">0</td>
+                          <td className="px-3 py-2 text-right">{cantDeclarada.toLocaleString("es-ES")}</td>
+                          <td className="px-3 py-2 text-right font-semibold text-[var(--color-verde-100)]">+{cantDeclarada}</td>
+                        </tr>
+                      );
+                    })}
                     {declaracionRows.map((row) => {
                       const cantDeclarada = declaredCantidad[`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`] ?? row.cantidadActual;
                       const diff = cantDeclarada - row.cantidadActual;
@@ -956,20 +994,6 @@ export function Inventario() {
                         </tr>
                       );
                     })}
-                    {customDeclaraciones.map((cr) => {
-                      const cantDeclarada = declaredCantidad[`custom:${cr.id}`] ?? 0;
-                      if (cantDeclarada === 0) return null;
-                      return (
-                        <tr key={`custom:${cr.id}`} className="border-b border-[var(--color-neutro-100)] bg-[var(--color-ind-azul)]/5">
-                          <td className="px-3 py-2 font-medium">{stripSymbols(cr.denominacion)}</td>
-                          <td className="px-3 py-2 text-center">{cr.clasificacion}</td>
-                          <td className="px-3 py-2 text-center">{cr.tipoPieza}</td>
-                          <td className="px-3 py-2 text-right">0</td>
-                          <td className="px-3 py-2 text-right">{cantDeclarada.toLocaleString("es-ES")}</td>
-                          <td className="px-3 py-2 text-right font-semibold text-[var(--color-verde-100)]">+{cantDeclarada}</td>
-                        </tr>
-                      );
-                    })}
                   </tbody>
                 </table>
               </div>
@@ -978,7 +1002,31 @@ export function Inventario() {
             )}
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" size="sm" onClick={() => setDeclararPage("form")}>Volver</Button>
-              <Button variant="primary" size="sm" onClick={() => { setShowDeclararModal(false); setDeclararPage("form"); setSelectedDivisaForDecl(""); setDeclaredCantidad({}); setCustomDeclaraciones([]); setPendingCustom(null); }}>Confirmar Declaración</Button>
+              <Button variant="primary" size="sm" onClick={() => {
+                const adj: Record<string, number> = {};
+                const customs: InventoryItem[] = [];
+                const declDivisa = selectedDivisaForDecl;
+                declaracionRows.forEach((row) => {
+                  const key = `${declDivisa}||${row.denominacion}||${row.tipoPieza}||${row.clasificacion}`;
+                  const cantDecl = declaredCantidad[`row:${row.denominacion}:${row.tipoPieza}:${row.clasificacion}`] ?? row.cantidadActual;
+                  const diff = cantDecl - row.cantidadActual;
+                  if (diff !== 0) adj[key] = diff;
+                });
+                customDeclaraciones.forEach((cr) => {
+                  const cantDecl = declaredCantidad[`custom:${cr.id}`] ?? 0;
+                  if (cantDecl <= 0) return;
+                  const exists = rawData.some((item) => item.divisa === declDivisa && item.denominacion === cr.denominacion && item.tipoPieza === cr.tipoPieza && item.clasificacion === cr.clasificacion);
+                  if (exists) {
+                    const key = `${declDivisa}||${cr.denominacion}||${cr.tipoPieza}||${cr.clasificacion}`;
+                    adj[key] = (adj[key] || 0) + cantDecl;
+                  } else {
+                    customs.push({ id: `declared-${cr.id}`, tipoPieza: cr.tipoPieza as "Billete" | "Moneda", clasificacion: cr.clasificacion, denominacion: cr.denominacion, cantidadDisponible: cantDecl, montoDisponible: cantDecl * cr.valorUnitario, cantidadCierre: 0, montoCierre: 0, cantidadTotal: cantDecl, montoTotal: cantDecl * cr.valorUnitario, divisa: declDivisa });
+                  }
+                });
+                setDeclaredAdjustments((prev) => ({ ...prev, ...adj }));
+                setDeclaredCustomItems((prev) => [...prev, ...customs]);
+                setShowDeclararModal(false); setDeclararPage("form"); setSelectedDivisaForDecl(""); setDeclaredCantidad({}); setCustomDeclaraciones([]); setPendingCustom(null);
+              }}>Confirmar Declaración</Button>
             </div>
           </div>
         )}
