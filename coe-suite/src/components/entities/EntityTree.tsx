@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronRight, FolderOpen, AlertTriangle, Search, X, Filter, Circle } from "lucide-react";
+import { ChevronRight, FolderOpen, AlertTriangle, Search, X, Filter, Circle, LayoutList, GitFork } from "lucide-react";
 import { Checkbox } from "@coe/design-system";
 import { useEntitiesStore, type Entity } from "@stores/entitiesStore";
 import { ENTITY_TYPES, getEntityType } from "@data/entityCatalog";
@@ -148,9 +148,12 @@ const UNIDADES_LEVELS = ENTITY_TYPES
 
 export function EntityTree() {
   const entities = useEntitiesStore((s) => s.entities);
+  const selectedId = useEntitiesStore((s) => s.selectedId);
+  const selectEntity = useEntitiesStore((s) => s.selectEntity);
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [hiddenLevels, setHiddenLevels] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<"tree" | "grouped">("tree");
   const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -184,6 +187,12 @@ export function EntityTree() {
       pid = p.padreId;
     }
     return true;
+  }
+
+  function subtreeHasVisible(e: Entity): boolean {
+    if (entityVisible(e)) return true;
+    const children = useEntitiesStore.getState().getChildren(e.id);
+    return children.some((c) => subtreeHasVisible(c));
   }
 
   const rootIds = useMemo(() => {
@@ -225,6 +234,17 @@ export function EntityTree() {
             </button>
           )}
         </div>
+        <button
+          className={`p-1.5 rounded-corner-m border transition-colors ${
+            viewMode === "grouped"
+              ? "bg-[var(--color-verde-100)] text-white border-[var(--color-verde-100)]"
+              : "bg-white text-[var(--color-neutro-400)] border-[var(--color-neutro-200)] hover:bg-[var(--color-neutro-100)]"
+          }`}
+          onClick={() => setViewMode(viewMode === "tree" ? "grouped" : "tree")}
+          title={viewMode === "tree" ? "Agrupar por tipo" : "Vista de árbol"}
+        >
+          {viewMode === "tree" ? <LayoutList className="w-3.5 h-3.5" /> : <GitFork className="w-3.5 h-3.5" />}
+        </button>
         <div ref={filterRef} className="relative">
           <button
             className={`p-1.5 rounded-corner-m border transition-colors ${
@@ -260,60 +280,121 @@ export function EntityTree() {
         </div>
       </div>
       <div className="space-y-0.5">
-        {query.trim()
-          ? entities
-              .filter((e) => rootIds.includes(e.id) && entityVisible(e) && ancestorsVisible(e))
-              .map((e) => {
-                let depth = 0;
-                let pid = e.padreId;
-                const seen = new Set<string>([e.id]);
-                while (pid && !seen.has(pid)) {
-                  seen.add(pid);
-                  depth++;
-                  pid = entities.find((p) => p.id === pid)?.padreId ?? null;
-                }
-                return <TreeNode key={e.id} entity={e} depth={depth} allEntities={entities} hiddenLevels={hiddenLevels} />;
-              })
-          : (() => {
-              const internal = entities.filter((e) => e.padreId === null && entityVisible(e) && e.nivel !== "Entidad Bancaria");
-              const external = entities.filter((e) => e.padreId === null && entityVisible(e) && e.nivel === "Entidad Bancaria");
-              const grupos = internal.reduce<{ nivel: string; items: Entity[] }[]>((acc, e) => {
-                const last = acc[acc.length - 1];
-                if (last && last.nivel === e.nivel) last.items.push(e);
-                else acc.push({ nivel: e.nivel, items: [e] });
-                return acc;
-              }, []);
-              return (
-                <>
-                  {grupos.map((g) =>
-                    g.items.length === 1 ? (
-                      <TreeNode key={g.items[0].id} entity={g.items[0]} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
-                    ) : (
-                      <div key={g.nivel} className="border-l-2 border-[var(--color-neutro-200)] ml-2 pl-2 space-y-0.5">
-                        {g.items.map((root) => (
-                          <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
-                        ))}
+        {viewMode === "tree" ? (
+          query.trim()
+            ? entities
+                .filter((e) => rootIds.includes(e.id) && entityVisible(e) && ancestorsVisible(e))
+                .map((e) => {
+                  let depth = 0;
+                  let pid = e.padreId;
+                  const seen = new Set<string>([e.id]);
+                  while (pid && !seen.has(pid)) {
+                    seen.add(pid);
+                    depth++;
+                    pid = entities.find((p) => p.id === pid)?.padreId ?? null;
+                  }
+                  return <TreeNode key={e.id} entity={e} depth={depth} allEntities={entities} hiddenLevels={hiddenLevels} />;
+                })
+            : (() => {
+                const internal = entities.filter((e) => e.padreId === null && subtreeHasVisible(e) && e.nivel !== "Entidad Bancaria");
+                const external = entities.filter((e) => e.padreId === null && subtreeHasVisible(e) && e.nivel === "Entidad Bancaria");
+                const grupos = internal.reduce<{ nivel: string; items: Entity[] }[]>((acc, e) => {
+                  const last = acc[acc.length - 1];
+                  if (last && last.nivel === e.nivel) last.items.push(e);
+                  else acc.push({ nivel: e.nivel, items: [e] });
+                  return acc;
+                }, []);
+                return (
+                  <>
+                    {grupos.map((g) =>
+                      g.items.length === 1 ? (
+                        <TreeNode key={g.items[0].id} entity={g.items[0]} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
+                      ) : (
+                        <div key={g.nivel} className="border-l-2 border-[var(--color-neutro-200)] ml-2 pl-2 space-y-0.5">
+                          {g.items.map((root) => (
+                            <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
+                          ))}
+                        </div>
+                      )
+                    )}
+                    {external.length > 0 && internal.length > 0 && (
+                      <div className="border-t border-[var(--color-neutro-200)] my-3" />
+                    )}
+                    {external.length > 0 && (
+                      <div className="px-2 py-1.5">
+                        <p className="text-[11px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide flex items-center gap-1.5">
+                          <Circle className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
+                          Externas
+                        </p>
                       </div>
-                    )
-                  )}
-                  {external.length > 0 && internal.length > 0 && (
-                    <div className="border-t border-[var(--color-neutro-200)] my-3" />
-                  )}
-                  {external.length > 0 && (
-                    <div className="px-2 py-1.5">
-                      <p className="text-[11px] font-bold text-[var(--color-neutro-400)] uppercase tracking-wide flex items-center gap-1.5">
-                        <Circle className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-                        Externas
-                      </p>
+                    )}
+                    {external.map((root) => (
+                      <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
+                    ))}
+                  </>
+                );
+              })()
+        ) : (
+          (() => {
+            const visible = entities.filter((e) => entityVisible(e) && (query ? matchEntity(e, query) || rootIds.includes(e.id) : true));
+            const typeOrder = ["Central Administrativa", "Oficinas", "Depósitos", "Dispositivos", "Anaqueles", "Contenedores", "Vehículos", "Mercancía", "Entidad Bancaria", "Proveedores", "Clientes"];
+            const grouped: Record<string, Entity[]> = {};
+            visible.forEach((e) => {
+              if (!grouped[e.nivel]) grouped[e.nivel] = [];
+              grouped[e.nivel].push(e);
+            });
+            const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
+              const ia = typeOrder.indexOf(a);
+              const ib = typeOrder.indexOf(b);
+              return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+            });
+            const totalCount = visible.length;
+            return (
+              <>
+                <p className="px-2 py-1 text-[11px] text-[var(--color-neutro-400)]">{totalCount} entidad{totalCount !== 1 ? "es" : ""}</p>
+                {sortedGroups.map(([nivel, items]) => {
+                  const tipo = ENTITY_TYPES.find((t) => t.nivel === nivel);
+                  if (!items.length) return null;
+                  return (
+                    <div key={nivel} className="space-y-0.5">
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-[var(--color-neutro-200)]">
+                        <span className="w-3 h-3 rounded-corner-full" style={{ backgroundColor: tipo?.color || "var(--color-neutro-400)" }} />
+                        <span className="text-[11px] font-bold text-[var(--color-neutro-600)] uppercase tracking-wide flex-1">{tipo?.etiqueta || nivel}s</span>
+                        <span className="text-[10px] text-[var(--color-neutro-400)]">{items.length}</span>
+                      </div>
+                      {items.map((entity) => {
+                        const isSelected = selectedId === entity.id;
+                        const subTipo = ENTITY_TYPES.find((t) => t.nivel === entity.nivel);
+                        return (
+                          <button
+                            key={entity.id}
+                            className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-corner-m text-left text-[13px] transition-colors ${
+                              isSelected
+                                ? "bg-[var(--color-verde-100)] text-white font-semibold"
+                                : "text-[var(--color-neutro-700)] hover:bg-[var(--color-neutro-100)]"
+                            }`}
+                            style={{ paddingLeft: `${16}px` }}
+                            onClick={() => selectEntity(entity.id)}
+                          >
+                            <EntityIcon nivel={entity.nivel} subtipo={entity.subtipo} className="w-5 h-5 shrink-0" style={{ color: isSelected ? "#fff" : subTipo?.color, strokeWidth: 2 }} />
+                            <span className="truncate">{entity.nombre}</span>
+                            <span className="ml-auto text-[11px] opacity-60 shrink-0">{entity.subtipo}</span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
-                  {external.map((root) => (
-                    <TreeNode key={root.id} entity={root} depth={0} allEntities={entities} hiddenLevels={hiddenLevels} />
-                  ))}
-                </>
-              );
-            })()}
-        {rootIds.length === 0 && (
+                  );
+                })}
+                {sortedGroups.length === 0 && (
+                  <p className="text-[13px] text-[var(--color-neutro-400)] p-4 text-center">
+                    {query ? "Sin resultados" : hiddenLevels.size === UNIDADES_LEVELS.length ? "Todos los tipos están ocultos" : "No hay entidades"}
+                  </p>
+                )}
+              </>
+            );
+          })()
+        )}
+        {viewMode === "tree" && rootIds.length === 0 && (
           <p className="text-[13px] text-[var(--color-neutro-400)] p-4 text-center">
             {query ? "Sin resultados" : hiddenLevels.size === UNIDADES_LEVELS.length ? "Todos los tipos están ocultos" : "No hay entidades"}
           </p>
