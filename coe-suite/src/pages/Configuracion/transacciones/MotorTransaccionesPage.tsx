@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, X, ArrowRight, AlertTriangle, Clock, CheckCheck, GripVertical, OctagonX, Save, FolderOpen, Trash2, Pencil, Layers, Package, ChevronDown, Copy, Undo2, Lock, CheckCircle, GripHorizontal, BookOpen, FileText, Tag } from "lucide-react";
 import { Button, Input, Select, Switch, Checkbox } from "@coe/design-system";
 import { Modal } from "@components/ui/Modal";
@@ -717,9 +717,9 @@ function FusionadoTab({
             <p className="flex-1 text-[12px] font-semibold text-white uppercase tracking-wide">Inspector de Propiedades</p>
           </div>
           {activeException ? (
-            <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} />
+            <ExceptionPropertyInspector exception={activeException} stepId={activeExceptionId!.stepId} steps={displaySteps} readOnly={isViewingSaved} productosPermitidos={displayProceso.productosPermitidos} />
           ) : activeStep ? (
-            <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} usaTransportista={displayProceso.usaTransportista} />
+            <PropertyInspector step={activeStep} origenTipo={displayProceso.origenTipo} destinoTipo={displayProceso.destinoTipo} readOnly={isViewingSaved} usaTransportista={displayProceso.usaTransportista} productosPermitidos={displayProceso.productosPermitidos} />
           ) : (
             <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
               <p className="text-[13px] text-[var(--color-neutro-400)]">Seleccione un estado para editar sus propiedades</p>
@@ -793,198 +793,328 @@ function FusionadoTab({
 }
 
 /* ── Eventos Contables Tab ── */
-interface EventoContableSimulado {
+interface EventoContableRow {
   id: string;
   operacion: string;
   operacionId: string;
   estado: string;
-  tipo: "debita" | "acredita" | "ninguno";
-  cuentaDebe: string;
-  cuentaHaber: string;
-  monto: number;
-  divisa: string;
-  descripcion: string;
+  origen: "estado" | "excepcion";
+  productoId: string;
+  productoLabel: string;
+  cuentaIngreso: string;
+  cuentaEgreso: string;
 }
 
-function generarEventosMock(procesos: ProcesoTransaccional[]): EventoContableSimulado[] {
-  const eventos: EventoContableSimulado[] = [];
-  let counter = 0;
-  for (const op of procesos) {
+function getEventosConfigurados(proceso: ProcesoTransaccional, procesosFinalizados: ProcesoTransaccional[]): EventoContableRow[] {
+  const rows: EventoContableRow[] = [];
+  const todos = [proceso, ...procesosFinalizados.filter((p) => p.id !== proceso.id)];
+  for (const op of todos) {
     for (const step of op.steps) {
-      if (step.inventario === "ninguno") continue;
-      counter++;
-      const baseMonto = Math.round(Math.random() * 95000 + 5000);
-      eventos.push({
-        id: `ev-${counter}`,
-        operacion: op.nombre,
-        operacionId: op.id,
-        estado: step.nombre,
-        tipo: step.inventario,
-        cuentaDebe: step.inventario === "debita" ? "1.1.01.001" : "5.1.01.001",
-        cuentaHaber: step.inventario === "acredita" ? "1.1.01.001" : "2.1.01.001",
-        monto: baseMonto,
-        divisa: op.divisasPermitidas[0] === "div-1" ? "VES" : "USD",
-        descripcion: `${op.nombre} — ${step.nombre}`,
-      });
+      if (step.eventoContableHabilitado) {
+        for (const ec of step.eventosContables) {
+          const prod = PRODUCTOS.find((p) => p.value === ec.productoId);
+          rows.push({
+            id: `${op.id}-${step.id}-${ec.id}`,
+            operacion: op.nombre,
+            operacionId: op.id,
+            estado: step.nombre,
+            origen: "estado",
+            productoId: ec.productoId,
+            productoLabel: prod?.label ?? ec.productoId,
+            cuentaIngreso: ec.cuentaIngreso,
+            cuentaEgreso: ec.cuentaEgreso,
+          });
+        }
+      }
+      for (const ex of step.excepciones) {
+        if (ex.eventoContableHabilitado) {
+          for (const ec of ex.eventosContables) {
+            const prod = PRODUCTOS.find((p) => p.value === ec.productoId);
+            rows.push({
+              id: `${op.id}-${step.id}-${ex.id}-${ec.id}`,
+              operacion: op.nombre,
+              operacionId: op.id,
+              estado: `${step.nombre} / ${ex.nombre}`,
+              origen: "excepcion",
+              productoId: ec.productoId,
+              productoLabel: prod?.label ?? ec.productoId,
+              cuentaIngreso: ec.cuentaIngreso,
+              cuentaEgreso: ec.cuentaEgreso,
+            });
+          }
+        }
+      }
     }
   }
-  return eventos;
+  return rows;
 }
 
 function EventosContablesTab() {
   const store = useTransaccionesStore();
-  const [eventos, setEventos] = useState<EventoContableSimulado[]>(() =>
-    generarEventosMock(store.procesosFinalizados)
-  );
-  const [filtroOperacion, setFiltroOperacion] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editField, setEditField] = useState<"cuentaDebe" | "cuentaHaber" | null>(null);
-  const [editValue, setEditValue] = useState("");
+  const { updateEventoContable, updateEventoContableEnExcepcion } = store;
+  const cuentas = CUENTAS_MOCK;
 
-  useEffect(() => {
-    setEventos(generarEventosMock(store.procesosFinalizados));
-  }, [store.procesosFinalizados]);
+  const [filtroOperacion, setFiltroOperacion] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("");
+  const [filtroCuenta, setFiltroCuenta] = useState("");
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [massField, setMassField] = useState<"cuentaIngreso" | "cuentaEgreso" | null>(null);
+
+  const eventos = useMemo(() => getEventosConfigurados(store.proceso, store.procesosFinalizados), [store.proceso, store.procesosFinalizados]);
 
   const operaciones = [...new Set(eventos.map((e) => e.operacion))];
+  const estados = [...new Set(eventos.map((e) => e.estado))];
 
   const eventosFiltrados = eventos.filter((e) =>
-    !filtroOperacion || e.operacion === filtroOperacion
+    (!filtroOperacion || e.operacion === filtroOperacion) &&
+    (!filtroEstado || e.estado === filtroEstado) &&
+    (!filtroCuenta || e.cuentaIngreso.includes(filtroCuenta) || e.cuentaEgreso.includes(filtroCuenta))
   );
 
-  function startEdit(id: string, field: "cuentaDebe" | "cuentaHaber", value: string) {
-    setEditId(id);
-    setEditField(field);
-    setEditValue(value);
+  const eventosVisibles = eventosFiltrados;
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
-  function commitEdit() {
-    if (editId && editField) {
-      setEventos((prev) =>
-        prev.map((e) => (e.id === editId ? { ...e, [editField!]: editValue } : e))
-      );
+  function toggleSelectAll() {
+    if (eventosVisibles.every((e) => selectedIds.has(e.id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(eventosVisibles.map((e) => e.id)));
     }
-    setEditId(null);
-    setEditField(null);
-    setEditValue("");
+  }
+
+  function commitMassUpdate() {
+    if (!massField) return;
+    const newValue = massField === "cuentaIngreso" ? (document.getElementById("mass-select-cuenta") as HTMLSelectElement)?.value : (document.getElementById("mass-select-cuenta") as HTMLSelectElement)?.value;
+    if (!newValue) return;
+    for (const id of selectedIds) {
+      const row = eventos.find((e) => e.id === id);
+      if (!row) continue;
+      const parts = id.split("-");
+      const origen = row.origen;
+      let stepId: string | undefined;
+      let exId: string | undefined;
+      if (origen === "excepcion") {
+        stepId = parts[1];
+        exId = parts[2];
+      } else {
+        stepId = parts[1];
+      }
+      if (!stepId) continue;
+      const ecId = origen === "excepcion" ? parts.slice(3).join("-") : parts.slice(2).join("-");
+      if (origen === "excepcion" && exId) {
+        updateEventoContableEnExcepcion(stepId, exId, ecId, { [massField]: newValue });
+      } else {
+        updateEventoContable(stepId, ecId, { [massField]: newValue });
+      }
+    }
+    setMassField(null);
+    setSelectedIds(new Set());
+  }
+
+  function updateSingleRow(row: EventoContableRow, field: "cuentaIngreso" | "cuentaEgreso", value: string) {
+    const parts = row.id.split("-");
+    let stepId: string | undefined;
+    let exId: string | undefined;
+    if (row.origen === "excepcion") {
+      stepId = parts[1];
+      exId = parts[2];
+    } else {
+      stepId = parts[1];
+    }
+    if (!stepId) return;
+    const ecId = row.origen === "excepcion" ? parts.slice(3).join("-") : parts.slice(2).join("-");
+    if (row.origen === "excepcion" && exId) {
+      updateEventoContableEnExcepcion(stepId, exId, ecId, { [field]: value });
+    } else {
+      updateEventoContable(stepId, ecId, { [field]: value });
+    }
   }
 
   return (
     <div className="flex-1 flex gap-4 min-h-0">
       <div className="flex-1 bg-white border border-[var(--color-neutro-200)] rounded-corner-m shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col min-h-0">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-neutro-200)]">
-          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide">
-            Simulación de Eventos Contables
+        {/* Header + Filters */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--color-neutro-200)]">
+          <p className="text-[12px] font-semibold text-[var(--color-neutro-600)] uppercase tracking-wide shrink-0">
+            Eventos Contables
           </p>
-          <div className="flex items-center gap-2">
-            <select
-              value={filtroOperacion}
-              onChange={(e) => setFiltroOperacion(e.target.value)}
-              className="text-[12px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
-            >
-              <option value="">Todas las operaciones</option>
-              {operaciones.map((op) => (
-                <option key={op} value={op}>{op}</option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={filtroOperacion}
+            onChange={(e) => setFiltroOperacion(e.target.value)}
+            className="text-[12px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+          >
+            <option value="">Todas las ops.</option>
+            {operaciones.map((op) => (
+              <option key={op} value={op}>{op}</option>
+            ))}
+          </select>
+          <select
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+            className="text-[12px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+          >
+            <option value="">Todos los estados</option>
+            {estados.map((st) => (
+              <option key={st} value={st}>{st}</option>
+            ))}
+          </select>
+          <input
+            placeholder="Buscar cuenta..."
+            value={filtroCuenta}
+            onChange={(e) => setFiltroCuenta(e.target.value)}
+            className="text-[12px] px-2.5 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white w-[180px]"
+          />
         </div>
+
+        {/* Mass update banner */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 bg-blue-50 border-b border-blue-200">
+            <CheckCircle size={14} className="text-blue-600" />
+            <span className="text-[12px] text-blue-700 font-medium">
+              {selectedIds.size} evento{selectedIds.size > 1 ? "s" : ""} seleccionado{selectedIds.size > 1 ? "s" : ""}
+            </span>
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-[11px] text-blue-600 font-medium">Cambiar:</span>
+              <button
+                onClick={() => setMassField("cuentaIngreso")}
+                className={`text-[11px] px-2 py-1 rounded-corner-m border font-medium transition-colors ${massField === "cuentaIngreso" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-blue-600 border-blue-300 hover:bg-blue-100"}`}
+              >
+                Cuenta Ingreso
+              </button>
+              <button
+                onClick={() => setMassField("cuentaEgreso")}
+                className={`text-[11px] px-2 py-1 rounded-corner-m border font-medium transition-colors ${massField === "cuentaEgreso" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-blue-600 border-blue-300 hover:bg-blue-100"}`}
+              >
+                Cuenta Egreso
+              </button>
+              {massField && (
+                <div className="flex items-center gap-2">
+                  <select
+                    id="mass-select-cuenta"
+                    className="text-[12px] px-2 py-1.5 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-blue-400 bg-white"
+                  >
+                    <option value="">Seleccionar cuenta...</option>
+                    {cuentas.map((c) => (
+                      <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={commitMassUpdate}
+                    className="text-[11px] px-3 py-1.5 rounded-corner-m bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    Aplicar
+                  </button>
+                  <button
+                    onClick={() => setMassField(null)}
+                    className="text-[11px] px-2 py-1.5 rounded-corner-m text-[var(--color-neutro-500)] hover:text-[var(--color-neutro-700)]"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Table */}
         <div className="flex-1 overflow-y-auto p-4">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[var(--color-neutro-200)]">
+                <th className="w-[36px] px-2 py-2">
+                  <input
+                    type="checkbox"
+                    checked={eventosVisibles.length > 0 && eventosVisibles.every((e) => selectedIds.has(e.id))}
+                    onChange={toggleSelectAll}
+                    className="accent-[var(--color-verde-100)]"
+                  />
+                </th>
                 <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Operación</th>
                 <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Estado</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Tipo</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Cuenta Debe</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Cuenta Haber</th>
-                <th className="text-right px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Monto</th>
-                <th className="text-center px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Divisa</th>
-                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Descripción</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Producto</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Cuenta Ingreso</th>
+                <th className="text-left px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Cuenta Egreso</th>
+                <th className="text-center px-3 py-2 text-[11px] font-bold text-[var(--color-neutro-500)] uppercase tracking-wide">Origen</th>
               </tr>
             </thead>
             <tbody>
-              {eventosFiltrados.map((ev) => (
-                <tr key={ev.id} className="border-b border-[var(--color-neutro-100)] hover:bg-[var(--color-neutro-50)] transition-colors">
+              {eventosVisibles.map((ev) => (
+                <tr key={ev.id} className={`border-b border-[var(--color-neutro-100)] transition-colors ${selectedIds.has(ev.id) ? "bg-blue-50/60" : "hover:bg-[var(--color-neutro-50)]"}`}>
+                  <td className="px-2 py-2.5 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(ev.id)}
+                      onChange={() => toggleSelect(ev.id)}
+                      className="accent-[var(--color-verde-100)]"
+                    />
+                  </td>
                   <td className="px-3 py-2.5 font-medium text-[var(--color-neutro-900)]">{ev.operacion}</td>
-                  <td className="px-3 py-2.5 text-[var(--color-neutro-700)]">{ev.estado}</td>
+                  <td className="px-3 py-2.5 text-[var(--color-neutro-700)] text-[12px]">{ev.estado}</td>
                   <td className="px-3 py-2.5">
-                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-corner-m ${
-                      ev.tipo === "debita" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
-                    }`}>
-                      {ev.tipo === "debita" ? "Débito" : "Crédito"}
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-corner-m bg-purple-100 text-purple-700">
+                      {ev.productoLabel}
                     </span>
                   </td>
                   <td className="px-3 py-2.5">
-                    {editId === ev.id && editField === "cuentaDebe" ? (
-                      <input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={commitEdit}
-                        onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditId(null); }}
-                        className="w-full text-[12px] px-1.5 py-0.5 rounded-corner-m border border-[var(--color-verde-100)] outline-none bg-white font-mono"
-                        autoFocus
-                      />
-                    ) : (
-                      <button
-                        className="font-mono text-[12px] text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                        onClick={() => startEdit(ev.id, "cuentaDebe", ev.cuentaDebe)}
-                      >
-                        {ev.cuentaDebe}
-                      </button>
-                    )}
+                    <select
+                      value={ev.cuentaIngreso}
+                      onChange={(e) => updateSingleRow(ev, "cuentaIngreso", e.target.value)}
+                      className="text-[12px] px-1.5 py-0.5 rounded-corner-m border border-transparent focus:border-[var(--color-verde-100)] outline-none bg-transparent focus:bg-white font-mono cursor-pointer hover:border-[var(--color-neutro-200)]"
+                    >
+                      {cuentas.map((c) => (
+                        <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-3 py-2.5">
-                    {editId === ev.id && editField === "cuentaHaber" ? (
-                      <input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={commitEdit}
-                        onKeyDown={(e) => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditId(null); }}
-                        className="w-full text-[12px] px-1.5 py-0.5 rounded-corner-m border border-[var(--color-verde-100)] outline-none bg-white font-mono"
-                        autoFocus
-                      />
-                    ) : (
-                      <button
-                        className="font-mono text-[12px] text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                        onClick={() => startEdit(ev.id, "cuentaHaber", ev.cuentaHaber)}
-                      >
-                        {ev.cuentaHaber}
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-[var(--color-neutro-900)]">
-                    {ev.monto.toLocaleString("es-VE")}
+                    <select
+                      value={ev.cuentaEgreso}
+                      onChange={(e) => updateSingleRow(ev, "cuentaEgreso", e.target.value)}
+                      className="text-[12px] px-1.5 py-0.5 rounded-corner-m border border-transparent focus:border-[var(--color-verde-100)] outline-none bg-transparent focus:bg-white font-mono cursor-pointer hover:border-[var(--color-neutro-200)]"
+                    >
+                      {cuentas.map((c) => (
+                        <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-corner-m bg-blue-50 text-blue-700">
-                      {ev.divisa}
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-corner-m ${
+                      ev.origen === "excepcion" ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700"
+                    }`}>
+                      {ev.origen === "excepcion" ? "Excepción" : "Estado"}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-[var(--color-neutro-500)] text-[12px]">{ev.descripcion}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {eventosFiltrados.length === 0 && (
+          {eventosVisibles.length === 0 && (
             <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
               <FileText className="w-10 h-10 text-[var(--color-neutro-300)] mb-2" />
               <p className="text-[13px] text-[var(--color-neutro-400)]">
-                {filtroOperacion
-                  ? "No hay eventos contables para esta operación"
-                  : "No hay eventos contables generados"}
+                No hay eventos contables configurados
               </p>
               <p className="text-[11px] text-[var(--color-neutro-400)] mt-1">
-                Los eventos se generan automáticamente de los estados con descuento de inventario
+                Active "Habilitar Evento Contable" en las propiedades de un estado para verlos aquí
               </p>
             </div>
           )}
         </div>
         <div className="px-4 py-2 border-t border-[var(--color-neutro-200)] flex items-center justify-between">
           <p className="text-[11px] text-[var(--color-neutro-400)]">
-            {eventosFiltrados.length} de {eventos.length} eventos simulados
+            {eventosVisibles.length} de {eventos.length} eventos
           </p>
           <p className="text-[11px] text-[var(--color-neutro-400)] italic">
-            Vista preliminar — las cuentas (azul) se pueden editar in-line
+            Seleccione múltiples eventos para cambio masivo de cuentas
           </p>
         </div>
       </div>
@@ -1199,12 +1329,14 @@ function EstadoCard({
 /* ── Property Inspector ── */
 const CATEGORIAS_OPERACIONES = ["Traslado", "Conteo", "Manipulación", "Custodia"];
 
-function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, usaTransportista = false }: { step: TransaccionStep; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean; usaTransportista?: boolean }) {
-  const { updateStepProperty, toggleServicioCategoriaEnStep } = useTransaccionesStore();
+function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, usaTransportista = false, productosPermitidos = [] }: { step: TransaccionStep; origenTipo: string | null; destinoTipo: string | null; readOnly?: boolean; usaTransportista?: boolean; productosPermitidos?: string[] }) {
+  const { updateStepProperty, updateEventoContable, setEventoContableHabilitado, toggleServicioCategoriaEnStep } = useTransaccionesStore();
   const sid = step.id;
 
   const labelClass = "text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1";
   const valueClass = "text-[13px] text-[var(--color-neutro-900)] py-1";
+
+  const cuentas = CUENTAS_MOCK;
 
   return (
     <div className="p-3 space-y-3 overflow-y-auto flex-1 min-h-0" onClick={(e) => e.stopPropagation()}>
@@ -1251,9 +1383,61 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
 
         <div>
           <p className={labelClass}>Evento Contable</p>
-          <div className="text-[13px] px-2.5 py-1.5 rounded-corner-m bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] border border-dashed border-[var(--color-neutro-300)]">
-            Disponible en módulo de Contabilidad
-          </div>
+          {readOnly ? (
+            <p className={valueClass}>
+              {step.eventoContableHabilitado ? (
+                <span className="text-indigo-700 font-medium">Habilitado ({step.eventosContables.length} producto{step.eventosContables.length !== 1 ? "s" : ""})</span>
+              ) : "No habilitado"}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch checked={step.eventoContableHabilitado} onChange={(v: boolean) => setEventoContableHabilitado(sid, v)} />
+                <span className="text-[13px] text-[var(--color-neutro-700)]">Habilitar Evento Contable</span>
+              </label>
+              {step.eventoContableHabilitado && (
+                <div className="space-y-2 mt-2">
+                  {productosPermitidos.length === 0 && (
+                    <p className="text-[11px] text-amber-600">Seleccione productos en la operación para configurar cuentas contables</p>
+                  )}
+                  {(step.eventosContables ?? []).map((ec) => {
+                    const prod = PRODUCTOS.find((p) => p.value === ec.productoId);
+                    return (
+                      <div key={ec.id} className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-2.5 space-y-1.5">
+                        <p className="text-[11px] font-semibold text-[var(--color-neutro-700)]">{prod?.label ?? ec.productoId}</p>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <p className="text-[10px] text-[var(--color-neutro-500)] mb-0.5">Cuenta Ingreso</p>
+                            <select
+                              value={ec.cuentaIngreso}
+                              onChange={(e) => updateEventoContable(sid, ec.id, { cuentaIngreso: e.target.value })}
+                              className="w-full text-[11px] px-2 py-1 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                            >
+                              {cuentas.map((c) => (
+                                <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-[var(--color-neutro-500)] mb-0.5">Cuenta Egreso</p>
+                            <select
+                              value={ec.cuentaEgreso}
+                              onChange={(e) => updateEventoContable(sid, ec.id, { cuentaEgreso: e.target.value })}
+                              className="w-full text-[11px] px-2 py-1 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                            >
+                              {cuentas.map((c) => (
+                                <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div>
@@ -1425,11 +1609,13 @@ function PropertyInspector({ step, origenTipo, destinoTipo, readOnly = false, us
 }
 
 /* ── Exception Property Inspector ── */
-function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps }: { exception: Excepcion; stepId: string; readOnly?: boolean; steps?: TransaccionStep[] }) {
-  const { updateExcepcionProperty, setExcepcionTerminal } = useTransaccionesStore();
+function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps, productosPermitidos = [] }: { exception: Excepcion; stepId: string; readOnly?: boolean; steps?: TransaccionStep[]; productosPermitidos?: string[] }) {
+  const { updateExcepcionProperty, setExcepcionTerminal, setEventoContableHabilitadoEnExcepcion, updateEventoContableEnExcepcion } = useTransaccionesStore();
   const eid = exception.id;
   const labelClass = "text-[12px] font-semibold text-[var(--color-neutro-600)] mb-1";
   const valueClass = "text-[13px] text-[var(--color-neutro-900)] py-1";
+
+  const cuentas = CUENTAS_MOCK;
 
   const currentStepIdx = steps?.findIndex((s) => s.id === stepId) ?? -1;
   const pasoAnterior = (steps && currentStepIdx > 0) ? steps[currentStepIdx - 1] : null;
@@ -1568,9 +1754,61 @@ function ExceptionPropertyInspector({ exception, stepId, readOnly = false, steps
 
         <div>
           <p className={labelClass}>Evento Contable</p>
-          <div className="text-[13px] px-2.5 py-1.5 rounded-corner-m bg-[var(--color-neutro-100)] text-[var(--color-neutro-400)] border border-dashed border-[var(--color-neutro-300)]">
-            Disponible en módulo de Contabilidad
-          </div>
+          {readOnly ? (
+            <p className={valueClass}>
+              {exception.eventoContableHabilitado ? (
+                <span className="text-indigo-700 font-medium">Habilitado ({exception.eventosContables.length} producto{exception.eventosContables.length !== 1 ? "s" : ""})</span>
+              ) : "No habilitado"}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch checked={exception.eventoContableHabilitado} onChange={(v: boolean) => setEventoContableHabilitadoEnExcepcion(stepId, eid, v)} />
+                <span className="text-[13px] text-[var(--color-neutro-700)]">Habilitar Evento Contable</span>
+              </label>
+              {exception.eventoContableHabilitado && (
+                <div className="space-y-2 mt-2">
+                  {productosPermitidos.length === 0 && (
+                    <p className="text-[11px] text-amber-600">Seleccione productos en la operación para configurar cuentas contables</p>
+                  )}
+                  {(exception.eventosContables ?? []).map((ec) => {
+                    const prod = PRODUCTOS.find((p) => p.value === ec.productoId);
+                    return (
+                      <div key={ec.id} className="bg-white border border-[var(--color-neutro-200)] rounded-corner-m p-2.5 space-y-1.5">
+                        <p className="text-[11px] font-semibold text-[var(--color-neutro-700)]">{prod?.label ?? ec.productoId}</p>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <p className="text-[10px] text-[var(--color-neutro-500)] mb-0.5">Cuenta Ingreso</p>
+                            <select
+                              value={ec.cuentaIngreso}
+                              onChange={(e) => updateEventoContableEnExcepcion(stepId, eid, ec.id, { cuentaIngreso: e.target.value })}
+                              className="w-full text-[11px] px-2 py-1 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                            >
+                              {cuentas.map((c) => (
+                                <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-[10px] text-[var(--color-neutro-500)] mb-0.5">Cuenta Egreso</p>
+                            <select
+                              value={ec.cuentaEgreso}
+                              onChange={(e) => updateEventoContableEnExcepcion(stepId, eid, ec.id, { cuentaEgreso: e.target.value })}
+                              className="w-full text-[11px] px-2 py-1 rounded-corner-m border border-[var(--color-neutro-200)] outline-none focus:border-[var(--color-verde-100)] bg-white"
+                            >
+                              {cuentas.map((c) => (
+                                <option key={c.id} value={c.codigo}>{c.codigo} — {c.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div>
